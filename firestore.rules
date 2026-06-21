@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && (
+        request.auth.uid == userId || 
+        (request.auth.token.email != null && (
+          request.auth.token.email == userId || 
+          request.auth.token.email.lowerCase() == userId.lowerCase()
+        ))
+      );
+    }
+
+    // Match all user documents and subcollections under /users/{userId}
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Device trials collection rules
+    match /device_trials/{deviceId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+  }
+}
