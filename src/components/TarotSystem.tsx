@@ -215,13 +215,26 @@ function romanize(num: number): string {
   return roman;
 }
 
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
+
 interface TarotSystemProps {
   userName?: string;
+  lang?: Language;
 }
 
 type TarotMode = 'inteligente' | 'amor' | 'tradicional' | 'semanal';
 
-export default function TarotSystem({ userName }: TarotSystemProps) {
+export default function TarotSystem({ userName, lang }: TarotSystemProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
   const [activeMode, setActiveMode] = useState<TarotMode>('inteligente');
   
   // Dynamic cards state and selection flow

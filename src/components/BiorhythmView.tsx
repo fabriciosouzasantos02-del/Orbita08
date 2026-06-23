@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Heart, 
@@ -18,10 +19,12 @@ import {
   TrendingDown, 
   AlertCircle 
 } from 'lucide-react';
+import { translateUiText, Language } from '../lib/translations';
 
 interface BiorhythmViewProps {
   userName?: string;
   birthDate?: string;
+  lang?: string;
 }
 
 // Fixed periods in days for the 7 biorhythm cycles
@@ -35,7 +38,16 @@ const CYCLES = {
   estetico: { name: 'Estético-Criativo', period: 43, color: 'text-pink-400', stroke: '#f472b6', desc: 'Apreciação artística refinada, criação espontânea de beleza e bom gosto.' }
 };
 
-export default function BiorhythmView({ userName, birthDate = '1997-02-11' }: BiorhythmViewProps) {
+export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang }: BiorhythmViewProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = new Date();
     const year = d.getFullYear();
@@ -419,7 +431,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11' }: Bi
                           {key === 'emocional' && <Heart className="w-4 h-4 text-indigo-400" />}
                           {key === 'intelectual' && <Brain className="w-4 h-4 text-sky-455" />}
                           
-                          <span className="text-xs font-bold text-slate-200">{details.name}</span>
+                          <span className="text-xs font-bold text-slate-200">{t(details.name)}</span>
                         </div>
 
                         <div className="flex items-center gap-2 font-mono text-[11px]">
@@ -500,7 +512,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11' }: Bi
                           {key === 'intuitivo' && <Compass className="w-3.5 h-3.5 text-amber-400" />}
                           {key === 'estetico' && <Palette className="w-3.5 h-3.5 text-pink-400" />}
                           
-                          <span className="text-xs text-slate-300">{details.name}</span>
+                          <span className="text-xs text-slate-300">{t(details.name)}</span>
                         </div>
 
                         <div className="flex items-center gap-1.5 font-mono text-[10px]">

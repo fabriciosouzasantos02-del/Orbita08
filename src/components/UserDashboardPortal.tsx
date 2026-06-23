@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Activity, Award, Calendar, Sparkles, ShieldCheck, BookOpen, 
   DollarSign, Heart, Users, Star, Moon, Home, Eye, Sliders,
@@ -13,6 +14,7 @@ import { generateDailyPrediction } from './dailyPredictionsEngine';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 import { getAvatarUrl } from '../lib/avatars';
+import { translateUiText, Language } from '../lib/translations';
 
 function getLifePathNumber(birthDate: string): number {
   if (!birthDate) return 8; // default fallback
@@ -83,6 +85,7 @@ interface UserDashboardPortalProps {
   areaSubTab?: any;
   setAreaSubTab?: any;
   onUpdateCurrentUser?: (updated: any) => void;
+  lang?: Language;
 }
 
 export default function UserDashboardPortal({
@@ -95,8 +98,18 @@ export default function UserDashboardPortal({
   dreamsHistory = [],
   areaSubTab: propAreaSubTab,
   setAreaSubTab: propSetAreaSubTab,
-  onUpdateCurrentUser
+  onUpdateCurrentUser,
+  lang
 }: UserDashboardPortalProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
   const userFirstName = user?.name ? user.name.split(' ')[0] : 'Viajante';
   const zodiacSign = getZodiacSign(user?.birthDate);
   const lifePathNumber = getLifePathNumber(user?.birthDate);
@@ -675,7 +688,7 @@ export default function UserDashboardPortal({
           {/* Mobile Dropdown Category Selector */}
           <div className="lg:hidden animate-in fade-in duration-300">
             <label className="block text-[10px] font-mono text-slate-500 mb-1.5 uppercase font-black tracking-wide">
-              Acelere Seus Objetivos, Navegue pelos Portais Ativos
+              {t("Acelere Seus Objetivos, Navegue pelos Portais Ativos")}
             </label>
             <div className="relative">
               <select
@@ -683,36 +696,36 @@ export default function UserDashboardPortal({
                 onChange={(e) => setAreaSubTab(e.target.value as any)}
                 className="w-full px-4 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] font-black text-slate-200 tracking-wider focus:outline-hidden cursor-pointer"
               >
-                <optgroup label="🌌 Revelação Semanal">
-                  <option value="universo_mostrando">🪐 Veja o que o universo quer te mostrando</option>
+                <optgroup label={`🌌 ${t("Revelação Semanal")}`}>
+                  <option value="universo_mostrando">🪐 {t("Veja o que o universo quer te mostrando")}</option>
                 </optgroup>
-                <optgroup label="🏆 Práticas & Evolução">
-                  <option value="missao">🏅 Missões do Portal</option>
-                  <option value="amuletos">🔮 Símbolos & Amuletos</option>
+                <optgroup label={`🏆 ${t("Práticas & Evolução")}`}>
+                  <option value="missao">🏅 {t("Missões do Portal")}</option>
+                  <option value="amuletos">🔮 {t("Símbolos & Amuletos")}</option>
                 </optgroup>
-                <optgroup label="📈 Sinais & Oportunidades do Dia">
-                  <option value="radar">⚡ Radar do Dia</option>
-                  <option value="oportunidades_hoje">🎯 Radar de Oportunidades (0-100)</option>
+                <optgroup label={`📈 ${t("Sinais & Oportunidades do Dia")}`}>
+                  <option value="radar">⚡ {t("Radar do Dia")}</option>
+                  <option value="oportunidades_hoje">🎯 {t("Radar de Oportunidades (0-100)")}</option>
                 </optgroup>
-                <optgroup label="🗓️ Previsões & Ciclos do Mês">
-                  <option value="painel_mes">🌙 Painel do Mês</option>
-                  <option value="calendario">📅 Calendário Inteligente</option>
-                  <option value="cores">🎨 Cores do Mês</option>
-                  <option value="mensagem">✉️ Mensagem e Avisos</option>
+                <optgroup label={`🗓️ ${t("Previsões & Ciclos do Mês")}`}>
+                  <option value="painel_mes">🌙 {t("Painel do Mês")}</option>
+                  <option value="calendario">📅 {t("Calendário Inteligente")}</option>
+                  <option value="cores">🎨 {t("Cores do Mês")}</option>
+                  <option value="mensagem">✉️ {t("Mensagem e Avisos")}</option>
                 </optgroup>
-                <optgroup label="💎 Áreas de Foco">
-                  <option value="prosperidade">💸 Prosperidade & Dinheiro</option>
-                  <option value="amor">💖 Amor & Romance</option>
-                  <option value="compatibilidade_social">👥 Sinergia Social & Compatibilidade</option>
-                  <option value="relacionamentos">👥 Relacionamentos Sociais</option>
-                  <option value="desenvolvimento">🌱 Desenvolvimento Pessoal</option>
+                <optgroup label={`💎 ${t("Áreas de Foco")}`}>
+                  <option value="prosperidade">💸 {t("Prosperidade & Dinheiro")}</option>
+                  <option value="amor">💖 {t("Amor & Romance")}</option>
+                  <option value="compatibilidade_social">👥 {t("Sinergia Social & Compatibilidade")}</option>
+                  <option value="relacionamentos">👥 {t("Relacionamentos Sociais")}</option>
+                  <option value="desenvolvimento">🌱 {t("Desenvolvimento Pessoal")}</option>
                 </optgroup>
-                <optgroup label="🌱 Campo Energético">
-                  <option value="energia_casa">🏡 Energia da Casa</option>
-                  <option value="sonhos">🌙 Centro de Sonhos</option>
+                <optgroup label={`🌱 ${t("Campo Energético")}`}>
+                  <option value="energia_casa">🏡 {t("Energia da Casa")}</option>
+                  <option value="sonhos">🌙 {t("Centro de Sonhos")}</option>
                 </optgroup>
-                <optgroup label="📱 Aplicativo Mobile">
-                  <option value="baixar_app">📱 Instalar APK / PWA</option>
+                <optgroup label={`📱 ${t("Aplicativo Mobile")}`}>
+                  <option value="baixar_app">📱 {t("Instalar APK / PWA")}</option>
                 </optgroup>
               </select>
             </div>
@@ -779,7 +792,7 @@ export default function UserDashboardPortal({
                 }
               ].map((group, groupIdx) => (
                 <div key={groupIdx} className="space-y-1">
-                  <span className="text-[8px] font-mono font-black text-slate-600 block uppercase px-2 tracking-widest leading-none mb-1">{group.group}</span>
+                  <span className="text-[8px] font-mono font-black text-slate-600 block uppercase px-2 tracking-widest leading-none mb-1">{t(group.group)}</span>
                   <div className="space-y-0.5">
                     {group.items.map((sub) => {
                       const Icon = sub.icon;
@@ -797,7 +810,7 @@ export default function UserDashboardPortal({
                         >
                           <div className="flex items-center gap-2">
                             <Icon className={`w-3.5 h-3.5 ${sub.color}`} />
-                            <span>{sub.label}</span>
+                            <span>{t(sub.label)}</span>
                           </div>
                           {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
                         </button>

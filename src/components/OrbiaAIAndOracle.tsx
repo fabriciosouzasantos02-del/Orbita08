@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send } from 'lucide-react';
 import { ChatMessage, DailyOracleResponse } from '../types';
+import { translateUiText, Language } from '../lib/translations';
 
 interface OrbiaAIAndOracleProps {
   chatMessages: ChatMessage[];
@@ -16,6 +18,7 @@ interface OrbiaAIAndOracleProps {
   setOracleResponse: (val: DailyOracleResponse | null) => void;
   isQueryingOracle: boolean;
   handleAskOracle: (e: React.FormEvent) => Promise<void>;
+  lang?: string;
 }
 
 export default function OrbiaAIAndOracle({
@@ -30,8 +33,19 @@ export default function OrbiaAIAndOracle({
   oracleResponse,
   setOracleResponse,
   isQueryingOracle,
-  handleAskOracle
+  handleAskOracle,
+  lang
 }: OrbiaAIAndOracleProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="orbia-oracle-grid">
       {/* Orbia AI Chat client */}
@@ -39,15 +53,15 @@ export default function OrbiaAIAndOracle({
         <div className="space-y-1 pb-2 border-b border-slate-850 shrink-0" id="orbia-header">
           <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest flex items-center gap-1.5" id="orbia-title">
             <span className="w-1.5 h-1.5 bg-rose-450 rounded-full animate-ping" />
-            Orbia: Conselheira Pessoal Live
+            {t("Orbia: Conselheira Pessoal Live")}
           </h3>
-          <p className="text-[10px] text-slate-500">Inteligência Astrológica treinada com seu mapa.</p>
+          <p className="text-[10px] text-slate-500">{t("Inteligência Astrológica treinada com seu mapa.")}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 space-y-3 pr-1 max-h-[300px]" id="chat-messages-scroll">
           {chatMessages.map((msg) => (
             <div 
-              key={msg.id} 
+               key={msg.id} 
               className={`flex flex-col max-w-[85%] space-y-1 ${
                 msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
               }`}
@@ -61,7 +75,7 @@ export default function OrbiaAIAndOracle({
                 {msg.text}
               </div>
               <span className="text-[8px] font-mono text-slate-600 tracking-wider">
-                {msg.sender === 'user' ? 'Você' : 'Orbia'} · {msg.timestamp}
+                {msg.sender === 'user' ? t('Você') : 'Orbia'} · {msg.timestamp}
               </span>
             </div>
           ))}
@@ -71,7 +85,7 @@ export default function OrbiaAIAndOracle({
           <input 
             type="text" 
             required
-            placeholder="Pergunte sobre amor, emprego, mapa..."
+            placeholder={t("Pergunte sobre amor, emprego, mapa...")}
             value={currentChatInput}
             onChange={(e) => setCurrentChatInput(e.target.value)}
             className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-300 focus:outline-hidden"
@@ -92,25 +106,25 @@ export default function OrbiaAIAndOracle({
       <div className="lg:col-span-6 bg-slate-900/20 p-6 rounded-3xl border border-rose-500/10 space-y-4" id="daily-oracle-container">
         <div className="pb-2 border-b border-slate-850 flex justify-between items-center" id="oracle-header">
           <div>
-            <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Oráculo do Dia</h3>
-            <p className="text-[10px] text-slate-500 mt-0.5">Limite de uma resposta profunda por dia.</p>
+            <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{t("Oráculo do Dia")}</h3>
+            <p className="text-[10px] text-slate-500 mt-0.5">{t("Limite de uma resposta profunda por dia.")}</p>
           </div>
           <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[8px] font-mono text-amber-500" id="oracle-status-badge">
-            {hasQueriedOracleToday ? "Consumido de hoje" : "Disponível"}
+            {hasQueriedOracleToday ? t("Consumido de hoje") : t("Disponível")}
           </span>
         </div>
 
         {!oracleResponse ? (
           <form onSubmit={handleAskOracle} className="space-y-4 pt-2" id="oracle-query-form">
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
-              Sintonize sua mente. Qual dúvida crucial pesa em sua energia hoje? Faça uma pergunta livre para receber reflexão astrológica profunda.
+              {t("Sintonize sua mente. Qual dúvida crucial pesa em sua energia hoje? Faça uma pergunta livre para receber reflexão astrológica profunda.")}
             </p>
             <div>
               <input 
                 type="text" 
                 required
                 disabled={hasQueriedOracleToday}
-                placeholder="e.g. Devo focar em mudar de carreira este Semestre?"
+                placeholder={t("e.g. Devo focar em mudar de carreira este Semestre?")}
                 value={oracleQuestion}
                 onChange={(e) => setOracleQuestion(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-202 focus:outline-hidden"
@@ -124,24 +138,24 @@ export default function OrbiaAIAndOracle({
               className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 disabled:text-slate-600 font-sans font-bold text-xs uppercase transition border border-slate-700"
               id="oracle-submit-btn"
             >
-              {isQueryingOracle ? "Consultando Sabedorias..." : "Evocar Conselho do Oráculo"}
+              {isQueryingOracle ? t("Consultando Sabedorias...") : t("Evocar Conselho do Oráculo")}
             </button>
           </form>
         ) : (
           <div className="space-y-4 animate-in fade-in duration-300" id="oracle-response-block">
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-850 space-y-3 font-sans" id="oracle-response-card">
               <div className="space-y-1">
-                <span className="text-[8px] font-mono uppercase text-slate-500 block">Reflexão Metafísica</span>
+                <span className="text-[8px] font-mono uppercase text-slate-500 block">{t("Reflexão Metafísica")}</span>
                 <p className="text-xs text-slate-300 leading-relaxed italic">"{oracleResponse.reflection}"</p>
               </div>
 
               <div className="space-y-1 pt-1 border-t border-slate-900">
-                <span className="text-[8px] font-mono uppercase text-amber-500 block">Incentivo de Sintonia</span>
+                <span className="text-[8px] font-mono uppercase text-amber-500 block">{t("Incentivo de Sintonia")}</span>
                 <p className="text-xs text-slate-400 leading-relaxed font-bold">{oracleResponse.inspiringMessage}</p>
               </div>
 
               <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/10 text-[10.5px] text-slate-400" id="oracle-counsel-box">
-                <strong>Conselho Ativo:</strong> {oracleResponse.counsel}
+                <strong>{t("Conselho Ativo:")}</strong> {oracleResponse.counsel}
               </div>
             </div>
 
@@ -151,7 +165,7 @@ export default function OrbiaAIAndOracle({
               className="text-xs text-slate-500 hover:text-slate-300 font-mono uppercase"
               id="oracle-close-btn"
             >
-              Fechar Oráculo de Hoje
+              {t("Fechar Oráculo de Hoje")}
             </button>
           </div>
         )}

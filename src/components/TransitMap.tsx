@@ -84,14 +84,37 @@ export default function TransitMap({ mapData }: TransitMapProps) {
 
   // Read natal positions of planets from birth chart
   const getNatalAngle = (planetName: string): number | null => {
+    if (!mapData || !mapData.astros || !Array.isArray(mapData.astros)) {
+      console.warn("[TransitMap] mapData ou mapData.astros ausente/inválido", mapData);
+      return null;
+    }
     const matched = mapData.astros.find(
-      (a) => a.name.toLowerCase().includes(planetName.toLowerCase()) || 
-             planetName.toLowerCase().includes(a.name.toLowerCase())
+      (a) => a && a.name && (a.name.toLowerCase().includes(planetName.toLowerCase()) || 
+             planetName.toLowerCase().includes(a.name.toLowerCase()))
     );
-    if (!matched) return null;
+    if (!matched) {
+      console.warn(`[TransitMap] Astro natal correspondente para ${planetName} não encontrado.`);
+      return null;
+    }
     const signIndex = ZODIAC_SIGNS.findIndex((s) => s.name === matched.sign);
-    if (signIndex === -1) return null;
-    const deg = parseInt(matched.degree.replace(/\D/g, '')) || 0;
+    if (signIndex === -1) {
+      console.warn(`[TransitMap] Signo '${matched.sign}' não catalogado para ${matched.name}. Mapeamento ignorado.`);
+      return null;
+    }
+    
+    let deg = 0;
+    try {
+      if (typeof matched.degree === 'number') {
+        deg = Math.floor(matched.degree);
+      } else if (matched.degree !== undefined && matched.degree !== null) {
+        const matchDeg = String(matched.degree).match(/^\d+/);
+        deg = matchDeg ? parseInt(matchDeg[0], 10) : 0;
+      }
+    } catch (err) {
+      console.error(`[TransitMap] Falhou ao extrair número de grau para ${matched.name}:`, matched.degree, err);
+    }
+
+    console.log(`[Diagnostic] TransitMap: ${matched.name} em ${matched.sign} (${signIndex * 30}°), grau parsed: ${deg}, ângulo final: ${(signIndex * 30 + deg) % 360}°`);
     return (signIndex * 30 + deg) % 360;
   };
 

@@ -151,6 +151,10 @@ export function getFirebaseApp() {
 
 export function getFirestoreDB() {
   if (!hasConfig) return null;
+  const auth = getFirebaseAuth();
+  if (!auth?.currentUser) {
+    return null;
+  }
   if (!dbInstance) {
     const app = getFirebaseApp();
     if (app) {
@@ -211,6 +215,11 @@ export interface UserProfileData {
   provider?: string;
   emailVerified?: boolean;
   isEmailVerified?: boolean; // Retro-compatibility
+  displayName?: string;
+  birthName?: string;
+  profileName?: string;
+  avatarId?: string;
+  preferredLanguage?: string;
   trialUsed?: boolean;
   trialStartDate?: string;
   trialEndDate?: string;
@@ -226,6 +235,7 @@ export interface UserProfileData {
   isPremium?: boolean;
   hasCreatedMap?: boolean;
   scorePoints?: number;
+  stellarPoints?: number;
   isUnknownTime?: boolean;
   latitude?: number;
   longitude?: number;
@@ -258,6 +268,8 @@ export interface DreamLogItem {
   interpretation: string;
   sentiment: string;
   date: string;
+  time?: string;
+  language?: string;
 }
 
 // 1. Helper to retrieve current document key (preferring active authenticated UID, falling back to email)
@@ -277,11 +289,24 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
   const auth = getFirebaseAuth();
   const activeUid = auth?.currentUser?.uid || profile.uid || profile.userId || "";
 
+  const rawName = profile.name || profile.displayName || profile.profileName || profile.birthName || "Buscador";
+  const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+
+  const pointsVal = profile.stellarPoints !== undefined ? profile.stellarPoints : (profile.scorePoints ?? 0);
+
   const enrichedProfile = {
     ...profile,
     uid: activeUid || profile.uid || "",
     userId: activeUid || profile.userId || "",
     email: mailKey,
+    name: finalName,
+    displayName: profile.displayName || finalName,
+    birthName: profile.birthName || finalName,
+    profileName: profile.profileName || finalName,
+    avatarId: profile.avatarId || profile.profilePhoto || "",
+    preferredLanguage: profile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
+    scorePoints: pointsVal,
+    stellarPoints: pointsVal,
     updatedAt: new Date().toISOString()
   };
 
@@ -292,11 +317,22 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
     const path = `users/${docKey}`;
     try {
       const userRef = doc(db, "users", docKey);
+      console.log(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] Starting setDoc to path: ${path}`, {
+        docKey,
+        activeUid,
+        authUid: auth?.currentUser?.uid,
+        authEmail: auth?.currentUser?.email
+      });
       await setDoc(userRef, enrichedProfile, { merge: true });
-      console.log(`[Sync] Perfil de usuário integrado na nuvem. Chave: ${docKey}`);
-    } catch (e) {
-      console.warn("[Sync] Gravação em nuvem adiada. Backup local ativo.");
+      console.log(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc SUCCESS for path: ${path}`);
+    } catch (e: any) {
+      console.error(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc FAILED for path: ${path}`, {
+        error: e?.message || String(e),
+        code: e?.code,
+        stack: e?.stack
+      });
       handleFirestoreError(e, OperationType.WRITE, path);
+      throw e;
     }
   }
 }
@@ -832,18 +868,30 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
   const db = getFirestoreDB();
   if (db) {
     const path = `users/${docKey}/natalCharts/${chartId}`;
+    const auth = getFirebaseAuth();
     try {
       const docRef = doc(db, "users", docKey, "natalCharts", chartId);
+      console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] Starting setDoc to path: ${path}`, {
+        chartId,
+        docKey,
+        authUid: auth?.currentUser?.uid,
+        authEmail: auth?.currentUser?.email
+      });
       await setDoc(docRef, {
         id: chartId,
         userId: docKey,
         ...chartData,
         updatedAt: new Date().toISOString()
       }, { merge: true });
-      console.log(`[Sync] Natal Chart saved in Firestore: ${path}`);
-    } catch (e) {
-      console.warn(`[Sync] Natal Chart save deferred to local: ${path}`, e);
+      console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc SUCCESS for path: ${path}`);
+    } catch (e: any) {
+      console.error(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc FAILED for path: ${path}`, {
+        error: e?.message || String(e),
+        code: e?.code,
+        stack: e?.stack
+      });
       handleFirestoreError(e, OperationType.WRITE, path);
+      throw e;
     }
   }
 }

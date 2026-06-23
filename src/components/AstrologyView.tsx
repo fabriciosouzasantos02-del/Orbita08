@@ -1,4 +1,6 @@
 import React, { useState, useMemo, memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 import { AstrologyMap, AstroAstroPosition, UserProfile } from '../types';
 import CircularChart from './CircularChart';
 import { 
@@ -38,6 +40,15 @@ interface ExtraMap {
 }
 
 const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainMap, readOnly = false }: AstrologyViewProps) {
+  const { t: i18nT, i18n } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (i18n.language as Language) || 'pt');
+    }
+    return res;
+  };
   const [activeSubTab, setActiveSubTab] = useState<'geral' | 'astros' | 'casas' | 'aspectos' | 'extras'>('geral');
   const [selectedAstro, setSelectedAstro] = useState<AstroAstroPosition | null>(() => mapData?.astros?.[0] || null);
   const [selectedHouse, setSelectedHouse] = useState<number>(1);
@@ -965,7 +976,10 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                   <span className="text-base font-bold text-amber-500/80">🪐</span>
                   <div>
                     <h4 className="text-xs font-bold">{ast.name}</h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{ast.sign} {ast.degree}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {ast.sign} {ast.degree !== null && ast.degree !== undefined ? ast.degree : ''}
+                      {ast.degree !== null && ast.degree !== undefined && (typeof ast.degree === 'number' || !String(ast.degree).includes('°')) ? '°' : ''}
+                    </p>
                   </div>
                 </div>
 
@@ -993,7 +1007,10 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                   </div>
                   
                   <div className="text-right">
-                    <span className="text-xl font-bold text-amber-500 font-mono">{selectedAstro.degree}</span>
+                    <span className="text-xl font-bold text-amber-500 font-mono">
+                      {selectedAstro.degree !== null && selectedAstro.degree !== undefined ? selectedAstro.degree : ''}
+                      {selectedAstro.degree !== null && selectedAstro.degree !== undefined && (typeof selectedAstro.degree === 'number' || !String(selectedAstro.degree).includes('°')) ? '°' : ''}
+                    </span>
                     {selectedAstro.extraInfo && (
                       <p className="text-[9px] font-mono text-slate-500 uppercase mt-1">{selectedAstro.extraInfo}</p>
                     )}

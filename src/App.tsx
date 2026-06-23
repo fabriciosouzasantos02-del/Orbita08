@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
+import i18n from './lib/i18n';
 import { 
   UserProfile, 
   AstrologyMap, 
@@ -68,10 +69,12 @@ import {
   getFirebaseAuth,
   saveNatalChartToDatabase,
   loadNatalChartFromDatabase,
+  loadAllNatalCharts,
   saveTransitToDatabase,
   saveDailyInsightToDatabase,
   saveWeeklyInsightToDatabase,
   saveMissionToDatabase,
+  loadMissionsFromDatabase,
   saveTarotReadingToDatabase,
   saveNumerologyToDatabase,
   saveProsperityMapToDatabase,
@@ -83,7 +86,7 @@ import {
 import { generatePersonalizedProsperityMap } from './components/prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
 import { PremiumConversionScreen } from './components/PremiumConversionScreen';
-import { getTranslation, getInitialLanguage, Language } from './lib/translations';
+import { getTranslation, getInitialLanguage, translateUiText, Language } from './lib/translations';
 
 // High-end Elite Celestial Logo Component
 export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
@@ -436,6 +439,234 @@ function generateDailyMissions(user: any): DailyMission[] {
   return missionTemplates[seedVal % missionTemplates.length];
 }
 
+const localLangDict: Record<string, Record<string, string>> = {
+  pt: {
+    general_settings: "Configurações Gerais",
+    settings_desc: "Gerencie suas coordenadas, sintonizações premium e preferências.",
+    control_panel: "Painel de Controle",
+    edit_coords: "Editar Coordenadas Celestes",
+    birth_date: "DATA DE NASCIMENTO",
+    birth_time: "HORA COMPLETA",
+    birth_city: "CIDADE CODIFICADA",
+    changes_count: "Alterações do Mapa Principal:",
+    limit_reached: "⚠️ Limite vitalício atingido. Não é mais possível alterar as coordenadas celestes do seu Mapa Principal.",
+    changes_remaining: "Você possui {count} alterações restantes para o Mapa Principal.",
+    lang_sovereignty: "Soberania de Idiomas",
+    preferred_lang: "Idioma Predileto",
+    lang_desc: "Traduções automáticas aplicadas em relatórios avançados de IA.",
+    accessibility: "Acessibilidade",
+    high_contrast: "Modo de Alto Contraste",
+    contrast_desc: "Aumenta o contraste de textos, botões e bordas para garantir melhor visibilidade.",
+    delete_account_title: "Exclusão Definitiva",
+    delete_account_btn: "Apagar Conta do Portal",
+    delete_account_desc: "A remoção de registros apaga permanentemente todos os relatórios, mapas e históricos criptografados no banco de dados.",
+    logout_btn: "Sair do Portal",
+    points_label: "Pontos",
+    trial_badge: "Acesso Premium Ativo",
+    calculating_placidus: "Calculando Placidus em tempo real...",
+    area_usuario: "Área do Usuário",
+    meu_mapa: "Meu Mapa",
+    criar_meu_mapa: "Criar Meu Mapa",
+    mapas_extras: "Mapas Extras",
+    alerts_and_notifs: "Alertas e Notificações",
+    daily_notifs: "Notificações Diárias Push",
+    daily_notifs_desc: "Receber alertas de trânsitos e biorritmo de manhã no celular.",
+    sms_reminders: "SMS Astro-Reminders",
+    sms_reminders_desc: "Alertas urgentes de trânsitos tensos (Mercúrio Retrógrado).",
+    performance_storage: "Desempenho e Armazenamento",
+    clear_cache: "Limpar Cache do Sistema",
+    clear_cache_desc: "Apaga os arquivos temporários e caches de desempenho de relatórios. Não afeta seus mapas nem sua conta de acesso.",
+    clear_cache_btn: "Limpar Cache",
+    support_team: "Em caso de dúvidas, faça contato com a equipe de suporte pelo canal de integridade celestial do portal.",
+    logout_app_btn: "Sair do Aplicativo",
+    delete_acc_btn: "Excluir Minha Conta",
+    delete_confirm_title: "Excluir sua conta?",
+    delete_confirm_desc: "Você deseja excluir sua conta? Ao excluir sua conta todos os seus dados mapas registros estatísticas serão excluídos da plataforma.",
+    delete_confirm_yes: "Sim, quero excluir",
+    delete_confirm_cancel: "Cancelar",
+  },
+  en: {
+    general_settings: "General Settings",
+    settings_desc: "Manage your coordinates, premium subscription and preferences.",
+    control_panel: "Control Panel",
+    edit_coords: "Edit Celestial Coordinates",
+    birth_date: "DATE OF BIRTH",
+    birth_time: "FULL TIME",
+    birth_city: "ENCODED CITY",
+    changes_count: "Main Chart Changes:",
+    limit_reached: "⚠️ Lifetime limit reached. It is no longer possible to change the celestial coordinates of your Main Chart.",
+    changes_remaining: "You have {count} changes remaining for the Main Chart.",
+    lang_sovereignty: "Language Sovereignty",
+    preferred_lang: "Preferred Language",
+    lang_desc: "Automatic translations applied in advanced AI reports.",
+    accessibility: "Accessibility",
+    high_contrast: "High Contrast Mode",
+    contrast_desc: "Increases text, button, and border contrast for better visibility.",
+    delete_account_title: "Definitive Deletion",
+    delete_account_btn: "Delete Portal Account",
+    delete_account_desc: "Removing your record permanently deletes all encrypted reports, charts, and histories from the database.",
+    logout_btn: "Log Out of Portal",
+    points_label: "Points",
+    trial_badge: "Premium Access Active",
+    calculating_placidus: "Calculating Placidus in real time...",
+    area_usuario: "User Dashboard",
+    meu_mapa: "My Chart",
+    criar_meu_mapa: "Create Chart",
+    mapas_extras: "Extra Charts",
+    alerts_and_notifs: "Alerts & Notifications",
+    daily_notifs: "Daily Push Notifications",
+    daily_notifs_desc: "Receive transit and biorhythm alerts in the morning.",
+    sms_reminders: "Interactive Astro-Reminders",
+    sms_reminders_desc: "Urgent alerts for challenging transits (Mercury Retrograde).",
+    performance_storage: "Performance & Storage",
+    clear_cache: "Clear System Cache",
+    clear_cache_desc: "Deletes temporary files and cached report metrics. Does not affect your charts or account integrity.",
+    clear_cache_btn: "Clear Cache",
+    support_team: "In case of structural questions, contact the support team via the portal integrations line.",
+    logout_app_btn: "Sign Out of App",
+    delete_acc_btn: "Delete My Account",
+    delete_confirm_title: "Delete your account?",
+    delete_confirm_desc: "Are you sure you want to delete your account? All your charts, reports, and historic portal logs will be permanently erased.",
+    delete_confirm_yes: "Yes, delete account",
+    delete_confirm_cancel: "Cancel",
+  },
+  es: {
+    general_settings: "Configuración General",
+    settings_desc: "Administre sus coordenadas, suscripciones premium y preferencias.",
+    control_panel: "Panel de Control",
+    edit_coords: "Editar Coordenadas Celestes",
+    birth_date: "FECHA DE NASCIMIENTO",
+    birth_time: "HORA COMPLETA",
+    birth_city: "CIUDAD CODIFICADA",
+    changes_count: "Cambios en la Carta Principal:",
+    limit_reached: "⚠️ Se alcanzó el límite de por vida. Ya no es posible cambiar las coordenadas celestes de su Carta Principal.",
+    changes_remaining: "Tiene {count} cambios restantes para la Carta Principal.",
+    lang_sovereignty: "Soberanía de Idiomas",
+    preferred_lang: "Idioma Predileto",
+    lang_desc: "Traducciones automáticas aplicadas en informes avanzados de IA.",
+    accessibility: "Accesibilidad",
+    high_contrast: "Modo de Alto Contraste",
+    contrast_desc: "Aumenta el contraste de textos, botones y bordes para garantizar una mejor visibilidad.",
+    delete_account_title: "Remoción Definitiva",
+    delete_account_btn: "Eliminar Cuenta del Portal",
+    delete_account_desc: "La eliminación de registros borra permanentemente todos los informes, cartas e historiales encriptados en la base de datos.",
+    logout_btn: "Cerrar Sesión",
+    points_label: "Puntos",
+    trial_badge: "Acceso Premium Activo",
+    calculating_placidus: "Calculando Plácidus en tempo real...",
+    area_usuario: "Área de Usuario",
+    meu_mapa: "Mi Carta",
+    criar_meu_mapa: "Calcular Carta",
+    mapas_extras: "Cartas Extras",
+    alerts_and_notifs: "Alertas y Notificaciones",
+    daily_notifs: "Notificaciones Diarias Push",
+    daily_notifs_desc: "Recibir alertas de tránsitos y biorritmo por la mañana.",
+    sms_reminders: "SMS Astro-Reminders",
+    sms_reminders_desc: "Alertas urgentes de tránsitos tensos (Mercurio Retrógrado).",
+    performance_storage: "Rendimiento y Almacenamiento",
+    clear_cache: "Limpar Caché del Sistema",
+    clear_cache_desc: "Borra archivos temporales y caché de rendimiento. No afecta sus mapas ni su cuenta.",
+    clear_cache_btn: "Limpiar Caché",
+    support_team: "En caso de dudas, contacte al soporte a través de la línea de integridad del portal.",
+    logout_app_btn: "Cerrar Sesión del App",
+    delete_acc_btn: "Excluir Mi Cuenta",
+    delete_confirm_title: "¿Eliminar su cuenta?",
+    delete_confirm_desc: "¿Desea eliminar su cuenta? Al hacerlo, todos sus datos, mapas e historiales serán borrados para siempre.",
+    delete_confirm_yes: "Sí, quiero eliminar",
+    delete_confirm_cancel: "Cancelar",
+  },
+  de: {
+    general_settings: "Allgemeine Einstellungen",
+    settings_desc: "Verwalten Sie Ihre Koordinaten, Premium-Abonnements und Einstellungen.",
+    control_panel: "Systemsteuerung",
+    edit_coords: "Himmelskoordinaten bearbeiten",
+    birth_date: "GEBURTSDATUM",
+    birth_time: "UHRZEIT",
+    birth_city: "GEBURTSORT",
+    changes_count: "Änderungen am Hauptdiagramm:",
+    limit_reached: "⚠️ Lebenslanges Limit erreicht. Es ist nicht mehr möglich, die Himmelskoordinaten Ihres Hauptdiagramms zu ändern.",
+    changes_remaining: "Sie haben noch {count} Änderungen für das Hauptdiagramm übrig.",
+    lang_sovereignty: "Souveränität der Sprachen",
+    preferred_lang: "Bevorzugte Sprache",
+    lang_desc: "Automatische Übersetzungen in fortgeschrittenen KI-Berichten.",
+    accessibility: "Barrierefreiheit",
+    high_contrast: "Hoher Kontrastmodus",
+    contrast_desc: "Erhöht den Kontrast von Texten, Schaltflächen und Rändern für eine bessere Sichtbarkeit.",
+    delete_account_title: "Endgültige Löschung",
+    delete_account_btn: "Portal-Konto löschen",
+    delete_account_desc: "Das Entfernen von Datensätzen löscht dauerhaft alle verschlüsselten Berichte, Diagramme und Verläufe in der Datenbank.",
+    logout_btn: "Vom Portal abmelden",
+    points_label: "Punkte",
+    trial_badge: "Premium-Zugang Aktiv",
+    calculating_placidus: "Berechnung von Placidus in Echtzeit...",
+    area_usuario: "Benutzerkonto",
+    meu_mapa: "Mein Horoskop",
+    criar_meu_mapa: "Horoskop Erstellen",
+    mapas_extras: "Zusatzhoroskope",
+    alerts_and_notifs: "Benachrichtigungen & Alarme",
+    daily_notifs: "Tägliche Push-Benachrichtigungen",
+    daily_notifs_desc: "Erhalten Sie Himmels- und Biorhythmus-Meldungen am Morgen.",
+    sms_reminders: "Dringende Kosmische Alarme",
+    sms_reminders_desc: "Dringende Benachrichtigungen bei rückläufigem Merkur.",
+    performance_storage: "Systemleistung & Speicher",
+    clear_cache: "Systemcache löschen",
+    clear_cache_desc: "Löscht temporäre Daten und Berichtscaches. Keine Auswirkung auf Ihre Horoskope.",
+    clear_cache_btn: "Cache löschen",
+    support_team: "Bei Fragen kontaktieren Sie den Support über den offiziellen Portal-Kanal.",
+    logout_app_btn: "App abmelden",
+    delete_acc_btn: "Konto löschen",
+    delete_confirm_title: "Konto unwiderruflich löschen?",
+    delete_confirm_desc: "Möchten Sie Ihr Konto wirklich löschen? Alle Berichte und gespeicherten Horoskope werden dauerhaft entfernt.",
+    delete_confirm_yes: "Ja, jetzt löschen",
+    delete_confirm_cancel: "Abbrechen",
+  },
+  fr: {
+    general_settings: "Paramètres Généraux",
+    settings_desc: "Gérez vos coordonnées, abonnements premium et préférences.",
+    control_panel: "Panneau de Contrôle",
+    edit_coords: "Modifier les Coordonnées Célestes",
+    birth_date: "DATE DE NAISSANCE",
+    birth_time: "HEURE DE NAISSANCE",
+    birth_city: "VILLE CODIFIÉE",
+    changes_count: "Changements de Carte Principale :",
+    limit_reached: "⚠️ Limite à vie atteinte. Il n'est plus possible de modifier les coordonnées célestes de votre Carte Principale.",
+    changes_remaining: "Il vous reste {count} modifications possibles pour la Carte Principale.",
+    lang_sovereignty: "Souveraineté Linguistique",
+    preferred_lang: "Langue Préférée",
+    lang_desc: "Traductions automatiques appliquées aux rapports d'IA avancés.",
+    accessibility: "Accessibilité",
+    high_contrast: "Mode Contraste Élevé",
+    contrast_desc: "Augmente le contraste des textes, boutons et bordures pour assurer une meilleure visibilité.",
+    delete_account_title: "Suppression Définitive",
+    delete_account_btn: "Supprimer le Compte",
+    delete_account_desc: "La suppression de votre enregistrement efface définitivement tous les rapports de calcul, cartes et historiques de la base de données.",
+    logout_btn: "Déconnexion du Portal",
+    points_label: "Points",
+    trial_badge: "Accès Premium Actif",
+    calculating_placidus: "Calcul de Placidus en temps réel...",
+    area_usuario: "Espace Utilisateur",
+    meu_mapa: "Mon Thème",
+    criar_meu_mapa: "Créer Ma Carte",
+    mapas_extras: "Thèmes Additionnels",
+    alerts_and_notifs: "Alertes et Notifications",
+    daily_notifs: "Notifications Flash Quotidiennes",
+    daily_notifs_desc: "Recevoir des alertes de transits et de biorythme le matin.",
+    sms_reminders: "Alerte Astro-Reminders",
+    sms_reminders_desc: "Alertes urgentes concernant les transits difficiles (Mercure Rétrograde).",
+    performance_storage: "Performance et Stockage",
+    clear_cache: "Effacer le Cache Système",
+    clear_cache_desc: "Efface les fichiers temporaires et les caches de performance des rapports. N'affecte pas vos thèmes.",
+    clear_cache_btn: "Vider le Cache",
+    support_team: "Pour toute question, contactez le support via le canal céleste officiel.",
+    logout_app_btn: "Se Déconnecter de l'App",
+    delete_acc_btn: "Supprimer Mon Compte",
+    delete_confirm_title: "Supprimer votre compte ?",
+    delete_confirm_desc: "Voulez-vous supprimer votre compte ? Toutes vos données, cartes et historiques seront définitivement effacés.",
+    delete_confirm_yes: "Oui, supprimer",
+    delete_confirm_cancel: "Annuler",
+  }
+};
+
 export default function App() {
   // Session / Authentication state
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -447,6 +678,14 @@ export default function App() {
     if (typeof window === 'undefined') return "";
     return localStorage.getItem("orbi_logged_email") || "";
   });
+
+  const [isAuthInitialized, setIsAuthInitialized] = useState<boolean>(false);
+  const [firebaseUid, setFirebaseUid] = useState<string>("");
+
+  // Central Page Translation Helper
+  const t = (text: string): string => {
+    return translateUiText(text, currentLang || 'pt');
+  };
 
   const [user, _setUser] = useState<UserProfile>(() => {
     let baseProfile: UserProfile = {
@@ -636,9 +875,20 @@ export default function App() {
 
           const forceTrialUsed = (!checkStatus.isAllowed && !existingProfile.isSubscribed);
 
+          const rawName = createMainName.trim() || existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || existingProfile.name || firebaseUser.displayName || "Viajante Estelar";
+          const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+
           targetUser = {
+            ...existingProfile,
             userId: firebaseUser.uid,
-            name: createMainName.trim() || existingProfile.name || firebaseUser.displayName || "Viajante Estelar",
+            uid: firebaseUser.uid,
+            name: finalName,
+            displayName: existingProfile.displayName || finalName,
+            birthName: existingProfile.birthName || finalName,
+            profileName: existingProfile.profileName || finalName,
+            avatarId: existingProfile.avatarId || existingProfile.profilePhoto || "",
+            profilePhoto: existingProfile.avatarId || existingProfile.profilePhoto || firebaseUser.photoURL || "",
+            preferredLanguage: existingProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
             birthDate: birthDateToUse,
             birthTime: birthTimeToUse,
             birthCity: birthCityToUse,
@@ -647,7 +897,6 @@ export default function App() {
             hasCreatedMap: hasProvidedData,
             email: emailLower,
             scorePoints: existingProfile.scorePoints ?? 0,
-            profilePhoto: existingProfile.profilePhoto || firebaseUser.photoURL,
             emailVerified: true, // Google accounts are pre-verified natively
             isEmailVerified: true,
             photoURL: firebaseUser.photoURL || existingProfile.photoURL,
@@ -673,7 +922,8 @@ export default function App() {
         } else {
           // New Google account flow
           const blockTrial = !checkStatus.isAllowed;
-          const nameToUse = createMainName.trim() || firebaseUser.displayName || "Viajante Estelar";
+          const rawNameToUse = createMainName.trim() || user.displayName || user.profileName || user.birthName || user.name || firebaseUser.displayName || "Viajante Estelar";
+          const finalNameToUse = (rawNameToUse === "Viajante Estelar") ? "Buscador" : rawNameToUse;
           const birthDateToUse = createMainDate || "";
           const birthTimeToUse = timeIsUnknown ? "12:00" : (createMainTime || "12:00");
           const birthCityToUse = createMainCity || "";
@@ -682,7 +932,14 @@ export default function App() {
 
           targetUser = {
             userId: firebaseUser.uid,
-            name: nameToUse,
+            uid: firebaseUser.uid,
+            name: finalNameToUse,
+            displayName: user.displayName || finalNameToUse,
+            birthName: user.birthName || finalNameToUse,
+            profileName: user.profileName || finalNameToUse,
+            avatarId: user.avatarId || user.profilePhoto || "",
+            profilePhoto: user.avatarId || user.profilePhoto || firebaseUser.photoURL || "",
+            preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
             birthDate: birthDateToUse,
             birthTime: birthTimeToUse,
             birthCity: birthCityToUse,
@@ -724,24 +981,7 @@ export default function App() {
         setUser(targetUser);
         setIsLoggedIn(true);
 
-        if (targetUser.hasCreatedMap) {
-          triggerGenerateMainMap(targetUser);
-          setMapSubTab('meu_mapa');
-          setActiveTab('mapa');
-        } else if (loginBirthCity.trim() && targetUser.birthDate) {
-          triggerGenerateMainMap({
-            name: targetUser.name,
-            birthDate: targetUser.birthDate,
-            birthTime: targetUser.birthTime,
-            birthCity: loginBirthCity.trim(),
-            isUnknownTime: targetUser.isUnknownTime
-          });
-          setMapSubTab('meu_mapa');
-          setActiveTab('mapa');
-        } else {
-          setMapSubTab('criar_meu_mapa');
-          setActiveTab('mapa');
-        }
+        await migrateLocalDataToCloud(emailLower, firebaseUser.uid, targetUser);
       }
     } catch (err: any) {
       console.error(err);
@@ -773,9 +1013,20 @@ export default function App() {
           const finalBirthCity = loginBirthCity.trim() || existingProfile.birthCity || "";
           const forceTrialUsed = (!checkStatus.isAllowed && !existingProfile.isSubscribed);
 
+          const rawName = existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || existingProfile.name || firebaseUser.displayName || "Viajante Estelar";
+          const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+
           targetUser = {
+            ...existingProfile,
             userId: firebaseUser.uid,
-            name: existingProfile.name || firebaseUser.displayName || "Viajante Estelar",
+            uid: firebaseUser.uid,
+            name: finalName,
+            displayName: existingProfile.displayName || finalName,
+            birthName: existingProfile.birthName || finalName,
+            profileName: existingProfile.profileName || finalName,
+            avatarId: existingProfile.avatarId || existingProfile.profilePhoto || "",
+            profilePhoto: existingProfile.avatarId || existingProfile.profilePhoto || firebaseUser.photoURL || "",
+            preferredLanguage: existingProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
             birthDate: existingProfile.birthDate || "",
             birthTime: existingProfile.birthTime || "",
             birthCity: finalBirthCity,
@@ -784,7 +1035,6 @@ export default function App() {
             hasCreatedMap: existingProfile.hasCreatedMap ?? (existingProfile.birthDate ? true : false),
             email: emailLower,
             scorePoints: existingProfile.scorePoints ?? 0,
-            profilePhoto: existingProfile.profilePhoto || firebaseUser.photoURL,
             emailVerified: true, 
             isEmailVerified: true,
             photoURL: firebaseUser.photoURL || existingProfile.photoURL,
@@ -807,9 +1057,19 @@ export default function App() {
           }
         } else {
           const blockTrial = !checkStatus.isAllowed;
+          const rawNameToUse = firebaseUser.displayName || user.displayName || user.profileName || user.birthName || user.name || "Viajante Estelar";
+          const finalNameToUse = (rawNameToUse === "Viajante Estelar") ? "Buscador" : rawNameToUse;
+
           targetUser = {
             userId: firebaseUser.uid,
-            name: firebaseUser.displayName || "Viajante Estelar",
+            uid: firebaseUser.uid,
+            name: finalNameToUse,
+            displayName: user.displayName || finalNameToUse,
+            birthName: user.birthName || finalNameToUse,
+            profileName: user.profileName || finalNameToUse,
+            avatarId: user.avatarId || user.profilePhoto || "",
+            profilePhoto: user.avatarId || user.profilePhoto || firebaseUser.photoURL || "",
+            preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
             birthDate: "",
             birthTime: "",
             birthCity: loginBirthCity.trim() || "",
@@ -962,7 +1222,8 @@ export default function App() {
       }
       const blockTrial = !checkStatus.isAllowed;
 
-      const nameToUse = createMainName || user.name || "Viajante Estelar";
+      const rawNameToUse = createMainName || user.name || "Viajante Estelar";
+      const finalNameToUse = (rawNameToUse === "Viajante Estelar") ? "Buscador" : rawNameToUse;
       const birthDateToUse = createMainDate || user.birthDate || "";
       const birthTimeToUse = timeIsUnknown ? "12:00" : (createMainTime || user.birthTime || "12:00");
       const birthCityToUse = createMainCity || user.birthCity || "";
@@ -972,7 +1233,14 @@ export default function App() {
       // 3. Setup user object
       const newUserProfile: UserProfile = {
         userId: firebaseUser ? firebaseUser.uid : "",
-        name: nameToUse,
+        uid: firebaseUser ? firebaseUser.uid : "",
+        name: finalNameToUse,
+        displayName: user.displayName || finalNameToUse,
+        birthName: user.birthName || finalNameToUse,
+        profileName: user.profileName || finalNameToUse,
+        avatarId: user.avatarId || user.profilePhoto || "",
+        profilePhoto: user.avatarId || user.profilePhoto || "",
+        preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
         birthDate: birthDateToUse,
         birthTime: birthTimeToUse,
         birthCity: birthCityToUse,
@@ -1037,21 +1305,12 @@ export default function App() {
       
       setLoggedEmail(mailLower);
       setUser(newUserProfile);
-      setMapData(null);
-      setNumerology(null);
       setExtraMaps([]);
       setIsLoggedIn(true);
 
       triggerGlobalNotification("Portal Órbita", "Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail.", "success");
 
-      if (hasProvidedData) {
-        triggerGenerateMainMap(newUserProfile);
-        setMapSubTab('meu_mapa');
-        setActiveTab('mapa');
-      } else {
-        setMapSubTab('criar_meu_mapa');
-        setActiveTab('mapa');
-      }
+      await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || "", newUserProfile);
     } finally {
       setTimeout(() => {
         manualAuthActionRef.current = false;
@@ -1111,10 +1370,20 @@ export default function App() {
         const isVerified = nativeVerified || cloudUser.isEmailVerified || cloudUser.emailVerified || false;
         const forceTrialUsed = (!checkStatus.isAllowed && !cloudUser.isSubscribed);
 
+        const rawName = cloudUser.displayName || cloudUser.profileName || cloudUser.birthName || cloudUser.name || "Viajante Estelar";
+        const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+
         targetUser = {
-          userId: firebaseUser ? firebaseUser.uid : (cloudUser.userId || ""),
-          uid: firebaseUser ? firebaseUser.uid : (cloudUser.userId || ""),
-          name: cloudUser.name || "Viajante Estelar",
+          ...cloudUser,
+          userId: firebaseUser ? firebaseUser.uid : (cloudUser.userId || cloudUser.uid || ""),
+          uid: firebaseUser ? firebaseUser.uid : (cloudUser.userId || cloudUser.uid || ""),
+          name: finalName,
+          displayName: cloudUser.displayName || finalName,
+          birthName: cloudUser.birthName || finalName,
+          profileName: cloudUser.profileName || finalName,
+          avatarId: cloudUser.avatarId || cloudUser.profilePhoto || "",
+          profilePhoto: cloudUser.avatarId || cloudUser.profilePhoto || "",
+          preferredLanguage: cloudUser.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
           birthDate: cloudUser.birthDate || "",
           birthTime: cloudUser.birthTime || "",
           birthCity: finalBirthCity,
@@ -1123,7 +1392,6 @@ export default function App() {
           hasCreatedMap: cloudUser.hasCreatedMap ?? (cloudUser.birthDate ? true : false),
           email: mailLower,
           scorePoints: cloudUser.scorePoints ?? 0,
-          profilePhoto: cloudUser.profilePhoto || "",
           emailVerified: isVerified,
           isEmailVerified: isVerified,
           provider: 'password',
@@ -1150,9 +1418,20 @@ export default function App() {
       } else {
         // Fallback create profile if missing in Firestore but logged in
         const forceTrialUsed = !checkStatus.isAllowed;
+        
+        const rawName = user.displayName || user.profileName || user.birthName || user.name || "Viajante Estelar";
+        const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+
         targetUser = {
           userId: firebaseUser ? firebaseUser.uid : "",
-          name: "Viajante Estelar",
+          uid: firebaseUser ? firebaseUser.uid : "",
+          name: finalName,
+          displayName: user.displayName || finalName,
+          birthName: user.birthName || finalName,
+          profileName: user.profileName || finalName,
+          avatarId: user.avatarId || user.profilePhoto || "",
+          profilePhoto: user.avatarId || user.profilePhoto || "",
+          preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
           birthDate: "",
           birthTime: "",
           birthCity: loginBirthCity.trim() || "",
@@ -1212,27 +1491,7 @@ export default function App() {
         triggerGlobalNotification("Portal Órbita", "Sessão iniciada, mas o link de e-mail ainda não foi confirmado.", "alert");
       }
 
-      if (targetUser.hasCreatedMap) {
-        triggerGenerateMainMap(targetUser);
-        setMapSubTab('meu_mapa');
-        setActiveTab('mapa');
-        triggerGlobalNotification("Portal Órbita", `Sessão restaurada para ${targetUser.name}! Coordenadas sintonizadas.`, "success");
-      } else if (loginBirthCity.trim() && targetUser.birthDate) {
-        triggerGenerateMainMap({
-          name: targetUser.name,
-          birthDate: targetUser.birthDate,
-          birthTime: targetUser.birthTime,
-          birthCity: loginBirthCity.trim(),
-          isUnknownTime: targetUser.isUnknownTime
-        });
-        setMapSubTab('meu_mapa');
-        setActiveTab('mapa');
-        triggerGlobalNotification("Portal Órbita", `Sessão iniciada e mapa gerado para a cidade de nascimento: ${loginBirthCity.trim()}!`, "success");
-      } else {
-        setMapSubTab('criar_meu_mapa');
-        setActiveTab('mapa');
-        triggerGlobalNotification("Portal Órbita", `Conexão cósmica sintonizada. Bem-vindo!`, "success");
-      }
+      await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || targetUser.userId || "", targetUser);
     } finally {
       setTimeout(() => {
         manualAuthActionRef.current = false;
@@ -1341,8 +1600,9 @@ export default function App() {
   // Keep scorePoints reactively synced with user.scorePoints and database in real-time
   useEffect(() => {
     if (isLoggedIn && loggedEmail) {
-      if (user.scorePoints !== scorePoints) {
-        const nextUser = { ...user, scorePoints };
+      const currentPts = user.stellarPoints !== undefined ? user.stellarPoints : (user.scorePoints ?? 0);
+      if (currentPts !== scorePoints) {
+        const nextUser = { ...user, scorePoints, stellarPoints: scorePoints };
         setUser(nextUser);
         saveProfileToDatabase(loggedEmail, nextUser).catch(console.error);
       }
@@ -1350,10 +1610,13 @@ export default function App() {
   }, [scorePoints, isLoggedIn, loggedEmail]);
 
   useEffect(() => {
-    if (user && user.scorePoints !== undefined && user.scorePoints !== scorePoints) {
-      setScorePoints(user.scorePoints);
+    if (user) {
+      const userPts = user.stellarPoints !== undefined ? user.stellarPoints : user.scorePoints;
+      if (userPts !== undefined && userPts !== scorePoints) {
+        setScorePoints(userPts);
+      }
     }
-  }, [user?.scorePoints]);
+  }, [user?.scorePoints, user?.stellarPoints]);
 
   // Firebase Real-time listeners hook
   useEffect(() => {
@@ -1363,20 +1626,36 @@ export default function App() {
     // 1. User Profile Real-time Sync
     const unsubProfile = subscribeToUserProfile(loggedEmail, (updatedProfile) => {
       if (updatedProfile) {
-        setUser(prev => ({
-          ...prev,
-          name: updatedProfile.name || prev.name,
-          birthDate: updatedProfile.birthDate || prev.birthDate,
-          birthTime: updatedProfile.birthTime || prev.birthTime || "",
-          birthCity: updatedProfile.birthCity || prev.birthCity,
-          profilePhoto: updatedProfile.profilePhoto || prev.profilePhoto,
-          isPremium: updatedProfile.isPremium ?? prev.isPremium,
-          hasCreatedMap: updatedProfile.hasCreatedMap ?? (updatedProfile.birthDate ? true : prev.hasCreatedMap),
-          createdAt: updatedProfile.createdAt || prev.createdAt,
-          isSubscribed: updatedProfile.isSubscribed ?? prev.isSubscribed,
-          subscriptionEndDate: updatedProfile.subscriptionEndDate || prev.subscriptionEndDate,
-          scorePoints: updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : prev.scorePoints
-        }));
+        setUser(prev => {
+          const rawName = updatedProfile.name || updatedProfile.displayName || updatedProfile.profileName || updatedProfile.birthName || prev.name;
+          const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+          
+          if (updatedProfile.preferredLanguage && updatedProfile.preferredLanguage !== lang) {
+            setLangState(updatedProfile.preferredLanguage as any);
+            localStorage.setItem('orbi_preferred_language', updatedProfile.preferredLanguage);
+          }
+
+          return {
+            ...prev,
+            name: finalName,
+            displayName: updatedProfile.displayName || finalName,
+            birthName: updatedProfile.birthName || finalName,
+            profileName: updatedProfile.profileName || finalName,
+            birthDate: updatedProfile.birthDate || prev.birthDate,
+            birthTime: updatedProfile.birthTime || prev.birthTime || "",
+            birthCity: updatedProfile.birthCity || prev.birthCity,
+            profilePhoto: updatedProfile.avatarId || updatedProfile.profilePhoto || prev.profilePhoto,
+            avatarId: updatedProfile.avatarId || updatedProfile.profilePhoto || prev.avatarId,
+            preferredLanguage: updatedProfile.preferredLanguage || prev.preferredLanguage || "pt",
+            isPremium: updatedProfile.isPremium ?? prev.isPremium,
+            hasCreatedMap: updatedProfile.hasCreatedMap ?? (updatedProfile.birthDate ? true : prev.hasCreatedMap),
+            createdAt: updatedProfile.createdAt || prev.createdAt,
+            isSubscribed: updatedProfile.isSubscribed ?? prev.isSubscribed,
+            subscriptionEndDate: updatedProfile.subscriptionEndDate || prev.subscriptionEndDate,
+            scorePoints: updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : prev.scorePoints),
+            stellarPoints: updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : prev.stellarPoints)
+          };
+        });
       }
     }, (error) => {
       setFirebaseErrors(prev => [
@@ -1425,6 +1704,9 @@ export default function App() {
           return {
             id: d.id,
             date: d.date,
+            time: d.time || "",
+            title: d.title || parsedInterpret?.title || d.text.slice(0, 30) + "...",
+            language: d.language || "pt",
             description: d.text,
             interpretation: parsedInterpret
           };
@@ -1447,7 +1729,7 @@ export default function App() {
       unsubExtraMaps();
       unsubDreams();
     };
-  }, [isLoggedIn, loggedEmail]);
+  }, [isLoggedIn, loggedEmail, isAuthInitialized, firebaseUid]);
 
   // Stripe Success / Redirect processing hook
   useEffect(() => {
@@ -1536,13 +1818,13 @@ export default function App() {
 
   const profileLoadedRef = useRef(false);
   const manualAuthActionRef = useRef(false);
-  const [isAuthInitialized, setIsAuthInitialized] = useState<boolean>(false);
 
   // Firebase Auth session observer hook
   useEffect(() => {
     const unsubAuth = subscribeToAuthChanges((firebaseUser) => {
       setIsAuthInitialized(true);
       if (firebaseUser && firebaseUser.email) {
+        setFirebaseUid(firebaseUser.uid);
         const emailLower = firebaseUser.email.toLowerCase().trim();
         console.log("[Auth Observer] Usuário do Firebase autenticado:", emailLower);
         
@@ -1561,9 +1843,27 @@ export default function App() {
         // Always load on first detection or email change
         if (isEmailDifferent || !profileLoadedRef.current) {
           profileLoadedRef.current = true;
-          loadProfileFromDatabase(emailLower).then((cloudProfile) => {
-            if (cloudProfile) {
-              let rawName = cloudProfile.name || firebaseUser.displayName || "";
+          loadProfileFromDatabase(emailLower).then(async (cloudProfile) => {
+            const localProfileStr = localStorage.getItem("orbi_user_profile");
+            let localProfile: any = null;
+            try {
+              if (localProfileStr) localProfile = JSON.parse(localProfileStr);
+            } catch {}
+
+            const hasLocalMap = localProfile && localProfile.birthDate && localProfile.birthCity;
+            const hasCloudMap = cloudProfile && cloudProfile.birthDate && cloudProfile.birthCity;
+
+            if (hasLocalMap && !hasCloudMap) {
+              console.log("[Auth Observer] Guest map found, but Cloud is empty. Migrating...");
+              const baseProfile = cloudProfile || {
+                userId: firebaseUser.uid,
+                email: emailLower,
+                name: localProfile.name || firebaseUser.displayName || "Viajante Estelar",
+                createdAt: new Date().toISOString()
+              };
+              await migrateLocalDataToCloud(emailLower, firebaseUser.uid, baseProfile);
+            } else if (cloudProfile) {
+              let rawName = cloudProfile.displayName || cloudProfile.profileName || cloudProfile.birthName || cloudProfile.name || firebaseUser.displayName || "";
               if (!rawName.trim() || rawName === "Viajante Estelar") {
                 const emailPrefix = emailLower.split("@")[0];
                 rawName = emailPrefix
@@ -1573,7 +1873,12 @@ export default function App() {
               const updatedUser: UserProfile = {
                 userId: cloudProfile.userId || firebaseUser.uid || "",
                 uid: cloudProfile.uid || firebaseUser.uid || "",
-                name: rawName || "Viajante Estelar",
+                name: rawName || "Buscador",
+                displayName: cloudProfile.displayName || rawName || "Buscador",
+                birthName: cloudProfile.birthName || rawName || "Buscador",
+                profileName: cloudProfile.profileName || rawName || "Buscador",
+                avatarId: cloudProfile.avatarId || cloudProfile.profilePhoto || "",
+                preferredLanguage: cloudProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
                 birthDate: cloudProfile.birthDate || "",
                 birthTime: cloudProfile.birthTime || "",
                 birthCity: cloudProfile.birthCity || "",
@@ -1582,7 +1887,7 @@ export default function App() {
                 hasCreatedMap: cloudProfile.hasCreatedMap ?? (cloudProfile.birthDate ? true : false),
                 email: emailLower,
                 scorePoints: cloudProfile.scorePoints ?? 0,
-                profilePhoto: cloudProfile.profilePhoto || firebaseUser.photoURL || "",
+                profilePhoto: cloudProfile.avatarId || cloudProfile.profilePhoto || firebaseUser.photoURL || "",
                 isSubscribed: cloudProfile.isSubscribed ?? false,
                 subscriptionEndDate: cloudProfile.subscriptionEndDate || "",
                 emailVerified: cloudProfile.emailVerified ?? cloudProfile.isEmailVerified ?? firebaseUser.emailVerified,
@@ -1598,6 +1903,12 @@ export default function App() {
                 longitude: cloudProfile.longitude,
                 createdAt: cloudProfile.createdAt || ""
               };
+              
+              if (updatedUser.preferredLanguage && updatedUser.preferredLanguage !== lang) {
+                setLangState(updatedUser.preferredLanguage as any);
+                localStorage.setItem('orbi_preferred_language', updatedUser.preferredLanguage);
+              }
+
               setUser(updatedUser);
               localStorage.setItem("orbi_user_profile", JSON.stringify(updatedUser));
 
@@ -1626,33 +1937,22 @@ export default function App() {
                 setActiveTab('mapa');
               }
             } else {
-              // No profile on database yet. If local has it, save it
-              const activeProfile = localStorage.getItem("orbi_user_profile");
-              if (activeProfile) {
-                try {
-                  const parsed = JSON.parse(activeProfile);
-                  if (parsed && parsed.email?.toLowerCase().trim() === emailLower) {
-                    saveProfileToDatabase(emailLower, parsed).catch(console.warn);
-                    if (parsed.hasCreatedMap) {
-                      setMapSubTab('meu_mapa');
-                      setActiveTab('mapa');
-                      triggerGenerateMainMap(parsed);
-                    } else {
-                      setMapSubTab('criar_meu_mapa');
-                      setActiveTab('mapa');
-                    }
-                  } else {
-                    setMapSubTab('criar_meu_mapa');
-                    setActiveTab('mapa');
-                  }
-                } catch {
-                  setMapSubTab('criar_meu_mapa');
-                  setActiveTab('mapa');
-                }
-              } else {
-                setMapSubTab('criar_meu_mapa');
-                setActiveTab('mapa');
-              }
+              const defaultProfile: UserProfile = {
+                userId: firebaseUser.uid,
+                email: emailLower,
+                name: firebaseUser.displayName || "Viajante Estelar",
+                birthDate: "",
+                birthTime: "",
+                birthCity: "",
+                isUnknownTime: false,
+                isPremium: true,
+                hasCreatedMap: false,
+                createdAt: new Date().toISOString()
+              };
+              setUser(defaultProfile);
+              localStorage.setItem("orbi_user_profile", JSON.stringify(defaultProfile));
+              setMapSubTab('criar_meu_mapa');
+              setActiveTab('mapa');
             }
           }).catch((err) => {
             console.warn("[Auth Observer] Failed to load cloud profile:", err);
@@ -1679,6 +1979,8 @@ export default function App() {
             }
           });
         }
+      } else {
+        setFirebaseUid("");
       }
     });
 
@@ -1784,36 +2086,81 @@ export default function App() {
     return [];
   });
 
+  // Sync / Load Daily Missions with cached fallback or live Firestore retrieval
   useEffect(() => {
+    let active = true;
     const todayStr = new Date().toISOString().split('T')[0];
-    const cacheKey = `orbi_missions_${user?.email || "default"}_${todayStr}`;
-    const saved = localStorage.getItem(cacheKey);
-    if (saved) {
-      try {
-        setDailyMissions(JSON.parse(saved));
-      } catch (e) {
-        setDailyMissions(generateDailyMissions(user));
+    const email = user?.email || loggedEmail;
+    const cacheKey = `orbi_missions_${email || "default"}_${todayStr}`;
+    
+    async function loadMissions() {
+      // 1. Try local cache key first for sub-millisecond, instant response
+      const savedLocal = localStorage.getItem(cacheKey);
+      if (savedLocal) {
+        try {
+          if (active) setDailyMissions(JSON.parse(savedLocal));
+        } catch (e) {}
       }
-    } else {
-      const generated = generateDailyMissions(user);
-      setDailyMissions(generated);
-      localStorage.setItem(cacheKey, JSON.stringify(generated));
-    }
-  }, [user]);
 
+      // 2. Fetch from cloud database asynchronously without blocking rendering
+      if (isLoggedIn && email) {
+        try {
+          const cloudMissions = await loadMissionsFromDatabase(email, todayStr);
+          if (active && cloudMissions && cloudMissions.length > 0) {
+            // Only update state if different to prevent re-renders
+            const cloudStr = JSON.stringify(cloudMissions);
+            if (savedLocal !== cloudStr) {
+              setDailyMissions(cloudMissions);
+              localStorage.setItem(cacheKey, cloudStr);
+            }
+            return;
+          }
+        } catch (err) {
+          console.warn("[Missions Sync] Cloud load fallback:", err);
+        }
+      }
+
+      // 3. Fallback to generating new ones if not found anywhere else
+      if (!savedLocal) {
+        const generated = generateDailyMissions(user);
+        if (active) {
+          setDailyMissions(generated);
+          localStorage.setItem(cacheKey, JSON.stringify(generated));
+          if (isLoggedIn && email) {
+            saveMissionToDatabase(email, todayStr, generated).catch(console.warn);
+          }
+        }
+      }
+    }
+
+    loadMissions();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.email, isLoggedIn, loggedEmail]);
+
+  // Keep Firestore dailyMissions list updated on change only (with comparison to reduce unnecessary setDoc triggers)
+  const prevMissionsRef = useRef("");
   useEffect(() => {
     if (dailyMissions && dailyMissions.length > 0) {
       const todayStr = new Date().toISOString().split('T')[0];
-      const cacheKey = `orbi_missions_${user?.email || "default"}_${todayStr}`;
-      localStorage.setItem(cacheKey, JSON.stringify(dailyMissions));
+      const email = user?.email || loggedEmail;
+      const cacheKey = `orbi_missions_${email || "default"}_${todayStr}`;
+      const serialized = JSON.stringify(dailyMissions);
+      
+      // Only persist if something has changed since the last update
+      if (prevMissionsRef.current !== serialized) {
+        prevMissionsRef.current = serialized;
+        localStorage.setItem(cacheKey, serialized);
 
-      // Re-route dynamically to Cloud Firestore users/{uid}/missions/{today} if logged in
-      const email = user.email || loggedEmail;
-      if (isLoggedIn && email) {
-        saveMissionToDatabase(email, todayStr, dailyMissions).catch(console.warn);
+        // Re-route dynamically to Cloud Firestore if logged in
+        if (isLoggedIn && email) {
+          saveMissionToDatabase(email, todayStr, dailyMissions).catch(console.warn);
+        }
       }
     }
-  }, [dailyMissions, user, isLoggedIn, loggedEmail]);
+  }, [dailyMissions, isLoggedIn, loggedEmail, user?.email]);
 
   const [weeklyMissions, setWeeklyMissions] = useState<DailyMission[]>([
     { id: "w1", title: "Esta semana tente resolver uma pendência antiga", description: "Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.", isCompleted: false, points: 120 },
@@ -1825,11 +2172,61 @@ export default function App() {
   const [activeLandingSection, setActiveLandingSection] = useState<'home' | 'blog' | 'tarot' | 'faq'>('home');
   const [readingBlogPost, setReadingBlogPost] = useState<number | null>(null);
 
+  // Map persistence state
+  const [isMapJustSaved, setIsMapJustSaved] = useState<boolean>(false);
+
   // Language settings state
   const [lang, setLangState] = useState<Language>(getInitialLanguage());
-  const setLang = (newLang: Language) => {
+  const setLang = async (newLang: Language) => {
     setLangState(newLang);
+    setCurrentLang(newLang);
+    i18n.changeLanguage(newLang);
     localStorage.setItem('orbi_preferred_language', newLang);
+    if (isLoggedIn && loggedEmail) {
+      try {
+        const nextUser = {
+          ...user,
+          preferredLanguage: newLang
+        };
+        setUser(nextUser);
+        localStorage.setItem("orbi_user_profile", JSON.stringify(nextUser));
+        await saveProfileToDatabase(loggedEmail, nextUser);
+        console.log("[Language] Preferred language successfully persistent on Firestore default:", newLang);
+      } catch (err) {
+        console.error("Erro ao salvar idioma no Firestore:", err);
+      }
+    }
+  };
+
+  // Sync currentLang dynamically so that any component receiving currentLang matches the settings perfectly
+  useEffect(() => {
+    setCurrentLang(lang);
+    if (i18n.language !== lang) {
+      i18n.changeLanguage(lang);
+    }
+  }, [lang]);
+
+  // Local helper to get static translations for settings on the fly
+  const tLocal = (key: string, replacement?: any): string => {
+    const activeL = lang || 'pt';
+    const translated = translateUiText(key, activeL);
+    if (translated && translated !== key) {
+      let str = translated;
+      if (replacement !== undefined) {
+        str = str.replace('{count}', String(replacement));
+      }
+      return str;
+    }
+    const dict = localLangDict[activeL] || localLangDict['pt'];
+    let str = dict[key] || '';
+    if (!str) {
+      const fallbackDict = localLangDict['pt'];
+      str = fallbackDict[key] || key;
+    }
+    if (replacement !== undefined) {
+      str = str.replace('{count}', String(replacement));
+    }
+    return str;
   };
 
   // Notifications toggles
@@ -1972,31 +2369,271 @@ export default function App() {
     };
   };
 
+  // Synchronize and migrate local astrology data to the active cloud user profile
+  const migrateLocalDataToCloud = async (emailLower: string, uid: string, targetUser: UserProfile) => {
+    try {
+      console.log("[Migration Engine] Checking if local guest map needs migration for:", emailLower);
+      
+      const localProfileStr = localStorage.getItem("orbi_user_profile");
+      const localMapStr = localStorage.getItem("orbi_map_data");
+      const localNumStr = localStorage.getItem("orbi_numerology_data");
+      
+      let localProfile: any = null;
+      let localMapData: any = null;
+      let localNumerology: any = null;
+      
+      try {
+        if (localProfileStr) localProfile = JSON.parse(localProfileStr);
+        if (localMapStr) localMapData = JSON.parse(localMapStr);
+        if (localNumStr) localNumerology = JSON.parse(localNumStr);
+      } catch (e) {
+        console.warn("[Migration Engine] Parse error:", e);
+      }
+      
+      const hasLocalMapParams = localProfile && localProfile.birthDate && localProfile.birthCity;
+      
+      let cloudCharts: any[] = [];
+      try {
+        cloudCharts = await loadAllNatalCharts(emailLower);
+      } catch (errCharts) {
+        console.warn("[Migration Engine] Failed to lookup cloud charts:", errCharts);
+      }
+      
+      const isCloudEmpty = !targetUser.birthDate || cloudCharts.length === 0;
+      
+      if (hasLocalMapParams && isCloudEmpty) {
+        console.log("[Migration Engine] Cloud is empty or missing map. Initiating guest-to-cloud automatic migration!");
+        
+        const birthDateClean = localProfile.birthDate.replace(/[^a-zA-Z0-9]/g, "_");
+        const birthTimeClean = (localProfile.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthCityClean = (localProfile.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+        
+        const finalMap = localMapData || mapLocalChartToAstrologyMap(
+          localProfile.name || targetUser.name || "Buscador",
+          localProfile.birthDate,
+          localProfile.birthTime || "12:00",
+          localProfile.birthCity
+        );
+        
+        const finalNum = localNumerology || calculateNumerology(
+          localProfile.name || targetUser.name || "Buscador",
+          localProfile.birthDate
+        );
+        
+        await saveNatalChartToDatabase(emailLower, chartId, {
+          name: localProfile.name || targetUser.name || "Buscador",
+          birthDate: localProfile.birthDate,
+          birthTime: localProfile.birthTime || "12:00",
+          birthCity: localProfile.birthCity,
+          isUnknownTime: !!localProfile.isUnknownTime,
+          mapData: finalMap,
+          numerology: finalNum
+        });
+        
+        const migratedUserObj: UserProfile = {
+          ...targetUser,
+          name: localProfile.name || targetUser.name || "Viajante Estelar",
+          birthDate: localProfile.birthDate,
+          birthTime: localProfile.birthTime || "12:00",
+          birthCity: localProfile.birthCity,
+          isUnknownTime: !!localProfile.isUnknownTime,
+          latitude: localProfile.latitude !== undefined ? localProfile.latitude : targetUser.latitude,
+          longitude: localProfile.longitude !== undefined ? localProfile.longitude : targetUser.longitude,
+          hasCreatedMap: true,
+          currentChartId: chartId
+        };
+        
+        await saveProfileToDatabase(emailLower, migratedUserObj);
+        
+        setUser(migratedUserObj);
+        localStorage.setItem("orbi_user_profile", JSON.stringify(migratedUserObj));
+        localStorage.setItem("orbi_map_data", JSON.stringify(finalMap));
+        localStorage.setItem("orbi_numerology_data", JSON.stringify(finalNum));
+        
+        setMapData(finalMap);
+        setNumerology(finalNum);
+        
+        setMapSubTab('meu_mapa');
+        setActiveTab('mapa');
+        
+        triggerGlobalNotification(
+          "Mapa Sincronizado", 
+          "Seu mapa astral local foi arquivado com sucesso no seu perfil na nuvem!", 
+          "success"
+        );
+      } else if (targetUser.birthDate || (cloudCharts && cloudCharts.length > 0)) {
+        console.log("[Migration Engine] Cloud profile already exists with active birth parameters. Restoring from Cloud.");
+        const finalUser = {
+          ...targetUser,
+          hasCreatedMap: true
+        };
+        setUser(finalUser);
+        localStorage.setItem("orbi_user_profile", JSON.stringify(finalUser));
+        setMapSubTab('meu_mapa');
+        setActiveTab('mapa');
+        await triggerGenerateMainMap(finalUser);
+      } else {
+        setMapSubTab('criar_meu_mapa');
+        setActiveTab('mapa');
+      }
+    } catch (errMigr) {
+      console.error("[Migration Engine] Critical error migrating astrology elements:", errMigr);
+    }
+  };
+
+  const handleManualSaveMap = async () => {
+    if (!isLoggedIn || !loggedEmail) {
+      triggerGlobalNotification(
+        "Autenticação Necessária", 
+        "Crie uma conta ou faça login para salvar seu mapa com segurança na Nuvem Órbita!", 
+        "alert"
+      );
+      setMapSubTab('criar_meu_mapa');
+      setActiveTab('configuracoes');
+      return;
+    }
+
+    if (!mapData || !numerology) {
+      triggerGlobalNotification(
+        "Sem Dados do Mapa", 
+        "Por favor, insira seus dados de nascimento para gerar um mapa antes de salvar.", 
+        "alert"
+      );
+      return;
+    }
+
+    setIsLoadingMain(true);
+    try {
+      const birthDateClean = (user.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
+      const birthTimeClean = (user.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
+      const birthCityClean = (user.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+      const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
+      await saveNatalChartToDatabase(loggedEmail, chartId, {
+        name: user.name || "Buscador",
+        birthDate: user.birthDate,
+        birthTime: user.birthTime || "12:00",
+        birthCity: user.birthCity,
+        isUnknownTime: !!user.isUnknownTime,
+        mapData: mapData,
+        numerology: numerology
+      });
+
+      const updatedUser: UserProfile = {
+        ...user,
+        hasCreatedMap: true,
+        currentChartId: chartId
+      };
+      
+      await saveProfileToDatabase(loggedEmail, updatedUser);
+      setUser(updatedUser);
+      setIsMapJustSaved(true);
+      localStorage.setItem("orbi_user_profile", JSON.stringify(updatedUser));
+      localStorage.setItem("orbi_map_data", JSON.stringify(mapData));
+      localStorage.setItem("orbi_numerology_data", JSON.stringify(numerology));
+
+      triggerGlobalNotification(
+        "Sincronização Completa", 
+        "Seu mapa natal e numerologia foram salvos com sucesso na nuvem do Firestore!", 
+        "success"
+      );
+    } catch (saveError: any) {
+      console.error("[Manual Save] Error:", saveError);
+      const errMsg = saveError?.message || String(saveError);
+      triggerGlobalNotification(
+        "Erro ao Salvar", 
+        `Erro Firestore: ${errMsg}`, 
+        "alert"
+      );
+    } finally {
+      setIsLoadingMain(false);
+    }
+  };
+
   // Fetch / Generate core maps matching user details
   const triggerGenerateMainMap = async (details: any) => {
-    setIsLoadingMain(true);
+    // 1. INSTRUMENTAL OPTIMIZATION: Instantaneous client-side Placidus math calculation.
+    // This allows the circular chart, astral degrees, and aspects to render immediately (<= 1ms)
+    // with no loading screens or infinite spinners, matching the fast Astrolink experience.
+    const defaultBirthDate = details.birthDate || user.birthDate || "1997-02-11";
+    const defaultBirthTime = details.birthTime || user.birthTime || "12:00";
+    const defaultBirthCity = details.birthCity || user.birthCity || "São Paulo";
+    
+    const clientMap = mapLocalChartToAstrologyMap(
+      details.name || user.name || "Buscador",
+      defaultBirthDate,
+      defaultBirthTime,
+      defaultBirthCity
+    );
+    const clientNum = calculateNumerology(
+      details.name || user.name || "Buscador",
+      defaultBirthDate
+    );
+
+    // Set high-precision map values instantly
+    setMapData(clientMap);
+    setNumerology(clientNum);
+    setIsLoadingMain(false);
+
     try {
       const email = details.email || user.email || loggedEmail;
       if (email) {
-        // High-Precision subcollection lookup via currentChartId
-        const activeChartId = user.currentChartId || details.currentChartId;
-        if (activeChartId) {
+        // High-Precision subcollection lookup via candidate IDs (robust and typo-tolerant)
+        const birthDateClean = (details.birthDate || user.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthTimeClean = (details.birthTime || user.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthCityClean = (details.birthCity || user.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const dynamicChartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+        const typoChartId = `chart_${birthDateClean}_birthTimeClean_birthCityClean`;
+
+        const activeChartId = details.currentChartId || user.currentChartId || dynamicChartId;
+        
+        let dbChart = null;
+        const candidateIds = Array.from(new Set([
+          activeChartId,
+          details.currentChartId,
+          user.currentChartId,
+          dynamicChartId,
+          typoChartId
+        ])).filter(Boolean) as string[];
+
+        for (const cid of candidateIds) {
           try {
-            const dbChart = await loadNatalChartFromDatabase(email, activeChartId);
-            if (dbChart && dbChart.mapData && dbChart.numerology && 
-                dbChart.birthDate === details.birthDate &&
-                dbChart.birthTime === details.birthTime &&
-                dbChart.birthCity === details.birthCity) {
-              console.log("[Astro DB] Natal chart loaded from users subcollection natalCharts.");
-              setMapData(dbChart.mapData);
-              setNumerology(dbChart.numerology);
-              pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu Mapa Principal carregado da Nuvem Astrológica! 🪐`);
-              setIsLoadingMain(false);
-              return;
+            const chart = await loadNatalChartFromDatabase(email, cid);
+            if (chart && chart.mapData && chart.numerology) {
+              dbChart = chart;
+              break;
             }
-          } catch (dbErr) {
-            console.warn("[Astro DB] Failed to load from subcollection natalCharts, fallback to cache/recalc:", dbErr);
+          } catch (e) {
+            console.warn(`[Astro DB Retry] Skip ID ${cid}:`, e);
           }
+        }
+
+        if (!dbChart) {
+          // Final bulletproof attempt: fetch all charts in subcollection
+          try {
+            const allCharts = await loadAllNatalCharts(email);
+            if (allCharts && allCharts.length > 0) {
+              const matched = allCharts.find(c => 
+                c && c.mapData && c.numerology &&
+                c.birthDate === details.birthDate
+              ) || allCharts.find(c => c && c.mapData && c.numerology);
+              
+              if (matched) {
+                dbChart = matched;
+              }
+            }
+          } catch (errAll) {
+            console.warn("[Astro DB All Recovery] Failed to fetch subcollection charts:", errAll);
+          }
+        }
+
+        if (dbChart && dbChart.mapData && dbChart.numerology) {
+          console.log("[Astro DB] Natal chart successfully restored from Firestore Cloud!");
+          setMapData(dbChart.mapData);
+          setNumerology(dbChart.numerology);
+          pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu Mapa Principal carregado da Nuvem Astrológica! 🪐`);
+          return;
         }
 
         // Fallback to traditional cache
@@ -2014,7 +2651,6 @@ export default function App() {
               setMapData(cached.map);
               setNumerology(cached.numerology);
               pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu novo Mapa Astral diretamente do Cache Celestial Inteligente! 🪐`);
-              setIsLoadingMain(false);
               return;
             }
           }
@@ -2023,6 +2659,8 @@ export default function App() {
         }
       }
 
+      // 2. BACKGROUND ENRICHMENT: Fetch deep poetic AI descriptions asynchronously in the background.
+      // This prevents the slow Gemini API from locking the UI with a spinner.
       let data;
       try {
         const response = await fetch("/api/astrology/generate", {
@@ -2045,23 +2683,12 @@ export default function App() {
           throw new Error("Astro API respondeu com código de erro " + response.status);
         }
       } catch (fetchErr) {
-        console.warn("[Astro API Fallback] Falhou a geração na API, sintonizando mapa local estelar offline...", fetchErr);
-        const fallbackMap = mapLocalChartToAstrologyMap(
-          details.name || user.name || "Buscador",
-          details.birthDate || "1997-02-11",
-          details.birthTime || "12:00",
-          details.birthCity || "São Paulo"
-        );
-        const fallbackNum = calculateNumerology(
-          details.name || user.name || "Buscador",
-          details.birthDate || "1997-02-11"
-        );
-        data = { map: fallbackMap, numerology: fallbackNum };
+        console.warn("[Astro API Fallback] Falhou a geração na API. Mantendo mapa local de alta precisão.", fetchErr);
+        data = { map: clientMap, numerology: clientNum };
       }
 
       if (data && data.map) {
         setMapData(data.map);
-        pushRealNotification(`Você (${details.name || user.name || "Buscador"}) rascunhou e sintonizou seu novo Mapa Astral de alta precisão! 🪐`);
       }
       if (data && data.numerology) {
         setNumerology(data.numerology);
@@ -2074,7 +2701,7 @@ export default function App() {
         const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
 
         try {
-          // Direct subcollection persistence
+          // Direct subcollection persistence in background
           await saveNatalChartToDatabase(email, chartId, {
             name: details.name || user.name || "Buscador",
             birthDate: details.birthDate,
@@ -2114,7 +2741,7 @@ export default function App() {
         }
       }
     } catch (err) {
-      console.error("Astrology calculation error:", err);
+      console.error("Astrology calculations backend sync warning:", err);
     } finally {
       setIsLoadingMain(false);
     }
@@ -2342,9 +2969,17 @@ export default function App() {
       });
       const data = await response.json();
       const nextId = `dream_${Date.now()}`;
+      const now = new Date();
+      const currentFormattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const currentFormattedDate = now.toISOString().split('T')[0];
+      const dreamTitle = data.interpretation?.title || newDreamDesc.slice(0, 30) + "...";
+      
       const newEntry: OracleDreamEntry = {
         id: nextId,
-        date: new Date().toISOString().split('T')[0],
+        date: currentFormattedDate,
+        time: currentFormattedTime,
+        title: dreamTitle,
+        language: currentLang,
         description: newDreamDesc,
         interpretation: data.interpretation
       };
@@ -2356,11 +2991,13 @@ export default function App() {
         saveDreamToDatabase(loggedEmail, {
           id: newEntry.id,
           userId: loggedEmail,
-          title: newEntry.description.slice(0, 30) + "...",
+          title: dreamTitle,
           text: newEntry.description,
           interpretation: newEntry.interpretation ? JSON.stringify(newEntry.interpretation) : "",
           sentiment: "Celeste",
-          date: new Date().toISOString()
+          date: newEntry.date,
+          time: newEntry.time,
+          language: newEntry.language || currentLang
         }).catch(console.warn);
       }
 
@@ -3887,6 +4524,8 @@ export default function App() {
                       <option value="pt">Português (Brasil)</option>
                       <option value="en">English (United States)</option>
                       <option value="es">Español (Castellano)</option>
+                      <option value="de">Deutsch (DE)</option>
+                      <option value="fr">Français (France)</option>
                     </select>
                   </li>
                 </ul>
@@ -4342,11 +4981,11 @@ export default function App() {
           <header className="w-full bg-slate-900/60 border-b border-slate-850 px-4 py-4 sticky top-0 z-40 backdrop-blur-md">
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-4">
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 {/* Custom User avatar & profile metadata list - Clickable to update profile picture with internal celestial avatars */}
                 <div 
                   onClick={() => setIsAvatarModalOpen(true)}
-                  className="relative group cursor-pointer" 
+                  className="relative group cursor-pointer shrink-0" 
                   title="Clique para escolher seu avatar místico"
                 >
                   <div 
@@ -4369,20 +5008,20 @@ export default function App() {
                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950" title="Ativo" />
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="text-xs font-bold text-slate-205">{user.name || "Buscador Estelar"}</h3>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-nowrap">
+                    <h3 className="text-xs font-bold text-slate-205 truncate max-w-[100px] sm:max-w-[200px]" title={user.name || "Buscador Estelar"}>{user.name || "Buscador Estelar"}</h3>
                     {user.isSubscribed || user.isPremium ? (
-                      <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-sm text-[8px] uppercase font-mono tracking-wider text-amber-400 font-black">
-                        Premium Ativo
+                      <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-sm text-[8px] uppercase font-mono tracking-wider text-amber-400 font-black shrink-0">
+                        Premium
                       </span>
                     ) : (
-                      <span className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded-sm text-[8px] uppercase font-mono tracking-wider text-slate-400 font-black">
-                        Plano Free
+                      <span className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded-sm text-[8px] uppercase font-mono tracking-wider text-slate-400 font-black shrink-0">
+                        Free
                       </span>
                     )}
                   </div>
-                  <p className="text-[9px] font-mono text-slate-500 leading-none mt-1">
+                  <p className="text-[9px] font-mono text-slate-500 leading-none mt-1 truncate max-w-[200px] sm:max-w-md">
                     {user.birthDate ? (
                       `Sol em ${mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate)} · Asc ${mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime)} · ${user.birthCity}`
                     ) : (
@@ -4393,10 +5032,10 @@ export default function App() {
               </div>
 
               {/* Score / Balance stats widget */}
-              <div className="flex items-center gap-4">
-                <div className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-850 text-right hidden sm:block">
-                  <span className="text-[8px] font-mono text-slate-500 uppercase block">Pontos Estelares</span>
-                  <span className="text-xs font-bold font-mono text-amber-400">{scorePoints} pts</span>
+              <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                <div className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-slate-950 border border-slate-850 text-right min-w-[70px] sm:min-w-[90px]">
+                  <span className="text-[7px] sm:text-[8px] font-mono text-slate-500 uppercase block leading-none">{tLocal('points_label')}</span>
+                  <span className="text-[11px] sm:text-xs font-bold font-mono text-amber-400 block mt-0.5 leading-none">{scorePoints} pts</span>
                 </div>
 
                 <AstroNotifications 
@@ -4432,7 +5071,7 @@ export default function App() {
                     }`}
                   >
                     <User className="w-3.5 h-3.5" />
-                    <span>Área do Usuário</span>
+                    <span>{tLocal('area_usuario')}</span>
                   </button>
 
                   <button
@@ -4448,7 +5087,7 @@ export default function App() {
                     }`}
                   >
                     <Compass className="w-3.5 h-3.5" />
-                    <span>Meu Mapa</span>
+                    <span>{tLocal('meu_mapa')}</span>
                   </button>
 
                   <button
@@ -4464,7 +5103,7 @@ export default function App() {
                     }`}
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Criar Meu Mapa</span>
+                    <span>{tLocal('criar_meu_mapa')}</span>
                   </button>
 
                   <button
@@ -4477,7 +5116,7 @@ export default function App() {
                     }`}
                   >
                     <Orbit className="w-3.5 h-3.5" />
-                    <span>Mapas Extras</span>
+                    <span>{tLocal('mapas_extras')}</span>
                   </button>
                 </div>
 
@@ -4656,6 +5295,7 @@ export default function App() {
                             areaSubTab={areaSubTab}
                             setAreaSubTab={setAreaSubTab}
                             onUpdateCurrentUser={setUser}
+                            lang={currentLang}
                           />
                         </div>
 
@@ -5205,7 +5845,69 @@ export default function App() {
                         )
                       ) : (
                         <div className="space-y-8 animate-in fade-in duration-300">
+                          {/* Botão de Sincronização / Salvação do Mapa no Firestore */}
+                          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                <span className="text-xl">🪐</span>
+                              </div>
+                              <div className="text-left">
+                                {isMapJustSaved || (user.hasCreatedMap && isLoggedIn) ? (
+                                  <>
+                                    <h4 className="text-xs font-bold font-mono text-emerald-400 uppercase tracking-wider">
+                                      MAPA SINCRONIZADO
+                                    </h4>
+                                    <p className="text-[11px] text-emerald-300/90 mt-1 max-w-lg leading-relaxed">
+                                      Seu mapa astral principal foi protegido e sincronizado com sua conta.
+                                      <br />
+                                      A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <h4 className="text-xs font-bold font-mono text-amber-500 uppercase tracking-wider">
+                                      SINCRONIZAÇÃO ATIVA
+                                    </h4>
+                                    <p className="text-[11px] text-slate-350 mt-1 max-w-lg leading-relaxed">
+                                      Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-2 w-full md:w-auto">
+                              {!isLoggedIn && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAuthTab('register_credentials');
+                                    setActiveTab('configuracoes');
+                                    triggerGlobalNotification(
+                                      "Registre-se",
+                                      "Crie sua conta para sincronizar e salvar este mapa para sempre na nuvem!",
+                                      "info"
+                                    );
+                                  }}
+                                  className="w-full md:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs font-mono transition-all duration-300 cursor-pointer"
+                                >
+                                  Criar Conta e Salvar
+                                </button>
+                              )}
+                              
+                              <button
+                                type="button"
+                                onClick={handleManualSaveMap}
+                                className="w-full md:w-auto px-4 py-2 rounded-xl border border-slate-700 hover:border-amber-500/50 bg-slate-950 hover:bg-slate-900 text-slate-350 hover:text-amber-500 text-xs font-mono transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer font-bold"
+                              >
+                                <span>💾</span>
+                                <span>SALVAR MAPA</span>
+                              </button>
+                            </div>
+                          </div>
+
                           {/* Render standard modules but completely readOnly to avoid new registrations */}
+                          <p className="hidden" />
                           <React.Suspense fallback={
                             <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse">
                               <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
@@ -5802,6 +6504,7 @@ export default function App() {
                   <BiorhythmView 
                     userName={user?.name} 
                     birthDate={user?.birthDate} 
+                    lang={currentLang}
                   />
                 </div>
 
@@ -5811,6 +6514,7 @@ export default function App() {
                     userName={user?.name} 
                     userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Aquário")} 
                     userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "Sagitário")}
+                    lang={currentLang}
                   />
                 </div>
 
@@ -6120,6 +6824,7 @@ export default function App() {
                     setOracleResponse={setOracleResponse}
                     isQueryingOracle={isQueryingOracle}
                     handleAskOracle={handleAskOracle}
+                    lang={currentLang}
                   />
                 </div>
 
@@ -6133,53 +6838,8 @@ export default function App() {
                     dreamsHistory={dreamsHistory}
                     selectedDreamDisplay={selectedDreamDisplay}
                     setSelectedDreamDisplay={setSelectedDreamDisplay}
+                    preferredLanguage={currentLang}
                   />
-                </div>
-
-                {/* Gamified Missions list Subcomponent */}
-                <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4">
-                  <div className="pb-2 border-b border-slate-850 flex justify-between items-center sm:flex-nowrap flex-wrap gap-2">
-                    <div>
-                      <h4 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Missões Diárias de Evolução Astrológica</h4>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Siga as tarefas indicadas para desbloquear pontos diários.</p>
-                    </div>
-
-                    <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-mono text-amber-500">
-                      Pontos hoje: +{dailyMissions.filter(m => m.isCompleted).reduce((sum, current) => sum + current.points, 0)} pts
-                    </span>
-                  </div>
-
-                  <div className="space-y-3 font-sans">
-                    {dailyMissions.map((task) => (
-                      <div 
-                        key={task.id} 
-                        onClick={() => handleToggleMission(task.id)}
-                        className={`p-3 rounded-2xl border transition flex justify-between items-center gap-4 cursor-pointer hover:border-slate-600 ${
-                          task.isCompleted 
-                            ? 'bg-slate-900/80 border-slate-800 opacity-60' 
-                            : 'bg-slate-950 border-slate-850'
-                        }`}
-                      >
-                        <div>
-                          <h5 className={`text-xs font-bold text-slate-201 ${task.isCompleted ? 'line-through text-slate-500' : ''}`}>
-                            {task.title}
-                          </h5>
-                          <p className="text-[10px] text-slate-455 mt-0.5">{task.description}</p>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <span className="text-[9px] font-mono text-amber-500 font-bold">+{task.points} pts</span>
-                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] ${
-                            task.isCompleted 
-                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 font-bold' 
-                              : 'border-slate-800 bg-slate-950'
-                          }`}>
-                            {task.isCompleted ? "✓" : ""}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
               </div>
@@ -6212,7 +6872,7 @@ export default function App() {
               ) : (
                 <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-350">
                   <div key={`tarot_system_${user.name}_${user.birthDate}`}>
-                    <TarotSystem userName={user.name} />
+                    <TarotSystem userName={user.name} lang={currentLang} />
                   </div>
                 </div>
               )
@@ -6228,13 +6888,13 @@ export default function App() {
                   <div className="relative flex justify-between items-center">
                     <div>
                       <span className="px-3 py-1 rounded-full text-[10px] uppercase font-mono font-semibold tracking-wider text-slate-500 bg-slate-800/20 border border-slate-800">
-                        Painel de Controle
+                        {tLocal('control_panel')}
                       </span>
                       <h1 className="text-2xl font-sans font-bold tracking-tight text-slate-100 mt-2">
-                        Configurações Gerais
+                        {tLocal('general_settings')}
                       </h1>
                       <p className="text-xs text-slate-500 mt-1">
-                        Gerencie suas coordenadas, sintonizações premium e preferências.
+                        {tLocal('settings_desc')}
                       </p>
                     </div>
                     <span className="text-3xl text-[#E5C158] shrink-0">⚙️</span>
@@ -6244,26 +6904,26 @@ export default function App() {
                 <div className="space-y-6 animate-in fade-in duration-300">
                   {/* Profile Editor form */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4 font-sans">
-                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">Editar Coordenadas Celestes</h3>
+                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">{tLocal('edit_coords')}</h3>
                     
                     {/* Alteration Limit Alert */}
                     <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-850 text-xs space-y-1.5">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="font-semibold text-slate-300">Alterações do Mapa Principal:</span>
+                        <span className="font-semibold text-slate-300">{tLocal('changes_count')}</span>
                         <span className="font-mono font-bold text-amber-500">{(user.mainMapChangesCount ?? 0)} / 2</span>
                       </div>
                       <p className="text-[10px] text-slate-400 leading-relaxed">
                         {(user.mainMapChangesCount ?? 0) >= 2 ? (
-                          <span className="text-rose-450 font-bold">⚠️ Limite vitalício atingido. Não é mais possível alterar as coordenadas celestes do seu Mapa Principal.</span>
+                          <span className="text-rose-450 font-bold">{tLocal('limit_reached')}</span>
                         ) : (
-                          <span>Você possui <strong>{2 - (user.mainMapChangesCount ?? 0)}</strong> alterações restantes para o Mapa Principal.</span>
+                          <span>{tLocal('changes_remaining', 2 - (user.mainMapChangesCount ?? 0))}</span>
                         )}
                       </p>
                     </div>
 
                     <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${((user.mainMapChangesCount ?? 0) >= 2) ? "pointer-events-none opacity-40 select-none" : ""}`}>
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-505 mb-1">DATA DE NASCIMENTO</label>
+                        <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_date')}</label>
                         <input 
                           type="date" 
                           value={user.birthDate} 
@@ -6274,7 +6934,7 @@ export default function App() {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-505 mb-1">HORA COMPLETA</label>
+                        <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_time')}</label>
                         <input 
                           type="text" 
                           value={user.birthTime} 
@@ -6286,7 +6946,7 @@ export default function App() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-mono text-slate-505 mb-1">CIDADE CODIFICADA</label>
+                        <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_city')}</label>
                         <CityAutocomplete
                           value={user.birthCity}
                           placeholder="e.g. São Paulo, SP"
@@ -6306,13 +6966,13 @@ export default function App() {
 
                   {/* Preferences notifications switch controls */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4">
-                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">Alertas e Notificações</h3>
+                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">{tLocal('alerts_and_notifs')}</h3>
                     
                     <div className="space-y-4 font-sans text-xs">
                       <label className="flex items-center justify-between cursor-pointer">
                         <div>
-                          <strong>Notificações Diárias Push</strong>
-                          <p className="text-[10px] text-slate-500">Receber alertas de trânsitos e biorritmo de manhã no celular.</p>
+                          <strong>{tLocal('daily_notifs')}</strong>
+                          <p className="text-[10px] text-slate-500">{tLocal('daily_notifs_desc')}</p>
                         </div>
                         <input 
                           type="checkbox" 
@@ -6324,8 +6984,8 @@ export default function App() {
 
                       <label className="flex items-center justify-between cursor-pointer">
                         <div>
-                          <strong>SMS Astro-Reminders</strong>
-                          <p className="text-[10px] text-slate-550 mr-2">Alertas urgentes de trânsitos tensos (Mercúrio Retrógrado).</p>
+                          <strong>{tLocal('sms_reminders')}</strong>
+                          <p className="text-[10px] text-slate-550 mr-2">{tLocal('sms_reminders_desc')}</p>
                         </div>
                         <input 
                           type="checkbox" 
@@ -6339,12 +6999,12 @@ export default function App() {
 
                   {/* Language selection dropdown config */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4 font-sans">
-                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">Soberania de Idiomas</h3>
+                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">{tLocal('lang_sovereignty')}</h3>
                     
                     <div className="flex justify-between items-center text-xs">
                       <div>
-                        <strong>Idioma Predileto</strong>
-                        <p className="text-[10px] text-slate-500">Traduções automáticas aplicadas em relatórios avançados de IA.</p>
+                        <strong>{tLocal('preferred_lang')}</strong>
+                        <p className="text-[10px] text-slate-500">{tLocal('lang_desc')}</p>
                       </div>
 
                       <select 
@@ -6356,18 +7016,19 @@ export default function App() {
                         <option value="en">English (US)</option>
                         <option value="es">Español (ES)</option>
                         <option value="de">Deutsch (DE)</option>
+                        <option value="fr">Français (FR)</option>
                       </select>
                     </div>
                   </div>
 
                   {/* Accessibility Switch Section */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4 font-sans">
-                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">Acessibilidade</h3>
+                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">{tLocal('accessibility')}</h3>
                     
                     <div className="flex justify-between items-center text-xs">
                       <div>
-                        <strong>Modo de Alto Contraste</strong>
-                        <p className="text-[10px] text-slate-500">Aumenta o contraste de textos, botões e bordas para garantir melhor visibilidade.</p>
+                        <strong>{tLocal('high_contrast')}</strong>
+                        <p className="text-[10px] text-slate-500">{tLocal('contrast_desc')}</p>
                       </div>
 
                       <button
@@ -6389,25 +7050,25 @@ export default function App() {
 
                   {/* Limpar Cache Panel */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4 font-sans">
-                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">Desempenho e Armazenamento</h3>
+                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">{tLocal('performance_storage')}</h3>
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center text-xs gap-3">
                       <div>
-                        <strong className="text-slate-200">Limpar Cache do Sistema</strong>
-                        <p className="text-[10px] text-slate-500 mt-1">Apaga os arquivos temporários e caches de desempenho de relatórios. Não afeta seus mapas nem sua conta de acesso.</p>
+                        <strong className="text-slate-200">{tLocal('clear_cache')}</strong>
+                        <p className="text-[10px] text-slate-500 mt-1">{tLocal('clear_cache_desc')}</p>
                       </div>
                       <button 
                         onClick={handleClearCache}
                         type="button"
                         className="px-4 py-2 bg-slate-950 hover:bg-slate-900 hover:text-amber-400 border border-slate-850 rounded-xl text-xs font-bold text-amber-500 transition cursor-pointer shrink-0"
                       >
-                        Limpar Cache
+                        {tLocal('clear_cache_btn')}
                       </button>
                     </div>
                   </div>
 
                   {/* Support coordinates credits details */}
                   <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 text-[10.5px] text-slate-550 leading-relaxed font-mono">
-                    Em caso de dúvidas, faça contato com a equipe de suporte pelo canal oficial de auditorias de integridade celestial.
+                    {tLocal('support_team')}
                   </div>
 
                   {/* Settings Actions */}
@@ -6446,7 +7107,7 @@ export default function App() {
                       className="w-full py-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-2xl text-xs font-bold text-slate-350 hover:text-white font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
                     >
                       <LogOut className="w-4 h-4 text-amber-500" />
-                      Sair do Aplicativo
+                      {tLocal('logout_app_btn')}
                     </button>
 
                     <button 
@@ -6454,7 +7115,7 @@ export default function App() {
                       type="button"
                       className="w-full py-3 bg-rose-950/35 hover:bg-rose-950/50 border border-rose-500/20 hover:border-rose-500/30 rounded-2xl text-xs font-bold text-rose-400 font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer"
                     >
-                      Excluir Minha Conta
+                      {tLocal('delete_acc_btn')}
                     </button>
                   </div>
                 </div>
@@ -6466,9 +7127,9 @@ export default function App() {
                       <div className="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto text-xl">
                         ⚠️
                       </div>
-                      <h3 className="text-sm font-bold text-slate-100 font-sans">Excluir sua conta?</h3>
+                      <h3 className="text-sm font-bold text-slate-100 font-sans">{tLocal('delete_confirm_title')}</h3>
                       <p className="text-xs text-slate-400 font-sans leading-relaxed">
-                        Você deseja excluir sua conta? Ao excluir sua conta todos os seus dados mapas registros estatísticas serão excluídos da plataforma.
+                        {tLocal('delete_confirm_desc')}
                       </p>
                       <div className="flex flex-col gap-2 pt-2">
                         <button
@@ -6476,14 +7137,14 @@ export default function App() {
                           type="button"
                           className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition cursor-pointer"
                         >
-                          Sim, quero excluir
+                          {tLocal('delete_confirm_yes')}
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(false)}
                           type="button"
                           className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider transition cursor-pointer"
                         >
-                          Cancelar
+                          {tLocal('delete_confirm_cancel')}
                         </button>
                       </div>
                     </div>
@@ -6623,7 +7284,7 @@ export default function App() {
               }`}
             >
               <Orbit className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">Mapa Estelar</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_map', 'Mapa Estelar')}</span>
             </button>
 
             {/* Constelações Tab activator */}
@@ -6636,7 +7297,7 @@ export default function App() {
               }`}
             >
               <Compass className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">Constelações</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_stars', 'Constelações')}</span>
             </button>
 
             {/* Planetas Tab activator */}
@@ -6649,7 +7310,7 @@ export default function App() {
               }`}
             >
               <Globe className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">Planetas</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_planets', 'Planetas')}</span>
             </button>
 
             {/* Tarot Tab activator */}
@@ -6662,7 +7323,7 @@ export default function App() {
               }`}
             >
               <Sparkles className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">Tarot</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_tarot', 'Tarot')}</span>
             </button>
 
             {/* Configurações Tab activator */}
@@ -6675,7 +7336,7 @@ export default function App() {
               }`}
             >
               <Settings className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">Ajustes</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_settings', 'Ajustes')}</span>
             </button>
 
           </nav>

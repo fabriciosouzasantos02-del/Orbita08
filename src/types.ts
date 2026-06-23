@@ -14,6 +14,11 @@ export interface UserProfile {
   provider?: string;
   emailVerified?: boolean;
   isEmailVerified?: boolean; // Retro-compatibility
+  displayName?: string;
+  birthName?: string;
+  profileName?: string;
+  avatarId?: string;
+  preferredLanguage?: string;
   trialUsed?: boolean;
   trialStartDate?: string;
   trialEndDate?: string;
@@ -32,6 +37,7 @@ export interface UserProfile {
   profilePhoto?: string;
   hasCreatedMap?: boolean;
   scorePoints?: number;
+  stellarPoints?: number;
   latitude?: number;
   longitude?: number;
   mainMapChangesCount?: number;
@@ -167,6 +173,9 @@ export interface OracleDreamInterpretation {
 export interface OracleDreamEntry {
   id: string;
   date: string;
+  time?: string;
+  title?: string;
+  language?: string;
   description: string;
   interpretation?: OracleDreamInterpretation | null;
 }

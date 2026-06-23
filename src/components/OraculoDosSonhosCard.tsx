@@ -14,6 +14,7 @@ import {
   Search 
 } from 'lucide-react';
 import { OracleDreamEntry } from '../types';
+import { jsPDF } from 'jspdf';
 
 interface OraculoDosSonhosCardProps {
   newDreamDesc: string;
@@ -23,6 +24,7 @@ interface OraculoDosSonhosCardProps {
   dreamsHistory: OracleDreamEntry[];
   selectedDreamDisplay: OracleDreamEntry | null;
   setSelectedDreamDisplay: (val: OracleDreamEntry | null) => void;
+  preferredLanguage?: string;
 }
 
 export default function OraculoDosSonhosCard({
@@ -32,10 +34,345 @@ export default function OraculoDosSonhosCard({
   handleRecordAndInterpretDream,
   dreamsHistory,
   selectedDreamDisplay,
-  setSelectedDreamDisplay
+  setSelectedDreamDisplay,
+  preferredLanguage = "pt"
 }: OraculoDosSonhosCardProps) {
   // Search state inside dreams list sidebar
   const [dreamSearch, setDreamSearch] = useState('');
+  const [isDownloadListOpen, setIsDownloadListOpen] = useState(false);
+
+  // Helper to trigger direct on-device PDF generation of a dream entry
+  const handleDeviceDownloadDreamPDF = (dream: OracleDreamEntry) => {
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+
+      const language = dream.language || preferredLanguage || "pt";
+
+      // Margins
+      const marginX = 20;
+      let currentY = 15;
+      const contentWidth = 170; // 210 - 40
+
+      // 1. Header block
+      doc.setFillColor(15, 23, 42); // slate-900 background
+      doc.rect(0, 0, 210, 40, "F");
+
+      // Header Text
+      doc.setTextColor(229, 193, 88); // Amber gold
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("ORBI - ORÁCULO CELESTE", marginX, 18);
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("Helvetica", "italic");
+      doc.setFontSize(10);
+      const subtitleMap: Record<string, string> = {
+        pt: "Interpretação e Análise Consciencial de Sonhos",
+        en: "Dream Interpretation & Consciousness Analysis",
+        es: "Interpretación de Sueños y Análisis de la Conciencia",
+        de: "Traumdeutung und Bewusstseinsanalyse"
+      };
+      doc.text(subtitleMap[language] || subtitleMap.pt, marginX, 26);
+
+      currentY = 52;
+
+      // Metadata section (Date & Time)
+      doc.setTextColor(115, 115, 115); // neutral-400
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(9);
+      
+      const dateLabel = language === "pt" ? "DATA" : language === "es" ? "FECHA" : language === "de" ? "DATUM" : "DATE";
+      const timeLabel = language === "pt" ? "HORÁRIO" : language === "es" ? "HORA" : language === "de" ? "UHRZEIT" : "TIME";
+      doc.text(`${dateLabel}: ${dream.date}  |  ${timeLabel}: ${dream.time || "N/A"}`, marginX, currentY);
+      
+      doc.setDrawColor(244, 63, 94); // rose-500 border line below metadata
+      doc.setLineWidth(0.4);
+      doc.line(marginX, currentY + 3, marginX + contentWidth, currentY + 3);
+
+      currentY += 12;
+
+      // Title of the Dream
+      doc.setTextColor(244, 63, 94); // rose-500
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text(dream.title || (language === "pt" ? "Relato de Sonho" : "Dream Log"), marginX, currentY);
+
+      currentY += 8;
+
+      // User Description heading
+      doc.setTextColor(15, 23, 42); // slate-900
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(11);
+      const descHeadingMap: Record<string, string> = {
+        pt: "RELAÇÃO DOS FATOS (SUBCONSCIENTE):",
+        en: "RELATION OF THE FACTS (SUBSCIOUS):",
+        es: "RELACIÓN DE LOS HECHOS (SUBCONSCIENTE):",
+        de: "DARSTELLUNG DER FAKTEN (UNTERBEWUSSTSEIN):"
+      };
+      doc.text(descHeadingMap[language] || descHeadingMap.pt, marginX, currentY);
+
+      currentY += 6;
+
+      // User Description content
+      doc.setTextColor(82, 82, 82); // gray-600
+      doc.setFont("Helvetica", "italic");
+      doc.setFontSize(9.5);
+      const wrappedDesc = doc.splitTextToSize(`"${dream.description}"`, contentWidth);
+      doc.text(wrappedDesc, marginX, currentY);
+
+      currentY += (wrappedDesc.length * 5) + 8;
+
+      // Thin separator line
+      doc.setDrawColor(226, 232, 240); // gray-200
+      doc.line(marginX, currentY - 2, marginX + contentWidth, currentY - 2);
+
+      if (dream.interpretation) {
+        const interp = dream.interpretation;
+
+        // Significance heading
+        doc.setTextColor(15, 23, 42); // slate-900
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(11);
+        const meaningHeadingMap: Record<string, string> = {
+          pt: "SIGNIFICADO PRIMÁRIO & ANÁLISE:",
+          en: "PRIMARY MEANING & ANALYSIS:",
+          es: "SIGNIFICADO PRIMARIO Y ANÁLISIS:",
+          de: "PRIMÄRE BEDEUTUNG & ANALYSE:"
+        };
+        doc.text(meaningHeadingMap[language] || meaningHeadingMap.pt, marginX, currentY);
+
+        currentY += 6;
+
+        // Significance title
+        doc.setTextColor(244, 63, 94); // rose-500
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(interp.mainMeaning || "", marginX, currentY);
+
+        currentY += 6;
+
+        // Significance body
+        doc.setTextColor(64, 64, 64); // gray-700
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(9.5);
+        const wrappedPsych = doc.splitTextToSize(interp.psychological || "", contentWidth);
+        
+        if (currentY + wrappedPsych.length * 5 > 280) {
+          doc.addPage();
+          currentY = 20;
+        }
+        doc.text(wrappedPsych, marginX, currentY);
+        currentY += (wrappedPsych.length * 5) + 8;
+
+        // Oracular advice section
+        if (interp.oracleAdvice) {
+          if (currentY + 28 > 280) {
+            doc.addPage();
+            currentY = 20;
+          }
+
+          doc.setFillColor(254, 243, 199); // amber 100 wrapper background
+          doc.rect(marginX - 2, currentY - 4, contentWidth + 4, 28, "F");
+
+          doc.setTextColor(180, 83, 9); // amber-700
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(9.5);
+          const adviceTitleMap: Record<string, string> = {
+            pt: "CONSELHO DO ORÁCULO CELESTE",
+            en: "CELESTIAL ORACLE ADVICE",
+            es: "CONSEJO DEL ORÁCULO CELESTIAL",
+            de: "RATSCHLAG DES HIMMLISCHEN ORAKELS"
+          };
+          doc.text(adviceTitleMap[language] || adviceTitleMap.pt, marginX, currentY);
+
+          doc.setTextColor(120, 53, 4); // amber-900
+          doc.setFont("Helvetica", "italic");
+          doc.setFontSize(9);
+          const wrappedAdvice = doc.splitTextToSize(interp.oracleAdvice, contentWidth - 4);
+          doc.text(wrappedAdvice, marginX, currentY + 5);
+
+          currentY += 32;
+        }
+
+        // Three areas of life detailed
+        const loveTitle = language === "pt" ? "Área Amorosa" : language === "es" ? "Área de Amor" : "Love Area";
+        const financeTitle = language === "pt" ? "Área Financeira" : language === "es" ? "Área Financiera" : "Finance Area";
+        const careerTitle = language === "pt" ? "Área Profissional" : language === "es" ? "Área Profesional" : "Career Area";
+
+        const areas = [
+          { t: loveTitle, b: interp.loveArea },
+          { t: financeTitle, b: interp.financeArea },
+          { t: careerTitle, b: interp.careerArea }
+        ].filter(a => !!a.b);
+
+        if (areas.length > 0) {
+          if (currentY + 20 > 280) {
+            doc.addPage();
+            currentY = 20;
+          }
+
+          doc.setTextColor(15, 23, 42);
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(11);
+          const lifeAreasHeadingMap: Record<string, string> = {
+            pt: "INFLUÊNCIA NAS ÁREAS DA VIDA:",
+            en: "INFLUENCE ON LIFE AREAS:",
+            es: "INFLUENCIA EN ÁREAS DE LA VIDA:",
+            de: "EINFLUSS AUF LEBENSBEREICHE:"
+          };
+          doc.text(lifeAreasHeadingMap[language] || lifeAreasHeadingMap.pt, marginX, currentY);
+          currentY += 6;
+
+          areas.forEach(area => {
+            const wrappedAreaBody = doc.splitTextToSize(area.b || "", contentWidth - 6);
+            if (currentY + (wrappedAreaBody.length * 4.5) + 10 > 280) {
+              doc.addPage();
+              currentY = 20;
+            }
+
+            doc.setFillColor(248, 250, 252); // slate-50
+            doc.rect(marginX, currentY - 3, contentWidth, (wrappedAreaBody.length * 4.5) + 6, "F");
+
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9.5);
+            doc.text(area.t, marginX + 3, currentY + 1);
+
+            doc.setTextColor(71, 85, 105);
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(9);
+            doc.text(wrappedAreaBody, marginX + 3, currentY + 5.5);
+
+            currentY += (wrappedAreaBody.length * 4.5) + 10;
+          });
+          currentY += 4;
+        }
+
+        // Lucky numbers and colors
+        if (interp.luckyNumbers?.length || interp.favorableColors?.length) {
+          if (currentY + 16 > 280) {
+            doc.addPage();
+            currentY = 20;
+          }
+
+          const luckyNumbersLabel = language === "pt" ? "Números Recomendados:" : "Lucky Numbers:";
+          const favorableColorsLabel = language === "pt" ? "Cores de Energia:" : "Energy Colors:";
+
+          doc.setTextColor(15, 23, 42);
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text(luckyNumbersLabel, marginX, currentY);
+          
+          doc.setFont("Helvetica", "normal");
+          doc.setTextColor(244, 63, 94);
+          doc.text(interp.luckyNumbers?.join(", ") || "N/A", marginX + 48, currentY);
+
+          currentY += 5;
+
+          doc.setTextColor(15, 23, 42);
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text(favorableColorsLabel, marginX, currentY);
+          
+          doc.setFont("Helvetica", "normal");
+          doc.setTextColor(79, 70, 229);
+          doc.text(interp.favorableColors?.join(", ") || "N/A", marginX + 48, currentY);
+
+          currentY += 10;
+        }
+
+        // Sincronias Oráculares (Attention, Opportunity, Protection) if they exist
+        const warningElements = [
+          { label: language === "pt" ? "⚠️ ATENÇÃO:" : "⚠️ ATTENTION:", content: interp.attention },
+          { label: language === "pt" ? "🍀 OPORTUNIDADES:" : "🍀 OPPORTUNITIES:", content: interp.opportunities },
+          { label: language === "pt" ? "🛡️ PROTEÇÃO e LIVRAMENTO:" : "🛡️ PROTECTION & SANCTUARY:", content: interp.protection }
+        ].filter(w => !!w.content);
+
+        if (warningElements.length > 0) {
+          warningElements.forEach(item => {
+            const wrappedWarning = doc.splitTextToSize(item.content || "", contentWidth);
+            if (currentY + (wrappedWarning.length * 4.5) + 8 > 280) {
+              doc.addPage();
+              currentY = 20;
+            }
+
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9.5);
+            doc.text(item.label, marginX, currentY);
+
+            currentY += 4.5;
+
+            doc.setTextColor(71, 85, 105);
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(9);
+            doc.text(wrappedWarning, marginX, currentY);
+
+            currentY += (wrappedWarning.length * 4.5) + 6;
+          });
+        }
+
+        // Universe Message
+        if (interp.universeMessage) {
+          if (currentY + 22 > 280) {
+            doc.addPage();
+            currentY = 20;
+          }
+
+          doc.setDrawColor(79, 70, 229);
+          doc.setLineWidth(0.4);
+          doc.rect(marginX - 1, currentY - 4, contentWidth + 2, 22, "D");
+
+          doc.setTextColor(79, 70, 229);
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(9);
+          const universeTitleMap: Record<string, string> = {
+            pt: "SINTONIA CÓSMICA & MENSAGEM DO UNIVERSO",
+            en: "COSMIC HARMONY & UNIVERSE MESSAGE",
+            es: "SINTONÍA CÓSMICA Y MENSAJE DEL UNIVERSO",
+            de: "KOSMISCHE HARMONIE & BOTSCHAFT DES UNIVERSUMS"
+          };
+          doc.text(universeTitleMap[language] || universeTitleMap.pt, marginX + 4, currentY);
+
+          doc.setTextColor(49, 46, 129);
+          doc.setFont("Helvetica", "italic");
+          doc.setFontSize(9);
+          const wrappedUniv = doc.splitTextToSize(interp.universeMessage, contentWidth - 8);
+          doc.text(wrappedUniv, marginX + 4, currentY + 5);
+        }
+      }
+
+      // Add page numbers
+      const pageCount = (doc.internal as any).getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(163, 163, 163);
+        const footerMap: Record<string, string> = {
+          pt: "Gerado pelo Astra Orbi - Seu portal de inteligência mística e autoconhecimento cósmico.",
+          en: "Generated by Astra Orbi - Your mystical intelligence portal & cosmic self-knowledge.",
+          es: "Generado por Astra Orbi - Tu portal de inteligencia mística y autoconocimiento cósmico.",
+          de: "Generiert von Astra Orbi - Ihr mystisches Intelligenzportal & kosmisches Selbsterkenntnis."
+        };
+        doc.text(footerMap[language] || footerMap.pt, marginX, 287);
+        doc.text(`${i}/` + pageCount, 190, 287);
+      }
+
+      const slugifiedTitle = (dream.title || "sonho")
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/[\s_]+/g, "_")
+        .substring(0, 30);
+      doc.save(`orbi_sonho_${slugifiedTitle}_${dream.date}.pdf`);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+    }
+  };
 
   // Filter history list based on search Input
   const filteredDreams = dreamsHistory.filter(d => 
@@ -110,6 +447,15 @@ export default function OraculoDosSonhosCard({
             <h4 className="text-[10.5px] font-bold font-mono text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               📁 Cofre de Sonhos ({dreamsHistory.length})
             </h4>
+            {dreamsHistory.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsDownloadListOpen(true)}
+                className="px-2 py-1 bg-rose-600/20 hover:bg-rose-600/35 border border-rose-500/30 text-rose-400 hover:text-rose-350 rounded-lg text-[9px] font-mono uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 font-bold"
+              >
+                📥 Baixar Sonho
+              </button>
+            )}
           </div>
 
           {/* Quick Search */}
@@ -193,17 +539,25 @@ export default function OraculoDosSonhosCard({
             
             {/* Display Header details */}
             <div className="pb-4 border-b border-slate-800 flex justify-between items-start sm:flex-nowrap flex-wrap gap-3" id="dream-display-header">
-              <div className="space-y-1">
+              <div className="space-y-1 flex-1">
                 <span className="text-[8.5px] font-mono text-rose-400 font-bold uppercase tracking-widest block">
-                  Cofre de Sonhos · Arquivado em {selectedDreamDisplay.date}
+                  Cofre de Sonhos · Arquivado em {selectedDreamDisplay.date} {selectedDreamDisplay.time ? ` às ${selectedDreamDisplay.time}` : ''}
                 </span>
                 <h3 className="text-xs font-mono font-bold text-slate-400">
                   Relato do Scribe:
                 </h3>
-                <p className="text-xs text-slate-350 leading-relaxed font-serif bg-slate-950 border border-slate-850 p-3 rounded-xl italic">
+                <p className="text-xs text-slate-350 leading-relaxed font-serif bg-slate-950 border border-slate-850 p-3 rounded-xl italic block">
                   "{selectedDreamDisplay.description}"
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => handleDeviceDownloadDreamPDF(selectedDreamDisplay)}
+                className="px-3 py-1.5 bg-rose-600/15 hover:bg-rose-600/30 border border-rose-500/30 text-rose-400 hover:text-rose-350 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                title="Download PDF"
+              >
+                📥 Baixar PDF
+              </button>
             </div>
 
             {/* Display Dream analysis */}
@@ -532,6 +886,77 @@ export default function OraculoDosSonhosCard({
         )}
 
       </div>
+
+      {/* Beautiful PDF Download List Modal Popup */}
+      {isDownloadListOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs animate-in fade-in duration-300">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden" id="download-list-modal">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="flex justify-between items-center pb-4 border-b border-slate-800">
+              <div>
+                <h3 className="text-sm font-bold text-slate-100 font-mono flex items-center gap-2">
+                  📥 BAIXAR REGISTRO DE SONHO
+                </h3>
+                <p className="text-[10px] text-slate-400 mt-1 leading-normal font-sans">
+                  Selecione um sonho do seu cofre para baixar a interpretação em PDF localmente no seu dispositivo.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDownloadListOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-705 text-slate-400 hover:text-slate-200 flex items-center justify-center text-xs transition duration-200 cursor-pointer font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto space-y-2.5 my-4 pr-1">
+              {dreamsHistory.length > 0 ? (
+                dreamsHistory.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => {
+                      handleDeviceDownloadDreamPDF(d);
+                      setIsDownloadListOpen(false);
+                    }}
+                    className="w-full text-left p-3.5 rounded-2xl bg-slate-950 border border-slate-850 hover:border-rose-500/40 transition-all duration-300 flex items-center justify-between gap-4 cursor-pointer group"
+                  >
+                    <div className="space-y-1 flex-1">
+                      <h4 className="text-xs font-bold text-slate-200 group-hover:text-rose-400 transition-colors font-mono line-clamp-1">
+                        {d.title || d.interpretation?.mainMeaning || d.description.slice(0, 30) + "..."}
+                      </h4>
+                      <p className="text-[10px] text-slate-500 line-clamp-1 italic">
+                        "{d.description}"
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[9px] font-mono text-rose-500 font-bold block">{d.date}</span>
+                      {d.time && (
+                        <span className="text-[8px] font-mono text-slate-500 block mt-0.5">{d.time}</span>
+                      )}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="p-8 text-center text-slate-600 font-mono text-xs">
+                  Nenhum sonho arquivado para download.
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsDownloadListOpen(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-slate-100 rounded-xl text-xs font-mono uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

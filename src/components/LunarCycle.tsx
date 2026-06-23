@@ -23,6 +23,8 @@ import {
   getZodiacSignInfo, 
   performAstroCalculation 
 } from './astroMath';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 
 // Simple analytical Sun longitude
 function calculateSunLongitude(T: number): number {
@@ -263,13 +265,24 @@ interface LunarCycleProps {
   userName?: string;
   userSunSign?: string;
   userAscendant?: string; // Additional props for premium maps
+  lang?: string;
 }
 
 export default function LunarCycle({ 
   userName, 
   userSunSign = 'Aquário',
-  userAscendant = 'Sagitário'
+  userAscendant = 'Sagitário',
+  lang
 }: LunarCycleProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
   
   // Temporal States
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
@@ -605,16 +618,16 @@ export default function LunarCycle({
                           Fase Astronomia Real
                         </span>
                         <h3 className="text-base font-black font-sans text-white uppercase mt-1">
-                          {phaseInfo.name} ({Math.round(moonState.elongation / 3.6)}% iluminada)
+                          {t(phaseInfo.name)} ({Math.round(moonState.elongation / 3.6)}% {t("iluminada")})
                         </h3>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[9px] font-mono text-[#E5C158] block uppercase font-bold">Duração Real</span>
+                      <span className="text-[9px] font-mono text-[#E5C158] block uppercase font-bold">{t("Duração Real")}</span>
                       <span className="text-[10px] font-mono text-slate-400">
-                        {limits.startD.toLocaleDateString('pt-BR', { day: '2-digit', month: 'numeric' })} a {' '}
-                        {limits.endD.toLocaleDateString('pt-BR', { day: '2-digit', month: 'numeric' })}
+                        {limits.startD.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : lang === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })} a {' '}
+                        {limits.endD.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : lang === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })}
                       </span>
                     </div>
                   </div>

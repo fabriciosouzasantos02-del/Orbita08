@@ -103,11 +103,30 @@ export default function CircularChart({ astros }: CircularChartProps) {
           />
 
           {/* Planet Placement Dots & Glyphs dynamically labeled around outer ring */}
-          {astros.map((ast, i) => {
+          {astros && Array.isArray(astros) && astros.map((ast, i) => {
+            if (!ast || !ast.name || !ast.sign) {
+              console.warn("[CircularChart] Registro de astro inválido ou herança vazia:", ast);
+              return null;
+            }
             // Find sign match to align correctly
             const signIndex = ZODIAC_SIGNS.findIndex(s => s.name === ast.sign);
-            const degStr = ast.degree.replace(/\D/g, '');
-            const deg = parseInt(degStr) || 15;
+            if (signIndex === -1) {
+              console.warn(`[CircularChart] Astro ${ast.name} com signo inválido ou não mapeado: ${ast.sign}`);
+              return null;
+            }
+
+            let deg = 15;
+            try {
+              if (typeof ast.degree === 'number') {
+                deg = Math.floor(ast.degree);
+              } else if (ast.degree !== undefined && ast.degree !== null) {
+                const matchDeg = String(ast.degree).match(/^\d+/);
+                deg = matchDeg ? parseInt(matchDeg[0], 10) : 15;
+              }
+            } catch (err) {
+              console.error(`[CircularChart] Falha crítica de parser para astro ${ast.name} com graus ${ast.degree}:`, err);
+            }
+
             // Angle placement calculation
             const angleVal = (signIndex * 30) + deg;
             const percent = angleVal / 360;
