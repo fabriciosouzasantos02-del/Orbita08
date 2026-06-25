@@ -216,7 +216,7 @@ function romanize(num: number): string {
 }
 
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { translateUiText, Language } from './lib/translations';
 
 interface TarotSystemProps {
   userName?: string;

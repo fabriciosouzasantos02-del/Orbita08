@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, Sparkles, AlertTriangle, Heart, HelpCircle, RefreshCw, Layers, Compass, Loader2, ChevronDown, ChevronUp, Clock, Activity, Hash, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 
 interface AstroEvent {
@@ -14,6 +16,7 @@ interface AstroEvent {
 interface TransitHistoryProps {
   userName?: string;
   birthDate?: string;
+  lang?: string;
 }
 
 function getWeeklyCacheKey(): string {
@@ -24,7 +27,17 @@ function getWeeklyCacheKey(): string {
   return `${now.getFullYear()}-W${weekNumber}`;
 }
 
-export default function TransitHistory({ userName, birthDate }: TransitHistoryProps) {
+export default function TransitHistory({ userName, birthDate, lang }: TransitHistoryProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
+
   const [events, setEvents] = useState<AstroEvent[]>([]);
   
   const getCurrentMonthAndYear = () => {
@@ -34,7 +47,7 @@ export default function TransitHistory({ userName, birthDate }: TransitHistoryPr
     ];
     const date = new Date();
     return {
-      monthName: monthNames[date.getMonth()],
+      monthName: t(monthNames[date.getMonth()]),
       year: date.getFullYear()
     };
   };

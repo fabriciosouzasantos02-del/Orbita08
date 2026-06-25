@@ -3,6 +3,7 @@ import { Compass, Moon, Sun, Flame, MessageSquareQuote, RefreshCw, Zap } from "l
 import { motion } from "motion/react";
 import { Language, translations } from "../translations";
 import { NatalChartData } from "../types";
+import { useTranslation } from "react-i18next";
 
 interface DashboardTabProps {
   natalChart: NatalChartData;
@@ -13,6 +14,7 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
   const [moonPhaseInfo, setMoonPhaseInfo] = useState({ name: "Lua Nova", symbol: "🌑", percent: 0 });
   const [activeHoroscope, setActiveHoroscope] = useState<'daily' | 'weekly'>('daily');
   const t = translations[lang];
+  const { t: tI18n } = useTranslation();
 
   // Calculate moon phase mathematically based on current date
   useEffect(() => {
@@ -151,14 +153,12 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
             className="p-4 bg-neutral-55 bg-indigo-50/25 border border-indigo-100/50 rounded-xl space-y-3 leading-relaxed"
           >
             <h3 className="font-semibold text-neutral-800 text-sm">
-              {activeHoroscope === 'daily' ? "Trânsito de Hoje" : "Maré Cósmica Semanal"}
+              {activeHoroscope === 'daily' ? tI18n("Trânsito de Hoje") : tI18n("Maré Cósmica Semanal")}
             </h3>
             <p className="text-neutral-600 text-xs sm:text-sm">
               {activeHoroscope === 'daily' 
                 ? currentHoroscope[lang]
-                : (lang === "pt" 
-                    ? "Esta semana as energias estão em fase de semeadura. Plutão estabiliza transições e Netuno convida você a decifrar os segredos de seus sonhos noturnos." 
-                    : "This week hosts fertile energies. Pluto stabilizes your inner transitions while Neptune guides you to pay absolute attention to nightly visions.")
+                : tI18n("Esta semana as energias estão em fase de semeadura. Plutão estabiliza transições e Netuno convida você a decifrar os segredos de seus sonhos noturnos.")
               }
             </p>
           </motion.div>
@@ -169,10 +169,7 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t.insightOfTheDay}</span>
               <p className="italic text-neutral-500 text-xs">
-                {lang === "pt" 
-                  ? `"O universo não fala por palavras externas, mas pelo compasso calmo do seu coração quando silencia."`
-                  : `"The universe speaks not of grand external commands, but of the silent alignment of your indwelling spirit."`
-                }
+                {tI18n(`"O universo não fala por palavras externas, mas pelo compasso calmo do seu coração quando silencia."`)}
               </p>
             </div>
           </div>
@@ -189,15 +186,12 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
             <span className="text-7xl block select-none animate-pulse-slow">{moonPhaseInfo.symbol}</span>
             <div>
               <span className="font-display font-bold text-neutral-900 text-lg block">{moonPhaseInfo.name}</span>
-              <span className="font-mono text-neutral-400 text-xs tracking-wider">{moonPhaseInfo.percent}% de iluminação</span>
+              <span className="font-mono text-neutral-400 text-xs tracking-wider">{moonPhaseInfo.percent}% {tI18n("de iluminação")}</span>
             </div>
           </div>
 
           <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-100/80 text-[11px] text-neutral-500 leading-relaxed text-center">
-            {lang === "pt"
-              ? "Período ideal para limpar velhos pesos mentais e nutrir ideias novas de forma mística."
-              : "Ideal period for clearing old mental clutter and planting fresh thoughts on a deep canvas."
-            }
+            {tI18n("Período ideal para limpar velhos pesos mentais e nutrir ideias novas de forma mística.")}
           </div>
         </section>
 

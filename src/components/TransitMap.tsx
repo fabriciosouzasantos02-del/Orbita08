@@ -3,6 +3,8 @@ import * as d3 from 'd3';
 import { AstrologyMap, AstroAstroPosition } from '../types';
 import { Orbit, Play, Pause, RotateCcw, Info, Zap, Calendar, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 
 interface TransitMapProps {
   mapData: AstrologyMap;
@@ -49,6 +51,16 @@ const TRANSIT_METADATA: PlanetConfig[] = [
 ];
 
 export default function TransitMap({ mapData }: TransitMapProps) {
+  const { t: i18nT, i18n } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (i18n.language as Language) || 'pt');
+    }
+    return res;
+  };
+
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 

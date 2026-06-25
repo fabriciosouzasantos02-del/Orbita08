@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 import { 
   Compass, 
   HelpCircle, 
@@ -21,6 +23,7 @@ import {
 interface LunarNodesProps {
   userName?: string;
   mapData?: any; // AstrologyMap
+  lang?: string;
 }
 
 type NodeSubTab = 'introducao' | 'significado' | 'insights' | 'signos' | 'casas' | 'conjuncoes' | 'dicas';
@@ -213,7 +216,17 @@ const nodeHousesData: Record<number, {
   }
 };
 
-export default function LunarNodes({ userName = 'Buscador de Sabedoria', mapData }: LunarNodesProps) {
+export default function LunarNodes({ userName = 'Buscador de Sabedoria', mapData, lang }: LunarNodesProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
+
   const [activeSubTab, setActiveSubTab] = useState<NodeSubTab>('introducao');
 
   // Find users exact North Node sign and house from actual calculations

@@ -468,16 +468,16 @@ export default function LunarCycle({
           <div className="space-y-1">
             <h3 className="text-sm font-semibold font-mono text-indigo-400 uppercase tracking-widest flex items-center gap-2 leading-none">
               <span className="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-pulse shrink-0" />
-              Sintonização Gravitacional Universal
+              {t("Sintonização Gravitacional Universal")}
             </h3>
             <h2 className="text-lg font-black font-sans uppercase tracking-tight text-white flex items-center gap-2.5">
-              <MoonStar className="w-5 h-5 text-indigo-305" /> Ciclo Lunar em Tempo Real
+              <MoonStar className="w-5 h-5 text-indigo-305" /> {t("Ciclo Lunar em Tempo Real")}
             </h2>
           </div>
           
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-indigo-950/40 text-indigo-300 font-mono text-[9.5px] rounded-lg border border-indigo-900 leading-none">
-              ★ Livre - Acesso Ilimitado
+              {t("★ Livre - Acesso Ilimitado")}
             </span>
           </div>
         </div>
@@ -485,11 +485,11 @@ export default function LunarCycle({
         <p className="text-xs text-slate-350 leading-relaxed font-sans">
           {userName ? (
             <>
-              Olá, <strong className="text-indigo-300 font-bold">{userName}</strong> (Sol em <strong className="text-amber-400 font-semibold">{userSunSign}</strong>, Ascendente em <strong className="text-pink-400 font-semibold">{userAscendant}</strong>). O ritmo gravitacional lunar dita o movimento das marés e rege os biorritmos biológicos de curto curso. Este módulo calcula em tempo real, através de efemérides geocêntricas integradas, a exata posição da Lua no céu para o seu mapa pessoal.
+              {t("Olá,")} <strong className="text-indigo-300 font-bold">{userName}</strong> ({t("Sol em")} <strong className="text-amber-400 font-semibold">{t(userSunSign)}</strong>, {t("Ascendente em")} <strong className="text-pink-400 font-semibold">{t(userAscendant)}</strong>). {t("O ritmo gravitacional lunar dita o movimento das marés e rege os biorritmos biológicos de curto curso. Este módulo calcula em tempo real, através de efemérides geocêntricas integradas, a exata posição da Lua no céu para o seu mapa pessoal.")}
             </>
           ) : (
             <>
-              O ritmo gravitacional lunar dita o movimento das marés e rege os biorritmos biológicos de curto curso. Este módulo calcula em tempo real, através de efemérides geocêntricas integradas, a exata posição da Lua no céu. <strong className="text-indigo-300">Crie seu mapa astral para desbloquear análises personalizadas e preencha seus dados para iniciar sua jornada.</strong>
+              {t("O ritmo gravitacional lunar dita o movimento das marés e rege os biorritmos biológicos de curto curso. Este módulo calcula em tempo real, através de efemérides geocêntricas integradas, a exata posição da Lua no céu.")} <strong className="text-indigo-300">{t("Crie seu mapa astral para desbloquear análises personalizadas e preencha seus dados para iniciar sua jornada.")}</strong>
             </>
           )}
         </p>
@@ -512,7 +512,7 @@ export default function LunarCycle({
                 }`}
               >
                 <Moon className="w-3.5 h-3.5" />
-                HOJE CORRENTE
+                {t("HOJE CORRENTE")}
               </button>
               
               <button
@@ -524,7 +524,7 @@ export default function LunarCycle({
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5" />
-                FUTUROS CÍCLICOS
+                {t("FUTUROS CÍCLICOS")}
               </button>
             </div>
 
@@ -537,7 +537,7 @@ export default function LunarCycle({
               }`}
             >
               <Clock className={`w-3.5 h-3.5 ${isLiveSync ? 'animate-spin' : ''}`} />
-              {isLiveSync ? '➔ Tempo Real Ativo' : '⊙ Sincronizar Tempo Real'}
+              {isLiveSync ? t('➔ Tempo Real Ativo') : t('⊙ Sincronizar Tempo Real')}
             </button>
           </div>
 
@@ -589,7 +589,7 @@ export default function LunarCycle({
 
                   <div className="flex justify-between items-center pt-1.5 flex-wrap gap-2.5 border-t border-slate-900/80">
                     <span className="text-[10px] font-mono text-indigo-400 font-bold block uppercase tracking-wide">
-                      ⊙ {selectedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} às {selectedDate.toTimeString().split(' ')[0].substring(0, 5)} {isLiveSync && '(Relógio Sincro)'}
+                      ⊙ {selectedDate.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : lang === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} {t("às")} {selectedDate.toTimeString().split(' ')[0].substring(0, 5)} {isLiveSync && `(${t("Relógio Sincro")})`}
                     </span>
                     
                     {!isLiveSync && (
@@ -598,7 +598,7 @@ export default function LunarCycle({
                         className="px-3.5 py-1.5 bg-indigo-500/10 border border-indigo-400/25 hover:bg-indigo-500/20 text-[10.5px] font-mono rounded-xl transition text-indigo-305 hover:text-white cursor-pointer flex items-center gap-1.5 shadow"
                       >
                         <RefreshCw className="w-3.5 h-3.5 animate-pulse" />
-                        Resetar P/ Agora
+                        {t("Resetar P/ Agora")}
                       </button>
                     )}
                   </div>

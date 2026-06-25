@@ -110,7 +110,8 @@ export default function UserDashboardPortal({
     }
     return res;
   };
-  const userFirstName = user?.name ? user.name.split(' ')[0] : 'Viajante';
+  const travelerFallback = lang === 'de' ? 'Reisender' : lang === 'en' ? 'Traveler' : lang === 'es' ? 'Viajero' : 'Viajante';
+  const userFirstName = user?.name ? user.name.split(' ')[0] : travelerFallback;
   const zodiacSign = getZodiacSign(user?.birthDate);
   const lifePathNumber = getLifePathNumber(user?.birthDate);
 
@@ -280,7 +281,7 @@ export default function UserDashboardPortal({
         }
 
         const defaultBiorhythm = { physical: 78, emotional: 82, intellectual: 65 };
-        const defaultWeather = { temperature: 24, condition: "Parcialmente Nublado" };
+        const defaultWeather = { temperature: 24, condition: lang === 'de' ? "Teilweise bewölkt" : lang === 'en' ? "Partly Cloudy" : lang === 'es' ? "Parcialmente Nublado" : "Parcialmente Nublado" };
         const locationStr = user?.birthCity || "São Paulo, SP";
 
         const res = await fetch("/api/osiris/dashboard", {
@@ -321,7 +322,7 @@ export default function UserDashboardPortal({
 
     try {
       const defaultBiorhythm = { physical: 78, emotional: 82, intellectual: 65 };
-      const defaultWeather = { temperature: 24, condition: "Parcialmente Nublado" };
+      const defaultWeather = { temperature: 24, condition: lang === 'de' ? "Teilweise bewölkt" : lang === 'en' ? "Partly Cloudy" : lang === 'es' ? "Parcialmente Nublado" : "Parcialmente Nublado" };
       const locationStr = user?.birthCity || "São Paulo, SP";
 
       const res = await fetch("/api/osiris/chat", {
@@ -384,14 +385,14 @@ export default function UserDashboardPortal({
 
             <div className="space-y-1.5 flex-1 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-                <h2 className="text-lg font-extrabold text-slate-100">{user.name || "Viajante Estelar"}</h2>
+                <h2 className="text-lg font-extrabold text-slate-100">{user.name || (lang === 'de' ? 'Stellarer Reisender' : lang === 'en' ? 'Star Traveler' : lang === 'es' ? 'Viajero Estelar' : 'Viajante Estelar')}</h2>
                 <span className="w-fit mx-auto sm:mx-0 px-2 py-0.5 bg-amber-500/10 border border-amber-500/25 text-[8.5px] font-mono font-bold text-amber-450 rounded-md">
                   Assinatura Premium Ativa
                 </span>
               </div>
               <div className="text-slate-450 text-xs font-sans space-y-1">
                 {user.email && <p>E-mail: <span className="font-mono text-slate-300">{user.email}</span></p>}
-                <p>Status: <span className="text-amber-400 font-bold font-mono">Aguardando seu Mapa Primordial</span></p>
+                <p>Status: <span className="text-amber-400 font-bold font-mono">{lang === 'de' ? 'Warte auf dein primordiales Horoskop' : lang === 'en' ? 'Awaiting your Primordial Chart' : lang === 'es' ? 'Esperando tu Mapa Primordial' : 'Aguardando seu Mapa Primordial'}</span></p>
               </div>
             </div>
           </div>
@@ -603,13 +604,16 @@ export default function UserDashboardPortal({
   ];
 
   const getCalendarDayIconAndBg = (day: number) => {
+    const calLabels: Record<string, string[]> = {
+      pt: ["Descanso", "Produtividade", "Encontros", "Avisos", "Financeiro", "Social"],
+      en: ["Rest", "Productivity", "Meetings", "Alerts", "Financial", "Social"],
+      de: ["Erholung", "Produktivität", "Treffen", "Warnungen", "Finanzen", "Soziales"],
+      es: ["Descanso", "Productividad", "Encuentros", "Avisos", "Financiero", "Social"],
+    };
+    const labels = calLabels[lang || 'pt'] || calLabels['pt'];
+    const syms = ["🌙", "🎯", "💖", "⚡", "💸", "💬"];
     if (activeCalendarFilter === 'todos') {
-      if (day % 6 === 0) return { sym: "🌙", label: "Descanso" };
-      if (day % 6 === 1) return { sym: "🎯", label: "Produtividade" };
-      if (day % 6 === 2) return { sym: "💖", label: "Encontros" };
-      if (day % 6 === 3) return { sym: "⚡", label: "Avisos" };
-      if (day % 6 === 4) return { sym: "💸", label: "Financeiro" };
-      return { sym: "💬", label: "Social" };
+      return { sym: syms[day % 6], label: labels[day % 6] };
     }
 
     const matchedCat = calendarCategories.find(c => c.id === activeCalendarFilter);
@@ -627,16 +631,49 @@ export default function UserDashboardPortal({
       }
     });
 
+    const neutralInfluences = lang === 'de' ? 'Allgemeine neutrale Einflüsse' : lang === 'en' ? 'General Neutral Influences' : lang === 'es' ? 'Influencias Generales Neutras' : 'Influências Gerais Neutras';
+    const guidanceEven = lang === 'de'
+      ? "Ein Tag, der von der reflektiven Energie des Mondes dominiert wird. Ideal, um alte Geschäftsideen zu strukturieren oder den Finanzfluss mit saturnischem Urteil zu überprüfen. Müdigkeit ist heilig — respektiere natürliche Pausen."
+      : lang === 'en'
+      ? "A day dominated by the Moon's reflective energy. Perfect for structuring old business ideas or reviewing the flow of finances with Saturnian discernment. Tiredness is sacred — respect natural pauses."
+      : lang === 'es'
+      ? "Un día dominado por la energía reflexiva de la Luna. Perfecto para estructurar ideas antiguas de negocios o revisar el flujo de las finanzas con criterio saturnino. El cansancio es sagrado, respeta las pausas naturales."
+      : "Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais.";
+    const guidanceOdd = lang === 'de'
+      ? "Ein Tag, der vom Sonnenimpuls des Luftelements geprägt ist. Ausgezeichnet, um Geschäftsvorschläge mündlich zu äußern, Ideen mit Partnern ungezwungen zu diskutieren oder über onirologische Spiritualität zu lesen."
+      : lang === 'en'
+      ? "A day marked by the solar impulse of the Air element. Excellent for verbally expressing business proposals, discussing ideas casually with partners or reading about oneiric spirituality."
+      : lang === 'es'
+      ? "Un día marcado por el impulso solar del elemento Aire. Excelente para expressar verbalmente propuestas comerciales, debatir ideas de forma distendida con socios o leer sobre espiritualidad onírica."
+      : "Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma descontraída com parceiros ou ler sobre espiritualidade onírica.";
+    const tips: Record<string, string[]> = {
+      pt: [
+        "Acenda um incenso de sândalo de manhã para sintonizar a sabedoria e limpe sua mesa.",
+        "Evite comprar itens supérfluos no final do dia. Aguarde 24 horas antes de decidir.",
+        "Faça alongamentos respiratórios intensificados de 5 minutos logo ao despertar."
+      ],
+      en: [
+        "Light a sandalwood incense in the morning to tune into wisdom and clear your desk.",
+        "Avoid buying superfluous items at the end of the day. Wait 24 hours before deciding.",
+        "Do 5 minutes of intensive breathing stretches right when you wake up."
+      ],
+      de: [
+        "Zünde morgens ein Sandelholzräucherstäbchen an, um Weisheit zu empfangen und deinen Schreibtisch aufzuräumen.",
+        "Vermeide es, am Ende des Tages überflüssige Dinge zu kaufen. Warte 24 Stunden vor einer Entscheidung.",
+        "Mache beim Aufwachen 5 Minuten intensive Atemübungen."
+      ],
+      es: [
+        "Enciende un incienso de sándalo por la mañana para sintonizar la sabiduría y limpia tu mesa.",
+        "Evita comprar artículos superfluos al final del día. Espera 24 horas antes de decidir.",
+        "Haz estiramientos respiratorios intensificados de 5 minutos al despertar."
+      ],
+    };
+    const langTips = tips[lang || 'pt'] || tips['pt'];
+
     return {
-      favorable: matchedFavorableTypes.length > 0 ? matchedFavorableTypes.join(', ') : 'Influências Gerais Neutras',
-      guidance: day % 2 === 0 
-        ? "Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais."
-        : "Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma descontraída com parceiros ou ler sobre espiritualidade onírica.",
-      tip: day % 3 === 0 
-        ? "Acenda um incenso de sândalo de manhã para sintonizar a sabedoria e limpe sua mesa."
-        : day % 3 === 1 
-          ? "Evite comprar itens supérfluos no final do dia. Aguarde 24 horas antes de decidir."
-          : "Faça alongamentos respiratórios intensificados de 5 minutos logo ao despertar."
+      favorable: matchedFavorableTypes.length > 0 ? matchedFavorableTypes.join(', ') : neutralInfluences,
+      guidance: day % 2 === 0 ? guidanceEven : guidanceOdd,
+      tip: day % 3 === 0 ? langTips[0] : day % 3 === 1 ? langTips[1] : langTips[2],
     };
   };
 
@@ -650,10 +687,10 @@ export default function UserDashboardPortal({
         <div className="text-left space-y-1 z-10 max-w-xl">
           <span className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            Portal Ativo Sincronizado
+            {lang === 'de' ? 'Aktives synchronisiertes Portal' : lang === 'en' ? 'Active Synchronized Portal' : lang === 'es' ? 'Portal Activo Sincronizado' : 'Portal Ativo Sincronizado'}
           </span>
           <h2 className="text-base sm:text-lg font-black text-slate-100 tracking-tight leading-snug">
-            Acelere Seus Objetivos, Navegue pelos Portais Ativos
+            {lang === 'de' ? 'Beschleunige deine Ziele, navigiere durch die aktiven Portale' : lang === 'en' ? 'Accelerate Your Goals, Navigate the Active Portals' : lang === 'es' ? 'Acelera tus Objetivos, Navega por los Portales Activos' : 'Acelere Seus Objetivos, Navegue pelos Portais Ativos'}
           </h2>
         </div>
 
@@ -669,13 +706,13 @@ export default function UserDashboardPortal({
             </div>
             <div className="space-y-0.5 min-w-0">
               <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-400 tracking-wide uppercase flex items-center gap-1 flex-wrap font-sans">
-                🪐 Veja o que o universo quer te mostrando
+                🪐 {lang === 'de' ? 'Sieh was das Universum dir zeigen möchte' : lang === 'en' ? 'See what the universe wants to show you' : lang === 'es' ? 'Ve lo que el universo quiere mostrarte' : 'Veja o que o universo quer te mostrando'}
               </span>
-              <p className="text-[9px] text-slate-400 font-medium">Painel do mês e orientações cósmicas.</p>
+              <p className="text-[9px] text-slate-400 font-medium">{lang === 'de' ? 'Monatspanel und kosmische Orientierungen.' : lang === 'en' ? 'Monthly panel and cosmic guidance.' : lang === 'es' ? 'Panel del mes y orientaciones cósmicas.' : 'Painel do mês e orientações cósmicas.'}</p>
             </div>
           </div>
           <span className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider self-end sm:self-center shrink-0 transition shadow-md hover:shadow-amber-500/10 hover:scale-102">
-            Ver tudo →
+            {lang === 'de' ? 'Alles sehen →' : lang === 'en' ? 'See all →' : lang === 'es' ? 'Ver todo →' : 'Ver tudo →'}
           </span>
         </button>
       </div>
@@ -736,7 +773,7 @@ export default function UserDashboardPortal({
           <div className="p-4 bg-slate-950/60 rounded-3xl border border-slate-850/80 space-y-4">
             <div className="flex justify-between items-center border-b border-slate-900 pb-2">
               <span className="text-[10px] font-mono font-black text-slate-500 uppercase tracking-wider block">
-                Navegação Cósmica
+                {lang === 'de' ? 'Kosmische Navigation' : lang === 'en' ? 'Cosmic Navigation' : lang === 'es' ? 'Navegación Cósmica' : 'Navegação Cósmica'}
               </span>
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
             </div>
@@ -1909,14 +1946,14 @@ export default function UserDashboardPortal({
             const totalDreams = dreamsHistory.length;
             const latestDream = totalDreams > 0 ? dreamsHistory[0] : null;
 
-            const dreamTitle = latestDream?.interpretation?.title || "Nenhum sonho sintonizado";
+            const dreamTitle = latestDream?.interpretation?.title || (lang === 'de' ? "Kein Traum synchronisiert" : lang === 'en' ? "No dream synced" : lang === 'es' ? "Ningún sueño sintonizado" : "Nenhum sonho sintonizado");
             const dreamSymbol = latestDream?.interpretation?.detectedAnimals?.[0]?.animal 
                                 || latestDream?.interpretation?.detectedColors?.[0]?.color 
-                                || (totalDreams > 0 ? "" + latestDream?.interpretation?.dreamEnergyType : "Sem símbolos");
-            const dreamEmotion = latestDream?.interpretation?.predominantEmotion?.emotion || "Neutro";
+                                || (totalDreams > 0 ? "" + latestDream?.interpretation?.dreamEnergyType : (lang === 'de' ? "Keine Symbole" : lang === 'en' ? "No symbols" : lang === 'es' ? "Sin símbolos" : "Sem símbolos"));
+            const dreamEmotion = latestDream?.interpretation?.predominantEmotion?.emotion || (lang === 'de' ? "Neutral" : lang === 'en' ? "Neutral" : lang === 'es' ? "Neutro" : "Neutro");
             const dreamTendency = latestDream?.interpretation?.dreamEnergyType 
                                   ? `${latestDream?.interpretation?.dreamEnergyType} (${latestDream?.interpretation?.dreamEnergyIndex} Hz)`
-                                  : "Nenhuma observada";
+                                  : (lang === 'de' ? "Keine beobachtet" : lang === 'en' ? "None observed" : lang === 'es' ? "Ninguna observada" : "Nenhuma observada");
 
             // Chart generation based on real historical dream entries
             const graphDreams = [...dreamsHistory].slice(0, 6).reverse();
@@ -1952,12 +1989,12 @@ export default function UserDashboardPortal({
                     <div>
                       <h3 className="text-xs font-bold font-mono text-slate-205 uppercase tracking-widest flex items-center gap-1.5">
                         <Moon className="w-4 h-4 text-pink-400 animate-pulse" />
-                        Métricas & Estatísticas do Centro de Sonhos
+                        {lang === 'de' ? 'Metriken & Statistiken des Traumzentrums' : lang === 'en' ? 'Dream Center Metrics & Statistics' : lang === 'es' ? 'Métricas & Estadísticas del Centro de Sueños' : 'Métricas & Estatísticas do Centro de Sonhos'}
                       </h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{lang === 'de' ? 'Analytische Intelligenz basierend auf den im Traumtresor archivierten Aufzeichnungen.' : lang === 'en' ? 'Analytical intelligence based on records archived in the Dream Vault.' : lang === 'es' ? 'Visión analítica de inteligencia basada en los registros archivados en el Cofre de Sueños.' : 'Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.'}</p>
                     </div>
                     <span className="px-2 py-0.5 bg-pink-500/10 border border-pink-500/20 text-[9px] font-mono font-bold text-pink-450 rounded-lg shrink-0">
-                      Relatório Onírico ({totalDreams} {totalDreams === 1 ? 'Sonho' : 'Sonhos'})
+                      {lang === 'de' ? `Traumreport (${totalDreams} ${totalDreams === 1 ? 'Traum' : 'Träume'})` : lang === 'en' ? `Dream Report (${totalDreams} ${totalDreams === 1 ? 'Dream' : 'Dreams'})` : lang === 'es' ? `Reporte Onírico (${totalDreams} ${totalDreams === 1 ? 'Sueño' : 'Sueños'})` : `Relatório Onírico (${totalDreams} ${totalDreams === 1 ? 'Sonho' : 'Sonhos'})`}
                     </span>
                   </div>
 
@@ -1979,7 +2016,7 @@ export default function UserDashboardPortal({
                           <span className="text-[11px] font-bold text-slate-200 mt-1 block truncate" title={dreamTitle}>
                             {dreamTitle}
                           </span>
-                          <span className="text-[8px] font-mono text-slate-600">Sintonizado em {latestDream?.date}</span>
+                          <span className="text-[8px] font-mono text-slate-600">{lang === 'de' ? `Synchronisiert am ${latestDream?.date}` : lang === 'en' ? `Synced on ${latestDream?.date}` : lang === 'es' ? `Sintonizado el ${latestDream?.date}` : `Sintonizado em ${latestDream?.date}`}</span>
                         </div>
 
                         <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex flex-col justify-between h-[90px]">
@@ -2011,7 +2048,7 @@ export default function UserDashboardPortal({
                       <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 text-left space-y-3 animate-in fade-in duration-500">
                         <div className="flex justify-between items-center border-b border-slate-900 pb-1.5 flex-wrap gap-2 leading-none">
                           <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">
-                            Variação Energética Onírica (Suas Sintonizações Recentes)
+                            {lang === 'de' ? 'Traumenergetische Variation (Ihre letzten Synchronisierungen)' : lang === 'en' ? 'Oneiric Energy Variation (Your Recent Syncs)' : lang === 'es' ? 'Variación Energética Onírica (Sus Sintonizaciones Recientes)' : 'Variação Energética Onírica (Suas Sintonizações Recentes)'}
                           </span>
                           <div className="flex items-center gap-3 text-[8.5px] font-mono">
                             <div className="flex items-center gap-1">
@@ -2477,7 +2514,7 @@ export default function UserDashboardPortal({
                       className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-rose-600/15"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      Baixar Arquivo APK
+                      {lang === 'de' ? 'APK-Datei herunterladen' : lang === 'en' ? 'Download APK File' : lang === 'es' ? 'Descargar Archivo APK' : 'Baixar Arquivo APK'}
                     </button>
                     <p className="text-[10px] text-slate-500 text-center leading-normal">
                       Compatível com Android 8.0 ou superior. Requer liberação de instalação manual.
@@ -2567,7 +2604,7 @@ export default function UserDashboardPortal({
                         <rect x="14" y="58" width="6" height="6" fill="currentColor" />
                       </svg>
                       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200">
-                        <span className="text-[9px] font-mono text-amber-400 font-bold uppercase tracking-wider text-center p-2">Sintonize com sua câmera 🪐</span>
+                        <span className="text-[9px] font-mono text-amber-400 font-bold uppercase tracking-wider text-center p-2">{lang === 'de' ? 'Mit deiner Kamera synchronisieren 🪐' : lang === 'en' ? 'Tune in with your camera 🪐' : lang === 'es' ? 'Sintoniza con tu cámara 🪐' : 'Sintonize com sua câmera 🪐'}</span>
                       </div>
                     </div>
                     
