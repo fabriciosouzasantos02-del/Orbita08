@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from "react-i18next";
+import { translateUiText, Language } from '../lib/translations';
 import { 
   Heart, Users, Sparkles, UserPlus, UserMinus, Search, 
   MapPin, Award, Check, TrendingUp, RefreshCw, MessageSquare, 
@@ -66,6 +67,7 @@ interface SocialNetworkViewProps {
     friendsCount?: number;
   };
   onUpdateCurrentUser: (updated: any) => void;
+  lang?: Language;
 }
 
 const SEED_USERS = [
@@ -136,8 +138,16 @@ const SEED_USERS = [
   }
 ];
 
-export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: SocialNetworkViewProps) {
-  const { t: tI18n } = useTranslation();
+export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, lang }: SocialNetworkViewProps) {
+  const { t: tI18nRaw } = useTranslation();
+  const tI18n = (text: string) => {
+    if (!text) return "";
+    const res = tI18nRaw(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
   const currentEmail = (currentUser.email || "viajante@starportal.com").toLowerCase().trim();
   
   // State variables

@@ -385,14 +385,14 @@ export default function UserDashboardPortal({
 
             <div className="space-y-1.5 flex-1 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-                <h2 className="text-lg font-extrabold text-slate-100">{user.name || (lang === 'de' ? 'Stellarer Reisender' : lang === 'en' ? 'Star Traveler' : lang === 'es' ? 'Viajero Estelar' : 'Viajante Estelar')}</h2>
+                <h2 className="text-lg font-extrabold text-slate-100">{user.name || t("Viajante Estelar")}</h2>
                 <span className="w-fit mx-auto sm:mx-0 px-2 py-0.5 bg-amber-500/10 border border-amber-500/25 text-[8.5px] font-mono font-bold text-amber-450 rounded-md">
-                  Assinatura Premium Ativa
+                  {t("Assinatura Premium Ativa")}
                 </span>
               </div>
               <div className="text-slate-450 text-xs font-sans space-y-1">
-                {user.email && <p>E-mail: <span className="font-mono text-slate-300">{user.email}</span></p>}
-                <p>Status: <span className="text-amber-400 font-bold font-mono">{lang === 'de' ? 'Warte auf dein primordiales Horoskop' : lang === 'en' ? 'Awaiting your Primordial Chart' : lang === 'es' ? 'Esperando tu Mapa Primordial' : 'Aguardando seu Mapa Primordial'}</span></p>
+                {user.email && <p>{t("E-mail")}: <span className="font-mono text-slate-300">{user.email}</span></p>}
+                <p>Status: <span className="text-amber-400 font-bold font-mono">{t("Aguardando seu Mapa Primordial")}</span></p>
               </div>
             </div>
           </div>
@@ -402,33 +402,33 @@ export default function UserDashboardPortal({
         <div className="bg-gradient-to-r from-amber-950/20 via-slate-900 to-slate-900 p-6 rounded-3xl border border-amber-500/20 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 text-left">
           <div className="space-y-2 max-w-xl">
             <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[9px] font-mono font-black text-amber-450 rounded-lg uppercase tracking-wider">
-              ALINHAMENTO COLETIVO GRATUITO
+              {t("ALINHAMENTO COLETIVO GRATUITO")}
             </span>
-            <h3 className="text-base md:text-lg font-black font-sans text-slate-100 tracking-tight">Sua Assinatura está Pronta. Sincronize seu Mapa Astral!</h3>
+            <h3 className="text-base md:text-lg font-black font-sans text-slate-100 tracking-tight">{t("Sua Assinatura está Pronta. Sincronize seu Mapa Astral!")}</h3>
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
-              Calcule as 12 ordens de casas sob o método clássico Placidus, as 10 distâncias angulares do Sol ao Meio do Céu, o guia numerológico de prosperidade e as sinergias sociais criptografadas.
+              {t("Calcule as 12 ordens de casas sob o método clássico Placidus, as 10 distâncias angulares do Sol ao Meio do Céu, o guia numerológico de prosperidade e as sinergias sociais criptografadas.")}
             </p>
           </div>
           <button
             onClick={onRequestCreateMap}
             className="w-full md:w-auto shrink-0 px-6 py-3 bg-gradient-to-r from-amber-500 to-rose-600 rounded-xl text-xs font-black font-sans uppercase text-slate-950 shadow-lg tracking-wide hover:opacity-100 opacity-90 transition cursor-pointer active:scale-95"
           >
-            Criar Meu Mapa Astral
+            {t("Criar Meu Mapa Astral")}
           </button>
         </div>
 
         {/* 3. EXPLICAÇÃO DAS FUNCIONALIDADES */}
         <div className="space-y-4">
-          <h3 className="text-xs font-bold font-mono text-slate-500 uppercase tracking-widest text-left">Guia de Portais e Funcionalidades Ativas</h3>
+          <h3 className="text-xs font-bold font-mono text-slate-500 uppercase tracking-widest text-left">{t("Guia de Portais e Funcionalidades Ativas")}</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-sans text-left">
             {[
-              { title: "Mapa Natal Placidus Completo", desc: "Mapeamento das 12 ordens de casas, posições exatas dos astros clássicos e modernos em relação ao horizonte e local de nascimento.", highlight: "CÁLCULO GEOMÉTRICO" },
-              { title: "Sinergia Social & Compatibilidade", desc: "Varredura do ecossistema de usuários reais em afinidade afetiva, amizade, prosperidade e energia para sintonizar afinidades mutáveis.", highlight: "CONEXÃO REAL" },
-              { title: "Radar do Dia & Biorritmo", desc: "Acompanhamento detalhado e dinâmico de suas oscilações moleculares e intelectuais com conselhos estratégicos atualizados.", highlight: "FALAS DIÁRIAS" },
-              { title: "Conselheira Orbia", desc: "O auge da sabedoria integrada. Chat interativo e confidencial baseado no seu mapa natal para sanar anseios de carreira e propósitos.", highlight: "SUPORTE INDIVIDUAL" },
-              { title: "Guia Semanal do Tarô", desc: "Sorteio consciente do arcano semanal orientador trazendo as diretrizes práticas para resguardo energético e expansão.", highlight: "ORÁCULO SEMANAL" },
-              { title: "Vibrações de Prosperidade", desc: "Conheça seu caminho evolutivo numerológico, as cores auspiciosas, os amuletos recomendados e dias ideias para contratos.", highlight: "NUMEROLOGIA ATIVA" },
+              { title: t("Mapa Natal Placidus Completo"), desc: t("Mapeamento das 12 ordens de casas, posições exatas dos astros clássicos e modernos em relação ao horizonte e local de nascimento."), highlight: t("CÁLCULO GEOMÉTRICO") },
+              { title: t("Sinergia Social & Compatibilidade"), desc: t("Varredura do ecossistema de usuários reais em afinidade afetiva, amizade, prosperidade e energia para sintonizar afinidades mutáveis."), highlight: t("CONEXÃO REAL") },
+              { title: t("Radar do Dia & Biorritmo"), desc: t("Acompanhamento detalhado e dinâmico de suas oscilações moleculares e intelectuais com conselhos estratégicos atualizados."), highlight: t("FALAS DIÁRIAS") },
+              { title: t("Conselheira Orbia"), desc: t("O auge da sabedoria integrada. Chat interativo e confidencial baseado no seu mapa natal para sanar anseios de carreira e propósitos."), highlight: t("SUPORTE INDIVIDUAL") },
+              { title: t("Guia Semanal do Tarô"), desc: t("Sorteio consciente do arcano semanal orientador trazendo as diretrizes práticas para resguardo energético e expansão."), highlight: t("ORÁCULO SEMANAL") },
+              { title: t("Vibrações de Prosperidade"), desc: t("Conheça seu caminho evolutivo numerológico, as cores auspiciosas, os amuletos recomendados e dias ideias para contratos."), highlight: t("NUMEROLOGIA ATIVA") },
             ].map((func, i) => (
               <div key={i} className="bg-slate-900/30 p-5 rounded-2xl border border-slate-800 space-y-2 flex flex-col justify-between">
                 <div className="space-y-1.55">
@@ -445,7 +445,7 @@ export default function UserDashboardPortal({
 
         {/* 4. DEMONSTRAÇÕES ILUSTRATIVAS (POLISHED BLURRED PREVIEWS) */}
         <div className="space-y-4 pt-4">
-          <h3 className="text-xs font-bold font-mono text-slate-500 uppercase tracking-widest text-left font-bold">Demonstrações Ilustrativas Pré-Mapa</h3>
+          <h3 className="text-xs font-bold font-mono text-slate-500 uppercase tracking-widest text-left font-bold">{t("Demonstrações Ilustrativas Pré-Mapa")}</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left font-sans">
             
@@ -455,18 +455,18 @@ export default function UserDashboardPortal({
                 <span className="p-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs">
                   🔒
                 </span>
-                <span className="font-bold text-xs text-amber-450 tracking-wide uppercase font-mono">Funcionalidade Bloqueada</span>
-                <p className="text-[10px] text-slate-400 max-w-xs leading-normal">Crie seu mapa astral oficial para sintonizar e liberar seu biorritmo científico e estatísticas diárias.</p>
+                <span className="font-bold text-xs text-amber-450 tracking-wide uppercase font-mono">{t("Funcionalidade Bloqueada")}</span>
+                <p className="text-[10px] text-slate-400 max-w-xs leading-normal">{t("Crie seu mapa astral oficial para sintonizar e liberar seu biorritmo científico e estatísticas diárias.")}</p>
               </div>
 
               <div className="flex justify-between items-center border-b border-slate-850 pb-2">
-                <span className="text-[9px] font-mono text-slate-500 uppercase font-bold">⚡ Radar do Dia</span>
+                <span className="text-[9px] font-mono text-slate-500 uppercase font-bold">{t("⚡ Radar do Dia")}</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
               </div>
               <div className="space-y-3 opacity-25">
                 <div className="space-y-1">
                   <div className="flex justify-between text-[11px]">
-                    <span>Energia Vital</span>
+                    <span>{t("Energia Vital")}</span>
                     <span className="font-mono">92%</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
@@ -475,7 +475,7 @@ export default function UserDashboardPortal({
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between text-[11px]">
-                    <span>Produtividade Sideral</span>
+                    <span>{t("Produtividade Sideral")}</span>
                     <span className="font-mono">81%</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
@@ -491,12 +491,12 @@ export default function UserDashboardPortal({
                 <span className="p-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs">
                   🔒
                 </span>
-                <span className="font-bold text-xs text-amber-450 tracking-wide uppercase font-mono">Funcionalidade Bloqueada</span>
-                <p className="text-[10px] text-slate-400 max-w-xs leading-normal">Seu conselho do tarô semanal do destino requer as coordenadas geométricas do seu nascimento.</p>
+                <span className="font-bold text-xs text-amber-450 tracking-wide uppercase font-mono">{t("Funcionalidade Bloqueada")}</span>
+                <p className="text-[10px] text-slate-400 max-w-xs leading-normal">{t("Seu conselho do tarô semanal do destino requer as coordenadas geométricas do seu nascimento.")}</p>
               </div>
 
               <div className="flex justify-between items-center border-b border-slate-850 pb-2">
-                <span className="text-[9px] font-mono text-slate-500 uppercase font-bold">🔮 Arcana Maior Semanal</span>
+                <span className="text-[9px] font-mono text-slate-500 uppercase font-bold">{t("🔮 Arcana Maior Semanal")}</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-405" />
               </div>
               <div className="flex gap-4 items-center opacity-25">
@@ -504,8 +504,8 @@ export default function UserDashboardPortal({
                   ♚
                 </div>
                 <div className="space-y-1 flex-1">
-                  <h4 className="font-bold text-slate-350 text-xs font-sans">O Imperador (Arcano IV)</h4>
-                  <p className="text-[10px] text-slate-500 leading-snug">Autoridade, ordem prática e estabilidade rígida para expandir metas materiais organizadas.</p>
+                  <h4 className="font-bold text-slate-350 text-xs font-sans">{t("O Imperador (Arcano IV)")}</h4>
+                  <p className="text-[10px] text-slate-500 leading-snug">{t("Autoridade, ordem prática e estabilidade rígida para expandir metas materiais organizadas.")}</p>
                 </div>
               </div>
             </div>
@@ -1850,6 +1850,7 @@ export default function UserDashboardPortal({
               <SocialNetworkView 
                 currentUser={user} 
                 onUpdateCurrentUser={onUpdateCurrentUser || (() => {})} 
+                lang={lang}
               />
             </div>
           )}
@@ -2432,7 +2433,7 @@ export default function UserDashboardPortal({
                   <button
                     type="button"
                     onClick={() => {
-                      alert("Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!");
+                      alert(t("Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!"));
                     }}
                     className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-slate-950 text-[9.5px] font-black uppercase rounded-lg tracking-wider transition hover:shadow-lg active:scale-95 cursor-pointer shrink-0"
                   >
@@ -2509,7 +2510,7 @@ export default function UserDashboardPortal({
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                        alert("O download do arquivo APK foi iniciado! Caso seu navegador pergunte, confirme e permita fontes desconhecidas para prosseguir.");
+                        alert(t("O download do arquivo APK foi iniciado! Caso seu navegador pergunte, confirme e permita fontes desconhecidas para prosseguir."));
                       }}
                       className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-rose-600/15"
                     >
@@ -2548,7 +2549,7 @@ export default function UserDashboardPortal({
                     <button
                       type="button"
                       onClick={() => {
-                        alert("Esta aplicação é um PWA completo! Encontre a opção de instalar diretamente no menu de opções do seu navegador (ícone de computador ou adicionar à tela inicial) para rodar como um app nativo.");
+                        alert(t("Esta aplicação é um PWA completo! Encontre a opção de instalar diretamente no menu de opções do seu navegador (ícone de computador ou adicionar à tela inicial) para rodar como um app nativo."));
                       }}
                       className="w-full py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-amber-500/10"
                     >
@@ -2618,7 +2619,7 @@ export default function UserDashboardPortal({
                           type="button"
                           onClick={() => {
                             navigator.clipboard.writeText(window.location.href);
-                            alert("Link do Portal Órbita copiado para o seu clipboard! Compartilhe o link com familiares e amigos.");
+                            alert(t("Link do Portal Órbita copiado para o seu clipboard! Compartilhe o link com familiares e amigos."));
                           }}
                           className="px-4 py-2 bg-slate-900 hover:bg-slate-850 hover:text-indigo-400 border border-slate-800 rounded-xl text-[10.5px] font-bold text-slate-300 tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5 flex-1"
                         >
@@ -2637,7 +2638,7 @@ export default function UserDashboardPortal({
                               }).catch(console.warn);
                             } else {
                               navigator.clipboard.writeText(window.location.href);
-                              alert("Recurso de compartilhamento nativo indisponível. O link do aplicativo foi copiado para a área de transferência!");
+                              alert(t("Recurso de compartilhamento nativo indisponível. O link do aplicativo foi copiado para a área de transferência!"));
                             }
                           }}
                           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-slate-950 font-black rounded-xl text-[10.5px] font-sans uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 flex-1"

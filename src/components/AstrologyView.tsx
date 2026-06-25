@@ -376,7 +376,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
     e.preventDefault();
     if (!newExtraName || !newExtraDate) return;
     if (extraMaps.length >= 2) {
-      alert("Você atingiu o limite de 2 mapas extras permitidos na conta premium.");
+      alert(t("Você atingiu o limite de 2 mapas extras permitidos na conta premium."));
       return;
     }
     setExtraMaps([...extraMaps, {

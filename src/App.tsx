@@ -5126,6 +5126,7 @@ export default function App() {
                   birthDate={user?.birthDate} 
                   userEmail={user?.email || loggedEmail}
                   onRewardPoints={(amount) => setScorePoints(prev => prev + amount)} 
+                  lang={currentLang}
                 />
               </div>
 

@@ -3,6 +3,7 @@ import { User, Shield, Info, LogOut, Globe, Heart, RefreshCw, KeyRound } from "l
 import { Language, translations } from "../translations";
 import { UserProfile } from "../types";
 import { useTranslation } from "react-i18next";
+import { translateUiText } from "../lib/translations";
 
 interface ProfileSettingsTabProps {
   userProfile: UserProfile;
@@ -19,7 +20,16 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
   const [success, setSuccess] = useState(false);
 
   const t = translations[lang];
-  const { t: tI18n } = useTranslation();
+  const { t: tI18nRaw } = useTranslation();
+
+  const tI18n = (text: string) => {
+    if (!text) return "";
+    const res = tI18nRaw(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
 
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,8 +152,8 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
             {/* Lang toggler widget */}
             <div className="space-y-1.5Col space-y-2">
               <span className="text-[10px] sm:text-xs font-semibold text-neutral-500 block">{tI18n("Idioma do Oráculo")}</span>
-              <div className="grid grid-cols-4 gap-1.5 text-xs">
-                {(["pt", "en", "de", "es"] as Language[]).map((l) => (
+              <div className="grid grid-cols-5 gap-1.5 text-xs">
+                {(["pt", "en", "de", "es", "fr"] as Language[]).map((l) => (
                   <button
                     key={l}
                     onClick={() => setLang(l)}

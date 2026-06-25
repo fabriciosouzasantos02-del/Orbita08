@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { Language, translations } from "../translations";
 import { NatalChartData } from "../types";
 import { useTranslation } from "react-i18next";
+import { translateUiText } from "../lib/translations";
 
 interface DashboardTabProps {
   natalChart: NatalChartData;
@@ -14,7 +15,16 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
   const [moonPhaseInfo, setMoonPhaseInfo] = useState({ name: "Lua Nova", symbol: "🌑", percent: 0 });
   const [activeHoroscope, setActiveHoroscope] = useState<'daily' | 'weekly'>('daily');
   const t = translations[lang];
-  const { t: tI18n } = useTranslation();
+  const { t: tI18nRaw } = useTranslation();
+
+  const tI18n = (text: string) => {
+    if (!text) return "";
+    const res = tI18nRaw(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
 
   // Calculate moon phase mathematically based on current date
   useEffect(() => {
@@ -65,35 +75,41 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
       pt: "Hoje a energia convida você a iniciar novos empreendimentos. A Lua ativa sua intuição e propicia o diálogo assertivo.",
       en: "Today the cosmic current encourages starting new projects. The Moon heightens your intuition and fosters clear, assertive expression.",
       de: "Heute ermutigt dich die kosmische Strömung, neue Unternehmungen zu starten. Der Mond stärkt deine Intuition.",
-      es: "Hoy la corriente cósmica te anima a iniciar nuevos emprendimientos. La luna potencia tu intuición y valentía."
+      es: "Hoy la corriente cósmica te anima a iniciar nuevos emprendimientos. La luna potencia tu intuición y valentía.",
+      fr: "Aujourd'hui, l'énergie vous invite à lancer de nouvelles initiatives. La Lune active votre intuition et favorise un dialogue affirmé."
     },
     Touro: {
       pt: "Momento excelente para organizar finanças e planejar de forma minuciosa suas próximas metas corporais e espirituais.",
       en: "Excellent day to organize finances and meticulously plan your next physiological and spiritual objectives.",
       de: "Hervorragender Tag, um Finanzen zu regeln und deine nächsten Lebensziele feinfühlig zu strukturieren.",
-      es: "Día ideal para consolidar tus recursos y planificar detalladamente tus próximas metas materiales y del alma."
+      es: "Día ideal para consolidar tus recursos y planificar detalladamente tus próximas metas materiales y del alma.",
+      fr: "Excellent moment pour organiser vos finances et planifier minutieusement vos prochains objectifs physiques et spirituels."
     },
     Gêmeos: {
       pt: "Mercúrio traz claridade e agilidade ao seu plano de estudos. Um diálogo surpresa trará insights para desvendar mistérios do lar.",
       en: "Mercury brings razor-sharp clarity to your thoughts. A surprising conversation today will unlock keys to solve long-standing puzzles.",
       de: "Merkur schenkt dir messerscharfe mentale Klarheit. Ein überraschendes Gespräch bringt bahnbrechende Erkenntnisse.",
-      es: "Mercurio trae mucha elocuencia y dinamismo a tus ideas. Una conversación oportuna abrirá horizontes impensados."
+      es: "Mercurio trae mucha elocuencia y dinamismo a tus ideas. Una conversación oportuna abrirá horizontes impensados.",
+      fr: "Mercure apporte clarté et agilité à vos études. Un dialogue surprise apportera des éclairages pour révéler les mystères du foyer."
     },
     Câncer: {
       pt: "Sua sensibilidade aflora. Permita-se momentos de interiorização e reconexão com seus sonhos primordiais.",
       en: "Your natural emotional sensitivity is amplified. Allow yourself spaces for meditation and journaling your key subconcious dreams.",
       de: "Deine emotionale Tiefe ist heute besonders stark ausgeprägt. Gönne dir meditative Ruhezeiten.",
-      es: "Tu receptividad natural se agudiza. Dedícate unos instantes de silencio para repensar tus mayores prioridades."
+      es: "Tu receptividad natural se agudiza. Dedícate unos instantes de silencio para repensar tus mayores prioridades.",
+      fr: "Votre sensibilité s'épanouit. Accordez-vous des moments d'intériorisation et de reconnexion avec vos rêves primordiaux."
     },
     default: {
       pt: "Seu signo solar está sob excelentes vibrações celestes. Uma quadratura benéfica estimula ações equilibradas e determinação focada.",
       en: "Your solar coordinate sits under beautiful alignments today. This triggers a balanced motivation to solve key personal goals.",
       de: "Dein Sonnenzeichen empfängt heute kraftvolle kosmische Schwingungen. Nutze den Tag für strukturelle Fortschritte.",
-      es: "Tu regente natal se halla en óptima armonía. Aprovecha esta influencia constructiva para renovar tu fe en el destino."
+      es: "Tu regente natal se halla en óptima armonía. Aprovecha esta influência constructiva para renovar tu fe en el destino.",
+      fr: "Votre signe solaire est sous d'excellentes vibrations célestes. Un aspect bénéfique stimule des actions équilibrées et une détermination ciblée."
     }
   };
 
   const currentHoroscope = dailyHoroscopes[sunSign] || dailyHoroscopes.default;
+  const horoscopeText = currentHoroscope[lang] || currentHoroscope['en'] || currentHoroscope['pt'];
 
   return (
     <div className="space-y-6">
