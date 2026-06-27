@@ -4,6 +4,7 @@ import { Language, translations } from "../translations";
 import { UserProfile } from "../types";
 import { useTranslation } from "react-i18next";
 import { translateUiText } from "../lib/translations";
+import { useIdioma } from "../context/IdiomaContext";
 
 interface ProfileSettingsTabProps {
   userProfile: UserProfile;
@@ -13,6 +14,7 @@ interface ProfileSettingsTabProps {
 }
 
 export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogout }: ProfileSettingsTabProps) {
+  const { mudarIdioma } = useIdioma();
   const [name, setName] = useState(userProfile.name);
   const [birthCity, setBirthCity] = useState(userProfile.birthDetails.birthCity);
   const [birthTime, setBirthTime] = useState(userProfile.birthDetails.birthTime);
@@ -156,7 +158,10 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
                 {(["pt", "en", "de", "es", "fr"] as Language[]).map((l) => (
                   <button
                     key={l}
-                    onClick={() => setLang(l)}
+                    onClick={() => {
+                      setLang(l);
+                      mudarIdioma(l as any);
+                    }}
                     className={`py-1.5 border rounded-lg uppercase font-bold text-center transition cursor-pointer ${
                       lang === l 
                         ? "bg-neutral-900 text-white border-neutral-900" 

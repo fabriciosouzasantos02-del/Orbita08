@@ -197,10 +197,10 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                   >
                     
                     {/* Entry Header */}
-                    <div className="flex justify-between items-start gap-4">
+                    <div justify-between="true" className="flex justify-between items-start gap-4">
                       <div>
                         <span className="text-[10px] text-neutral-400 font-medium">{dream.date}</span>
-                        <h4 className="font-display font-semibold text-neutral-950 text-sm">{dream.title}</h4>
+                        <h4 className="font-display font-semibold text-neutral-950 text-sm">{tI18n(dream.title)}</h4>
                       </div>
                       
                       <div className="flex items-center gap-1.5">
@@ -219,7 +219,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                     </div>
 
                     <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
-                      {dream.content}
+                      {tI18n(dream.content)}
                     </p>
 
                     {/* Symbols pill tag row */}
@@ -227,7 +227,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {dream.symbols.map(sym => (
                           <span key={sym} className="px-2 py-0.5 bg-neutral-100 text-neutral-600 rounded-md font-mono text-[10px]">
-                            #{sym}
+                            #{tI18n(sym)}
                           </span>
                         ))}
                       </div>
@@ -240,9 +240,33 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                           <Feather className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
                           <span>{tI18n("Revelação Arquetípica Integral")}</span>
                         </span>
-                        <p className="text-[11px] text-neutral-700 leading-relaxed font-sans">
-                          {dream.aiAnalysis}
-                        </p>
+                        <div className="text-[11px] text-neutral-700 leading-relaxed font-sans">
+                          {typeof dream.aiAnalysis === 'object' && dream.aiAnalysis !== null ? (
+                            <div className="space-y-2 text-xs">
+                              {dream.aiAnalysis.title && (
+                                <p className="font-semibold text-neutral-900 border-b border-neutral-100 pb-1 text-sm">
+                                  {dream.aiAnalysis.title}
+                                </p>
+                              )}
+                              {dream.aiAnalysis.mainMeaning && (
+                                <p><strong className="text-indigo-950">{tI18n("Significado Principal")}:</strong> {dream.aiAnalysis.mainMeaning}</p>
+                              )}
+                              {dream.aiAnalysis.psychological && (
+                                <p><strong>{tI18n("Psicológico")}:</strong> {dream.aiAnalysis.psychological}</p>
+                              )}
+                              {dream.aiAnalysis.spiritual && (
+                                <p><strong>{tI18n("Espiritual")}:</strong> {dream.aiAnalysis.spiritual}</p>
+                              )}
+                              {dream.aiAnalysis.oracleAdvice && (
+                                <p className="italic text-indigo-700 bg-indigo-50/50 p-1.5 rounded-lg border border-indigo-100/50 mt-1">
+                                  ★ <strong>{tI18n("Conselho do Oráculo")}:</strong> {dream.aiAnalysis.oracleAdvice}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p>{tI18n(dream.aiAnalysis as unknown as string)}</p>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div className="pt-2 flex justify-end">

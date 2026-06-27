@@ -2,6 +2,8 @@ import React from "react";
 import { Layers, HelpCircle, Palette, Binary, ArrowUpRight } from "lucide-react";
 import { Language, translations } from "../translations";
 import { NumerologyData } from "../types";
+import { useTranslation } from "react-i18next";
+import { translateUiText } from "../lib/translations";
 
 interface NumerologyTabProps {
   numerologyData: NumerologyData;
@@ -10,6 +12,16 @@ interface NumerologyTabProps {
 
 export default function NumerologyTab({ numerologyData, lang }: NumerologyTabProps) {
   const t = translations[lang];
+  const { t: tI18nRaw } = useTranslation();
+
+  const tI18n = (text: string) => {
+    if (!text) return "";
+    const res = tI18nRaw(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
 
   // In depth Pythagorean descriptions for numbers 1-9, plus master numbers 11, 22, 33
   const numbersDictionary: Record<number, { title: string; keyword: string; desc: string }> = {
@@ -71,13 +83,16 @@ export default function NumerologyTab({ numerologyData, lang }: NumerologyTabPro
   };
 
   const getNumberInfo = (num: number) => {
-    return (
-      numbersDictionary[num] || {
-        title: "Energia Sintética Universal",
-        keyword: "Espiritualidade, Equilíbrio, Sincronia",
-        desc: "Um vetor vibracional místico idealizado para motivar conexões elevadas com o plano celeste."
-      }
-    );
+    const raw = numbersDictionary[num] || {
+      title: "Energia Sintética Universal",
+      keyword: "Espiritualidade, Equilíbrio, Sincronia",
+      desc: "Um vetor vibracional místico idealizado para motivar conexões elevadas com o plano celeste."
+    };
+    return {
+      title: tI18n(raw.title),
+      keyword: tI18n(raw.keyword),
+      desc: tI18n(raw.desc)
+    };
   };
 
   const cardsByRole = [
@@ -136,7 +151,7 @@ export default function NumerologyTab({ numerologyData, lang }: NumerologyTabPro
       {/* Expanded explanations details board */}
       <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm space-y-4">
         <h3 className="font-display font-bold text-neutral-900 text-sm border-b border-neutral-100 pb-3">
-          Leitura Detalhada de seus Números Força
+          {tI18n("Leitura Detalhada de seus Números Força")}
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

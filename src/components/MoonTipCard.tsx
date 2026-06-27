@@ -68,7 +68,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
         const res = await fetch('/api/astrology/moon-tip', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: userName, birthDate: birthDate })
+          body: JSON.stringify({ name: userName, birthDate: birthDate, lang: lang })
         });
         if (res.ok) {
           const fetchedData = await res.json();

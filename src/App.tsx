@@ -87,6 +87,7 @@ import { generatePersonalizedProsperityMap } from './components/prosperityEngine
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
 import { PremiumConversionScreen } from './components/PremiumConversionScreen';
 import { getTranslation, getInitialLanguage, translateUiText, Language } from './lib/translations';
+import { useIdioma } from './context/IdiomaContext';
 
 // High-end Elite Celestial Logo Component
 export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
@@ -668,6 +669,8 @@ const localLangDict: Record<string, Record<string, string>> = {
 };
 
 export default function App() {
+  const { idioma, mudarIdioma, t: tContext } = useIdioma();
+
   // Session / Authentication state
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -1533,7 +1536,8 @@ export default function App() {
           birthCity: extraDetails.birthCity || "Desconhecida",
           isUnknownTime: false,
           latitude: extraDetails.latitude,
-          longitude: extraDetails.longitude
+          longitude: extraDetails.longitude,
+          lang: lang || 'pt'
         })
       });
       const data = await response.json();
@@ -2178,10 +2182,24 @@ export default function App() {
   // Language settings state
   const [lang, setLangState] = useState<Language>(getInitialLanguage());
   const setLang = async (newLang: Language) => {
+    // 4. Update the global context state first
+    mudarIdioma(newLang as any);
     setLangState(newLang);
     setCurrentLang(newLang);
     i18n.changeLanguage(newLang);
     localStorage.setItem('orbi_preferred_language', newLang);
+    if (user && user.birthDate) {
+      triggerGenerateMainMap({
+        name: user.name,
+        birthDate: user.birthDate,
+        birthTime: user.birthTime,
+        birthCity: user.birthCity,
+        isUnknownTime: user.isUnknownTime,
+        latitude: user.latitude,
+        longitude: user.longitude,
+        currentChartId: user.currentChartId
+      }, newLang);
+    }
     if (isLoggedIn && loggedEmail) {
       try {
         const nextUser = {
@@ -2205,6 +2223,13 @@ export default function App() {
       i18n.changeLanguage(lang);
     }
   }, [lang]);
+
+  // Synchronize Context language change to App state
+  useEffect(() => {
+    if (idioma && idioma !== lang) {
+      setLangState(idioma as any);
+    }
+  }, [idioma]);
 
   // Local helper to get static translations for settings on the fly
   const tLocal = (key: string, replacement?: any): string => {
@@ -2552,7 +2577,7 @@ export default function App() {
   };
 
   // Fetch / Generate core maps matching user details
-  const triggerGenerateMainMap = async (details: any) => {
+  const triggerGenerateMainMap = async (details: any, forcedLang?: Language) => {
     // 1. INSTRUMENTAL OPTIMIZATION: Instantaneous client-side Placidus math calculation.
     // This allows the circular chart, astral degrees, and aspects to render immediately (<= 1ms)
     // with no loading screens or infinite spinners, matching the fast Astrolink experience.
@@ -2628,6 +2653,8 @@ export default function App() {
           }
         }
 
+        const activeLang = forcedLang || idioma || lang || 'pt';
+
         if (dbChart && dbChart.mapData && dbChart.numerology) {
           console.log("[Astro DB] Natal chart successfully restored from Firestore Cloud!");
           setMapData(dbChart.mapData);
@@ -2636,7 +2663,7 @@ export default function App() {
           return;
         }
 
-        // Fallback to traditional cache
+        // Fallback to traditional cache with language check
         try {
           const cached = await loadCalculationCache(email, "natal_chart");
           if (cached && cached.parameters) {
@@ -2645,7 +2672,8 @@ export default function App() {
               p.birthDate === details.birthDate &&
               p.birthTime === details.birthTime &&
               p.birthCity === details.birthCity &&
-              p.isUnknownTime === details.isUnknownTime;
+              p.isUnknownTime === details.isUnknownTime &&
+              (!p.lang || p.lang === activeLang);
             if (isMatch && cached.map && cached.numerology) {
               console.log("[Intelligent Cache] Natal chart loaded from Firestore cache.");
               setMapData(cached.map);
@@ -2663,6 +2691,7 @@ export default function App() {
       // This prevents the slow Gemini API from locking the UI with a spinner.
       let data;
       try {
+        const activeLang = forcedLang || idioma || lang || 'pt';
         const response = await fetch("/api/astrology/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -2674,7 +2703,8 @@ export default function App() {
             birthCity: details.birthCity,
             isUnknownTime: details.isUnknownTime,
             latitude: details.latitude !== undefined ? details.latitude : user.latitude,
-            longitude: details.longitude !== undefined ? details.longitude : user.longitude
+            longitude: details.longitude !== undefined ? details.longitude : user.longitude,
+            lang: activeLang
           })
         });
         if (response.ok) {
@@ -2726,12 +2756,14 @@ export default function App() {
         }
 
         try {
+          const activeLang = forcedLang || idioma || lang || 'pt';
           await saveCalculationCache(email, "natal_chart", {
             parameters: {
               birthDate: details.birthDate,
               birthTime: details.birthTime,
               birthCity: details.birthCity,
-              isUnknownTime: details.isUnknownTime
+              isUnknownTime: details.isUnknownTime,
+              lang: activeLang
             },
             map: data.map,
             numerology: data.numerology
@@ -3153,7 +3185,7 @@ export default function App() {
       const response = await fetch("/api/oraculo/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: oracleQuestion })
+        body: JSON.stringify({ question: oracleQuestion, lang: currentLang })
       });
       const data = await response.json();
       setOracleResponse(data);
@@ -6512,13 +6544,13 @@ export default function App() {
                   <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl" />
                   <div className="relative">
                     <span className="px-3 py-1 rounded-full text-[10px] uppercase font-mono font-semibold tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                      Módulo Trânsitos e Energias Diárias
+                      {tLocal("Módulo Trânsitos e Energias Diárias")}
                     </span>
                     <h1 className="text-2xl md:text-3xl font-sans font-bold tracking-tight text-slate-100 mt-2">
-                      Radar Biológico & Tendências
+                      {tLocal("Radar Biológico & Tendências")}
                     </h1>
                     <p className="text-xs text-slate-400 max-w-xl mt-1">
-                      Monitore biorritmos matemáticos, previsões de trânsitos celestes, e o ciclo lunar ativo para planejar suas melhores ações do dia.
+                      {tLocal("Monitore biorritmos matemáticos, previsões de trânsitos celestes, e o ciclo lunar ativo para planejar suas melhores ações do dia.")}
                     </p>
                   </div>
                 </div>
@@ -6528,20 +6560,20 @@ export default function App() {
                   {/* Radar do Dia Subcomponent */}
                   <div className="lg:col-span-4 bg-slate-900/50 p-6 rounded-3xl border border-slate-800 space-y-4">
                     <div className="pb-2 border-b border-slate-850">
-                      <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Radar Diário</h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Influências transitórias de hoje</p>
+                      <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{tLocal("Radar Diário")}</h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{tLocal("Influências transitórias de hoje")}</p>
                     </div>
 
                     <div className="space-y-3">
                       <div className="p-3 bg-slate-950 rounded-xl border border-slate-850">
-                        <span className="text-[9px] font-mono text-slate-500 block uppercase">Frequência Regente</span>
+                        <span className="text-[9px] font-mono text-slate-500 block uppercase">{tLocal("Frequência Regente")}</span>
                         <div className="text-xs font-bold text-emerald-400 mt-1">{dailyRadar.energyOfDay}</div>
                       </div>
 
                       {/* Disposition Level widget gauge */}
                       <div className="space-y-1 pt-1">
                         <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-400">Nível de Disposição Física</span>
+                          <span className="text-slate-400">{tLocal("Nível de Disposição Física")}</span>
                           <span className="font-mono text-emerald-400 font-bold">{dailyRadar.dispositionLevel}%</span>
                         </div>
                         <div className="w-full h-2 rounded bg-slate-950 overflow-hidden">
@@ -6551,17 +6583,17 @@ export default function App() {
 
                       {/* Best hours timeline lists */}
                       <div className="space-y-2 pt-2 text-[11px]">
-                        <strong className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Melhores Janelas Horas:</strong>
+                        <strong className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">{tLocal("Melhores Janelas Horas:")}</strong>
                         <div className="flex justify-between p-2 bg-slate-950/40 rounded-lg">
-                          <span className="text-slate-400">Produtividade</span>
+                          <span className="text-slate-400">{tLocal("Produtividade")}</span>
                           <span className="font-mono text-slate-200">{dailyRadar.bestTimeProductivity}</span>
                         </div>
                         <div className="flex justify-between p-2 bg-slate-950/40 rounded-lg">
-                          <span className="text-slate-400">Relacionamentos</span>
+                          <span className="text-slate-400">{tLocal("Relacionamentos")}</span>
                           <span className="font-mono text-rose-400">{dailyRadar.bestTimeRelationships}</span>
                         </div>
                         <div className="flex justify-between p-2 bg-slate-950/40 rounded-lg">
-                          <span className="text-slate-400">Foco / Estudos</span>
+                          <span className="text-slate-400">{tLocal("Foco / Estudos")}</span>
                           <span className="font-mono text-sky-400">{dailyRadar.bestTimeStudies}</span>
                         </div>
                       </div>
@@ -6571,15 +6603,18 @@ export default function App() {
                   {/* Informational Prompt block on Biorhythm integration */}
                   <div className="lg:col-span-8 bg-slate-900/10 p-6 rounded-3xl border border-slate-800 flex flex-col justify-center space-y-4">
                     <span className="px-3 py-1 rounded-full text-[9px] uppercase font-mono font-semibold tracking-wider text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 w-fit">
-                      Sincronismo Quântico Ativado
+                      {tLocal("Sincronismo Quântico Ativado")}
                     </span>
-                    <h3 className="text-base font-bold text-slate-100 uppercase tracking-tight">Sintonização do Potencial de Vida</h3>
+                    <h3 className="text-base font-bold text-slate-100 uppercase tracking-tight">{tLocal("Sintonização do Potencial de Vida")}</h3>
                     <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      O Biorritmo auxilia você a sincronizar seus picos de eficiência diários em cada uma das 7 esferas de experiência vital. Role para baixo ou navegue ao lado para analisar detalhadamente seu gráfico de 15 dias completo e o cronômetro correspondente de transições de fases física, emocional e espiritual.
+                      {tLocal("O Biorritmo auxilia você a sincronizar seus picos de eficiência diários em cada uma das 7 esferas de experiência vital. Role para baixo ou navegue ao lado para analisar detalhadamente seu gráfico de 15 dias completo e o cronômetro correspondente de transições de fases física, emocional e espiritual.")}
                     </p>
                     <div className="flex gap-2 items-center text-[11px] font-mono text-indigo-305">
                       <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
-                      <span>Integração com {user?.birthDate ? `Nascimento: ${user.birthDate}` : 'suas datas astrológicas'}</span>
+                      <span>
+                        {lang === 'de' ? 'Integration mit Geburt:' : lang === 'en' ? 'Integration with Birth:' : lang === 'es' ? 'Integración con Nacimiento:' : lang === 'fr' ? 'Intégration avec Naissance:' : 'Integração com Nascimento:'}{" "}
+                        {user?.birthDate ? user.birthDate : (lang === 'de' ? 'Ihre astrologischen Daten' : lang === 'en' ? 'your astrological dates' : lang === 'es' ? 'sus fechas astrológicas' : lang === 'fr' ? 'vos dates astrologiques' : 'suas datas astrológicas')}
+                      </span>
                     </div>
                   </div>
 

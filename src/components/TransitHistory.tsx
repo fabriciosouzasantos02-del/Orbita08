@@ -68,7 +68,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
       const weekKey = getWeeklyCacheKey();
 
       if (email) {
-        const cachedTransits = await loadCalculationCache(email, `weekly_transits_${weekKey}`);
+        const cachedTransits = await loadCalculationCache(email, `weekly_transits_${weekKey}_${lang || 'pt'}`);
         if (cachedTransits && Array.isArray(cachedTransits)) {
           console.log("[Intelligent Cache] Loaded weekly transits from Firestore cache.");
           setEvents(cachedTransits);
@@ -80,7 +80,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
       const res = await fetch('/api/astrology/transits-month', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: userName, birthDate: birthDate }),
+        body: JSON.stringify({ name: userName, birthDate: birthDate, lang: lang || 'pt' }),
       });
       if (!res.ok) {
         throw new Error('Falha ao obter histórico de trânsitos celestes.');
@@ -89,7 +89,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
       if (data && Array.isArray(data.events)) {
         setEvents(data.events);
         if (email) {
-          await saveCalculationCache(email, `weekly_transits_${weekKey}`, data.events);
+          await saveCalculationCache(email, `weekly_transits_${weekKey}_${lang || 'pt'}`, data.events);
         }
       } else {
         throw new Error('Formato de dados inesperado recebido do servidor.');
@@ -104,7 +104,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
 
   useEffect(() => {
     fetchTransits();
-  }, [userName, birthDate]);
+  }, [userName, birthDate, lang]);
 
   // Extract unique planets from events for filters
   const uniquePlanets = Array.from(new Set(events.map((e) => e.planet))).filter(Boolean);

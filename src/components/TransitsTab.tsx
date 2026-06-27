@@ -3,6 +3,8 @@ import { Zap, Calendar, Shuffle, CloudSun, AlertTriangle, Eye } from "lucide-rea
 import { motion } from "motion/react";
 import { Language, translations } from "../translations";
 import { NatalChartData } from "../types";
+import { useTranslation } from "react-i18next";
+import { translateUiText } from "../lib/translations";
 
 interface TransitsTabProps {
   natalChart: NatalChartData;
@@ -11,6 +13,16 @@ interface TransitsTabProps {
 
 export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
   const t = translations[lang];
+  const { t: tI18nRaw } = useTranslation();
+
+  const tI18n = (text: string) => {
+    if (!text) return "";
+    const res = tI18nRaw(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
 
   // Mock list of current transits of this day (moving planets)
   const currentTransits = [
@@ -27,18 +39,18 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
       {/* Intro Header */}
       <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Monitor em Tempo Real</span>
+          <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{tI18n("Monitor em Tempo Real")}</span>
           <h2 className="text-xl font-display font-semibold text-neutral-900 leading-tight">
-            Seus Trânsitos Horários e Energias do Dia
+            {tI18n("Seus Trânsitos Horários e Energias do Dia")}
           </h2>
           <p className="text-neutral-500 text-xs">
-            Análise de como os planetas flutuam sobre sua composição natal de nascimento.
+            {tI18n("Análise de como os planetas flutuam sobre sua composição natal de nascimento.")}
           </p>
         </div>
         
         <div className="px-3 py-1.5 bg-neutral-50 border border-neutral-100 rounded-lg flex items-center gap-2 text-xs text-neutral-500">
           <Calendar className="w-4 h-4 text-neutral-450" />
-          <span>Sincronizado: Hoje</span>
+          <span>{tI18n("Sincronizado: Hoje")}</span>
         </div>
       </div>
 
@@ -47,7 +59,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
         {/* Dynamic sky transit card list */}
         <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm md:col-span-7 space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Planetas Transitando no Céu</h3>
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{tI18n("Planetas Transitando no Céu")}</h3>
             <CloudSun className="w-5 h-5 text-indigo-500" />
           </div>
 
@@ -59,10 +71,10 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-neutral-850 text-sm">{transit.planet}</span>
-                    <span className="text-xs text-neutral-450">em</span>
+                    <span className="font-semibold text-neutral-850 text-sm">{tI18n(transit.planet)}</span>
+                    <span className="text-xs text-neutral-450">{tI18n("em")}</span>
                     <span className="px-2 py-0.5 bg-neutral-100 text-neutral-700 text-[10px] font-semibold rounded">
-                      {transit.sign}
+                      {tI18n(transit.sign)}
                     </span>
                     {transit.isRetrograde && (
                       <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 font-bold text-[9px] rounded uppercase tracking-wider flex items-center gap-0.5">
@@ -72,7 +84,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
                     )}
                   </div>
                   <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
-                    {transit.influence}
+                    {tI18n(transit.influence)}
                   </p>
                 </div>
               </div>
@@ -83,14 +95,14 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
         {/* Natal Aspect Impact Widget */}
         <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm md:col-span-5 flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Pontuações Celestes Planas</span>
+            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{tI18n("Pontuações Celestes Planas")}</span>
             <Zap className="w-4 h-4 text-indigo-500" />
           </div>
 
           <div className="space-y-4 py-3">
             <div>
               <div className="flex justify-between text-xs font-semibold text-neutral-800 mb-1">
-                <span>Criatividade e Alinhamento</span>
+                <span>{tI18n("Criatividade e Alinhamento")}</span>
                 <span>85%</span>
               </div>
               <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
@@ -100,7 +112,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
 
             <div>
               <div className="flex justify-between text-xs font-semibold text-neutral-800 mb-1">
-                <span>Diálogo e Escrita</span>
+                <span>{tI18n("Diálogo e Escrita")}</span>
                 <span>90%</span>
               </div>
               <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
@@ -110,7 +122,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
 
             <div>
               <div className="flex justify-between text-xs font-semibold text-neutral-800 mb-1">
-                <span>Vontade Física e Esporte</span>
+                <span>{tI18n("Vontade Física e Esporte")}</span>
                 <span>55%</span>
               </div>
               <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
@@ -120,7 +132,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
           </div>
 
           <div className="p-3 bg-neutral-55 bg-indigo-50/20 rounded-xl border border-indigo-150/50 text-[11px] text-indigo-850 leading-relaxed">
-            <strong>Dica do Oráculo:</strong> Hoje o fluxo solar favorece a revisão estrutural. Ótimo período para finalizar escritos e praticar interiorizações sem pressões externas deletérias.
+            <strong>{tI18n("Dica do Oráculo:")}</strong> {tI18n("Hoje o fluxo solar favorece a revisão estrutural. Ótimo período para finalizar escritos e praticar interiorizações sem pressões externas deletérias.")}
           </div>
         </section>
 

@@ -243,7 +243,7 @@ export default function UserDashboardPortal({
         const res = await fetch("/api/astrology/daily-missions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userProfile: user })
+          body: JSON.stringify({ userProfile: user, lang: lang })
         });
         if (res.ok) {
           const data = await res.json();
@@ -292,7 +292,8 @@ export default function UserDashboardPortal({
             weather: defaultWeather,
             biorhythm: defaultBiorhythm,
             location: locationStr,
-            lastDream: dreamsHistory && dreamsHistory.length > 0 ? dreamsHistory[0] : null
+            lastDream: dreamsHistory && dreamsHistory.length > 0 ? dreamsHistory[0] : null,
+            lang: lang
           })
         });
         if (res.ok) {
