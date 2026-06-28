@@ -1018,7 +1018,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <span className="text-[8px] font-mono text-slate-500 uppercase block">{visitor.time}</span>
-                            <span className="text-xs font-bold font-mono text-cyan-400">{visitor.match}% Afinidade</span>
+                            <span className="text-xs font-bold font-mono text-cyan-400">{visitor.match}% {t("Afinidade")}</span>
                           </div>
                           
                           <div className="p-2 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/10">
@@ -1060,7 +1060,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
 
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono text-[10px] rounded-full font-bold">
                             <Sparkles className="w-3.5 h-3.5" />
-                            {visitor.match}% Alinhamento Vibracional
+                            {visitor.match}% {t("Alinhamento Vibracional")}
                           </div>
                         </div>
 
@@ -1068,21 +1068,21 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-3 pt-1">
                           
                           <div className="space-y-1">
-                            <span className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Ressonância Vibracional</span>
+                            <span className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Ressonância Vibracional")}</span>
                             <p className="text-xs text-indigo-300 font-mono font-semibold bg-indigo-500/5 p-2 rounded-xl border border-indigo-500/10">
                               ⚡ {visitor.astroAura}
                             </p>
                           </div>
 
                           <div className="space-y-1">
-                            <span className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Objetivo da Visita Sideral</span>
+                            <span className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Objetivo da Visita Sideral")}</span>
                             <p className="text-xs text-slate-350 leading-relaxed">
                               {visitor.purpose}
                             </p>
                           </div>
 
                           <div className="p-3 bg-slate-950 rounded-xl border border-slate-850/60 flex justify-between items-center text-[10px] font-mono text-slate-400">
-                            <span>Último acesso ao seu sinal:</span>
+                            <span>{t("Último acesso ao seu sinal:")}</span>
                             <span className="text-cyan-400 font-bold">{visitor.time}</span>
                           </div>
 
@@ -1103,7 +1103,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                             }`}
                           >
                             <Sparkles className="w-3.5 h-3.5" />
-                            <span>{notifiedVisitors[visitor.id] ? "Sinal Cósmico Enviado!" : "Enviar Sinal Cósmico de Sintonia"}</span>
+                            <span>{notifiedVisitors[visitor.id] ? t("Sinal Cósmico Enviado!") : t("Enviar Sinal Cósmico de Sintonia")}</span>
                           </button>
                         </div>
 
@@ -1112,7 +1112,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                   })() : (
                     <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-805 text-center text-slate-400 space-y-2">
                       <Eye className="w-8 h-8 text-slate-800 mx-auto animate-pulse" />
-                      <p className="text-xs font-mono">Selecione algum visitante recente da lista para expandir seus relatórios de acesso planetário e intenção astrológica.</p>
+                      <p className="text-xs font-mono">{t("Selecione algum visitante recente da lista para expandir seus relatórios de acesso planetário e intenção astrológica.")}</p>
                     </div>
                   )}
                 </div>
@@ -1136,10 +1136,10 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-slate-850 pb-3">
                 <div>
                   <h4 className="text-[10px] font-bold font-mono text-amber-500 uppercase tracking-widest">
-                    Procure por amigos ou pessoas com o perfil astrológico desejado.
+                    {t("Procure por amigos ou pessoas com o perfil astrológico desejado.")}
                   </h4>
                   <h2 className="text-base font-bold text-white mt-1 uppercase font-mono tracking-tight">
-                    Encontrar Pessoas
+                    {t("Encontrar Pessoas")}
                   </h2>
                 </div>
                 
@@ -1148,7 +1148,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 </span>
               </div>
               <p className="text-xs text-slate-405 leading-relaxed">
-                Utilize o filtro de busca avançada para cruzar posições de Sol, Ascendente, Lua, Vênus e mais. Encontre afinidades naturais ou posições astronômicas específicas perfeitas para suas sinastrias.
+                {t("Utilize o filtro de busca avançada para cruzar posições de Sol, Ascendente, Lua, Vênus e mais. Encontre afinidades naturais ou posições astronômicas específicas perfeitas para suas sinastrias.")}
               </p>
             </div>
 

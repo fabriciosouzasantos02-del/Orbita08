@@ -9,8 +9,8 @@ interface DreamsTabProps {
   lang: Language;
 }
 
-export default function DreamsTab({ lang }: DreamsTabProps) {
-  const [dreams, setDreams] = useState<DreamEntry[]>([
+const DEFAULT_DREAMS_BY_LANG: Record<string, DreamEntry[]> = {
+  pt: [
     {
       id: "dream_1",
       title: "Voando sobre um mar azul-marinho",
@@ -20,7 +20,57 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
       symbols: ["voar", "mar", "chave"],
       aiAnalysis: "Este sonho evoca uma forte sensação de libertação e novos limiares intelectuais (a chave d'ouro). Seu subconsciente indica que você está destrancando velhos limites emocionais para clarear os pensamentos."
     }
-  ]);
+  ],
+  en: [
+    {
+      id: "dream_1",
+      title: "Flying over a deep blue sea",
+      content: "I floated high, wingless. The sea below was calm, and there was a huge golden key floating on the grey horizon.",
+      date: "2026-06-20",
+      mood: "peaceful",
+      symbols: ["flying", "sea", "key"],
+      aiAnalysis: "This dream evokes a strong sense of liberation and new intellectual thresholds (the golden key). Your subconscious indicates that you are unlocking old emotional boundaries to clear your thoughts."
+    }
+  ],
+  es: [
+    {
+      id: "dream_1",
+      title: "Volando sobre un mar azul marino",
+      content: "Flotaba alto, sin alas. El mar de abajo estaba en calma y había una enorme llave dorada flotando en el horizonte gris.",
+      date: "2026-06-20",
+      mood: "peaceful",
+      symbols: ["volar", "mar", "llave"],
+      aiAnalysis: "Este sueño evoca una fuerte sensación de liberación y nuevos umbrales intelectuales (la llave de oro). Tu subconsciente indica que estás desbloqueando viejos límites emocionales para despejar tus pensamientos."
+    }
+  ],
+  de: [
+    {
+      id: "dream_1",
+      title: "Über ein tiefblaues Meer fliegen",
+      content: "Ich schwebte hoch oben, ohne Flügel. Das Meer darunter war ruhig, und am grauen Horizont schwebte ein riesiger goldener Schlüssel.",
+      date: "2026-06-20",
+      mood: "peaceful",
+      symbols: ["fliegen", "Meer", "Schlüssel"],
+      aiAnalysis: "Dieser Traum ruft ein starkes Gefühl der Befreiung und neue intellektuelle Schwellen hervor (der goldene Schlüssel). Ihr Unterbewusstsein signalisiert, dass Sie alte emotionale Grenzen freisetzen, um Ihre Gedanken zu klären."
+    }
+  ],
+  fr: [
+    {
+      id: "dream_1",
+      title: "Voler au-dessus d'une mer bleu marine",
+      content: "Je flottais haut, sans ailes. La mer en dessous était calme, et il y avait une immense clé dorée qui flottait à l'horizon gris.",
+      date: "2026-06-20",
+      mood: "peaceful",
+      symbols: ["voler", "mer", "clé"],
+      aiAnalysis: "Ce rêve évoque un fort sentiment de libération et de nouveaux seuils intellectuels (la clé d'or). Votre subconscient indique que vous débloquez d'anciennes limites émotionnelles pour clarifier vos pensées."
+    }
+  ]
+};
+
+export default function DreamsTab({ lang }: DreamsTabProps) {
+  const [dreams, setDreams] = useState<DreamEntry[]>(() => {
+    return DEFAULT_DREAMS_BY_LANG[lang] || DEFAULT_DREAMS_BY_LANG["pt"];
+  });
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");

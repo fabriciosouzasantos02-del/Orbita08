@@ -52,7 +52,8 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
         body: JSON.stringify({
           email: userEmail,
           planId: selectedPlan,
-          planName: activePlan.name
+          planName: activePlan.name,
+          lang: currentLang
         })
       });
 

@@ -15,23 +15,120 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
   const t = translations[lang];
   const { t: tI18nRaw } = useTranslation();
 
+  const localTranslations: Record<string, Record<string, string>> = {
+    en: {
+      "Monitor em Tempo Real": "Real-Time Monitor",
+      "Seus Trânsitos Horários e Energias do Dia": "Your Hourly Transits and Daily Energies",
+      "Análise de como os planetas flutuam sobre sua composição natal de nascimento.": "Analysis of how planets float over your natal birth chart.",
+      "Sincronizado: Hoje": "Synchronized: Today",
+      "Planetas Transitando no Céu": "Planets Transiting in the Sky",
+      "em": "in",
+      "Pontuações Celestes Planas": "Planar Celestial Scores",
+      "Criatividade e Alinhamento": "Creativity and Alignment",
+      "Diálogo e Escrita": "Dialogue and Writing",
+      "Vontade Física e Esporte": "Physical Will and Sports",
+      "Dica do Oráculo:": "Oracle Tip:",
+      "Hoje o fluxo solar favorece a revisão estrutural. Ótimo período para finalizar escritos e praticar interiorizações sem pressões externas deletérias.": "Today the solar flow favors structural review. Excellent period to finish writings and practice internalization without harmful external pressure."
+    },
+    es: {
+      "Monitor em Tempo Real": "Monitor en Tiempo Real",
+      "Seus Trânsitos Horários e Energias do Dia": "Tus Tránsitos Horarios y Energías del Día",
+      "Análise de como os planetas flutuam sobre sua composição natal de nascimento.": "Análisis de cómo flotan los planetas sobre tu composición natal de nacimiento.",
+      "Sincronizado: Hoje": "Sincronizado: Hoy",
+      "Planetas Transitando no Céu": "Planetas Transitando en el Cielo",
+      "em": "en",
+      "Pontuações Celestes Planas": "Puntajes Celestes Planos",
+      "Criatividade e Alinhamento": "Creatividad y Alineación",
+      "Diálogo e Escrita": "Diálogo y Escritura",
+      "Vontade Física e Esporte": "Voluntad Física y Deporte",
+      "Dica do Oráculo:": "Consejo del Oráculo:",
+      "Hoje o fluxo solar favorece a revisão estrutural. Ótimo período para finalizar escritos e praticar interiorizações sem pressões externas deletérias.": "Hoy el flujo solar favorece la revisión estructural. Excelente periodo para finalizar escritos y practicar la interiorización sin presiones externas dañinas."
+    },
+    de: {
+      "Monitor em Tempo Real": "Echtzeit-Monitor",
+      "Seus Trânsitos Horários e Energias do Dia": "Deine stündlichen Transite und Tagesenergien",
+      "Análise de como os planetas flutuam sobre sua composição natal de nascimento.": "Analyse, wie die Planeten über Ihre Geburtsradix gleiten.",
+      "Sincronizado: Hoje": "Synchronisiert: Heute",
+      "Planetas Transitando no Céu": "Transitierende Planeten am Himmel",
+      "em": "in",
+      "Pontuações Celestes Planas": "Flache himmlische Werte",
+      "Criatividade e Alinhamento": "Kreativität und Ausrichtung",
+      "Diálogo e Escrita": "Dialog und Schreiben",
+      "Vontade Física e Esporte": "Physischer Wille und Sport",
+      "Dica do Oráculo:": "Orakel-Tipp:",
+      "Hoje o fluxo solar favorece a revisão estrutural. Ótimo período para finalizar escritos e praticar interiorizações sem pressões externas deletérias.": "Heute begünstigt der solare Fluss die strukturelle Überprüfung. Hervorragende Zeit, um Schriften fertigzustellen und Verinnerlichung ohne schädlichen äußeren Druck zu praktizieren."
+    },
+    fr: {
+      "Monitor em Tempo Real": "Moniteur en Temps Réel",
+      "Seus Trânsitos Horários e Energias do Dia": "Vos Transits Horaires et Énergies du Jour",
+      "Análise de como os planetas flutuam sobre sua composição natal de nascimento.": "Analyse de la façon dont les planètes transitent sur votre thème natal de naissance.",
+      "Sincronizado: Hoje": "Synchronisé : Aujourd'hui",
+      "Planetas Transitando no Céu": "Planètes en Transit dans le Ciel",
+      "em": "en",
+      "Pontuações Celestes Planas": "Scores Célestes Plans",
+      "Criatividade e Alinhamento": "Créativité et Alignement",
+      "Diálogo e Escrita": "Dialogue et Écriture",
+      "Vontade Física e Esporte": "Volonté Physique et Sport",
+      "Dica do Oráculo:": "Conseil de l'Oracle :",
+      "Hoje o fluxo solar favorece a revisão estrutural. Ótimo período para finalizar escritos e praticar interiorizações sem pressões externas deletérias.": "Aujourd'hui, le flux solaire favorise la révision structurelle. Excellente période pour finaliser les écrits et pratiquer l'intériorisation sans pressions extérieures néfastes."
+    }
+  };
+
   const tI18n = (text: string) => {
     if (!text) return "";
+    
+    const targetLang = lang || 'pt';
+    if (targetLang !== 'pt' && localTranslations[targetLang] && localTranslations[targetLang][text]) {
+      return localTranslations[targetLang][text];
+    }
+
     const res = tI18nRaw(text);
     if (res === text || !res) {
-      return translateUiText(text, lang || 'pt');
+      return translateUiText(text, targetLang);
     }
     return res;
   };
 
   // Mock list of current transits of this day (moving planets)
-  const currentTransits = [
-    { planet: "Mercúrio", sign: "Câncer", status: "Direto", influence: "Comunicação focada no acolhimento e escuta íntima." },
-    { planet: "Vênus", sign: "Escorpião", status: "Direto", influence: "Período de afetos passionais, profundos e magnetismo elevado." },
-    { planet: "Marte", sign: "Leão", status: "Direto", influence: "Ações corajosas, nobres e generosidade competitiva acentuada." },
-    { planet: "Júpiter", sign: "Gêmeos", status: "Retrógrado", influence: "Reavaliação interna de ideias e estudos acumulados.", isRetrograde: true },
-    { planet: "Saturno", sign: "Peixes", status: "Direto", influence: "Estruturação de limites e responsabilidades espirituais profundas." }
-  ];
+  const localizedTransits: Record<string, Array<{ planet: string; sign: string; status: string; influence: string; isRetrograde?: boolean }>> = {
+    pt: [
+      { planet: "Mercúrio", sign: "Câncer", status: "Direto", influence: "Comunicação focada no acolhimento e escuta íntima." },
+      { planet: "Vênus", sign: "Escorpião", status: "Direto", influence: "Período de afetos passionais, profundos e magnetismo elevado." },
+      { planet: "Marte", sign: "Leão", status: "Direto", influence: "Ações corajosas, nobres e generosidade competitiva acentuada." },
+      { planet: "Júpiter", sign: "Gêmeos", status: "Retrógrado", influence: "Reavaliação interna de ideias e estudos acumulados.", isRetrograde: true },
+      { planet: "Saturno", sign: "Peixes", status: "Direto", influence: "Estruturação de limites e responsabilidades espirituais profundas." }
+    ],
+    en: [
+      { planet: "Mercúrio", sign: "Câncer", status: "Direct", influence: "Communication focused on welcoming and intimate listening." },
+      { planet: "Vênus", sign: "Escorpião", status: "Direct", influence: "Period of passionate, deep affection and elevated magnetism." },
+      { planet: "Marte", sign: "Leão", status: "Direct", influence: "Courageous, noble actions and sharp competitive generosity." },
+      { planet: "Júpiter", sign: "Gêmeos", status: "Retrograde", influence: "Internal reevaluation of ideas and accumulated studies.", isRetrograde: true },
+      { planet: "Saturno", sign: "Peixes", status: "Direct", influence: "Structuring of limits and deep spiritual responsibilities." }
+    ],
+    es: [
+      { planet: "Mercúrio", sign: "Câncer", status: "Directo", influence: "Comunicación enfocada en la acogida y la escuche íntima." },
+      { planet: "Vênus", sign: "Escorpião", status: "Directo", influence: "Periodo de afectos pasionales, profundos y magnetismo elevado." },
+      { planet: "Marte", sign: "Leão", status: "Directo", influence: "Acciones valientes, nobles y generosidad competitiva acentuada." },
+      { planet: "Júpiter", sign: "Gêmeos", status: "Retrógrado", influence: "Reevaluación interna de ideas y estudios acumulados.", isRetrograde: true },
+      { planet: "Saturno", sign: "Peixes", status: "Directo", influence: "Estructuración de límites y profundas responsabilidades espirituales." }
+    ],
+    de: [
+      { planet: "Mercúrio", sign: "Câncer", status: "Direkt", influence: "Kommunikation konzentriert auf Aufnahme und intimes Zuhören." },
+      { planet: "Vênus", sign: "Escorpião", status: "Direkt", influence: "Zeit leidenschaftlicher, tiefer Zuneigung und erhöhter Anziehungskraft." },
+      { planet: "Marte", sign: "Leão", status: "Direkt", influence: "Mutige, edle Taten und ausgeprägte wettbewerbsorientierte Großzügigkeit." },
+      { planet: "Júpiter", sign: "Gêmeos", status: "Rückläufig", influence: "Innere Neubewertung von Ideen und gesammelten Studien.", isRetrograde: true },
+      { planet: "Saturno", sign: "Peixes", status: "Direkt", influence: "Strukturierung von Grenzen und tiefen spirituellen Pflichten." }
+    ],
+    fr: [
+      { planet: "Mercúrio", sign: "Câncer", status: "Direct", influence: "Communication axée sur l'accueil et l'écoute intime." },
+      { planet: "Vênus", sign: "Escorpião", status: "Direct", influence: "Période d'affections passionnées, profondes et de magnétisme élevé." },
+      { planet: "Marte", sign: "Leão", status: "Direct", influence: "Actions courageuses, nobles et générosité compétitive accentuée." },
+      { planet: "Júpiter", sign: "Gêmeos", status: "Rétrograde", influence: "Réévaluation interne des idées et des études accumulées.", isRetrograde: true },
+      { planet: "Saturno", sign: "Peixes", status: "Direct", influence: "Structuration des limites et des responsabilités spirituelles profondes." }
+    ]
+  };
+
+  const currentTransits = localizedTransits[lang] || localizedTransits['pt'];
 
   return (
     <div className="space-y-6">
