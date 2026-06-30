@@ -358,7 +358,7 @@ export const translations = {
     // Auth & Form
     name: "Nombre Completo",
     birthDate: "Fecha de Nacimiento",
-    birthTime: "Hora de Nascimento",
+    birthTime: "Hora de Nacimiento",
     birthCity: "Ciudad de Nacimiento",
     email: "Correo Electrónico",
     password: "Contraseña",
@@ -462,7 +462,7 @@ export const translations = {
     languageSelection: "Idioma del Sistema",
     currentLocation: "Tus Coordenadas Natales",
     logout: "Desconectar Sesión",
-    unsupportedFirebase: "Modo Local Ativo: Tu sesión y datos están seguros localmente.",
+    unsupportedFirebase: "Modo Local Activo: Tu sesión y datos están seguros localmente.",
     astroModelEngine: "Motor Cósmico Interno: Precisión matemática offline.",
   },
   fr: {
@@ -522,7 +522,7 @@ export const translations = {
     degree: "degré",
     retrograde: "Rétrograde",
     aspectsList: "Aspects actifs",
-    houseSystem: "Cuispides des maisons (Système de maisons Placidus)",
+    houseSystem: "Cuspides des maisons (Système de maisons Placidus)",
     generateDeepInterpretation: "Générer une interprétation approfondie par l'IA",
     interpreting: "Consultation des astres et de l'IA...",
     deepReport: "Rapport d'interprétation personnalisé",

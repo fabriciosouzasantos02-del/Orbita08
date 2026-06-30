@@ -1,3 +1,17 @@
+import { translateUiText, getInitialLanguage } from "./lib/translations";
+
+function t(text: string): string {
+  if (!text) return text;
+  const currentLang = getInitialLanguage();
+  return translateUiText(text, currentLang);
+}
+
+export const FALLBACKS = {
+  get naoInformado() { return t("Não informado"); },
+  get naoFornecido() { return t("Não fornecido"); },
+  get semDescricao() { return t("Sem descrição"); }
+};
+
 export interface AppPreset {
   id: string;
   name: string;
@@ -10,10 +24,10 @@ export interface AppPreset {
 export const PRESETS: AppPreset[] = [
   {
     id: "calculator",
-    name: "Calculadora de Precisão",
+    get name() { return t("Calculadora de Precisão"); },
     icon: "Calculator",
-    category: "Utilidade",
-    description: "Calculadora de alta precisão comercial com histórico de operações e design minimalista em vidro (glassmorphism).",
+    get category() { return t("Utilidade"); },
+    get description() { return t("Calculadora de alta precisão comercial com histórico de operações e design minimalista em vidro (glassmorphism)."); },
     defaultCode: `<!-- Calculadora de Precisão Real-time -->
 <div class="min-h-[450px] flex flex-col items-center justify-center p-4">
   <div class="w-full max-w-xs bg-slate-900/90 border border-slate-800/80 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
@@ -142,10 +156,10 @@ export const PRESETS: AppPreset[] = [
   },
   {
     id: "todolist",
-    name: "Lista de Tarefas Fluida",
+    get name() { return t("Lista de Tarefas Fluida"); },
     icon: "CheckSquare",
-    category: "Produtividade",
-    description: "Gerenciador intuitivo de tarefas semanais com checkboxes interativos de toque, contadores dinâmicos de progresso e filtros ativos.",
+    get category() { return t("Produtividade"); },
+    get description() { return t("Gerenciador intuitivo de tarefas semanais com checkboxes interativos de toque, contadores dinâmicos de progresso e filtros ativos."); },
     defaultCode: `<!-- Lista de Tarefas Minimalista e Fluida -->
 <div class="min-h-[460px] flex items-center justify-center p-4">
   <div class="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
@@ -171,7 +185,7 @@ export const PRESETS: AppPreset[] = [
     <div id="todo-list" class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
       <!-- Tarefas populadas pelo script -->
     </div>
-
+ 
   </div>
 </div>
 
@@ -292,10 +306,10 @@ export const PRESETS: AppPreset[] = [
   },
   {
     id: "pomodoro",
-    name: "Focus & Pomodoro Zen",
+    get name() { return t("Focus & Pomodoro Zen"); },
     icon: "Clock",
-    category: "Produtividade",
-    description: "Temporizador de concentração imersivo com círculo dinâmico de progresso sutil e alertas de intervalo integrados.",
+    get category() { return t("Produtividade"); },
+    get description() { return t("Temporizador de concentração imersivo com círculo dinâmico de progresso sutil e alertas de intervalo integrados."); },
     defaultCode: `<!-- Temporizador Pomodoro Zen -->
 <div class="min-h-[460px] flex flex-col items-center justify-center p-4">
   <div class="w-full max-w-xs bg-[#110e1a]/95 border border-[#231a3d] rounded-3xl p-6 shadow-2xl relative overflow-hidden text-center">
@@ -408,10 +422,10 @@ export const PRESETS: AppPreset[] = [
   },
   {
     id: "sandbox",
-    name: "Painel de Bio Link",
+    get name() { return t("Painel de Bio Link"); },
     icon: "Layers",
-    category: "Design",
-    description: "Estrutura moderna para agregador de links pessoais ou links-na-bio, contendo botões interativos de redes, foto de perfil, e animações de hover.",
+    get category() { return t("Design"); },
+    get description() { return t("Estrutura moderna para agregador de links pessoais ou links-na-bio, contendo botões interativos de redes, foto de perfil, e animações de hover."); },
     defaultCode: `<!-- Hub de Links de Bio Moderno -->
 <div class="min-h-[460px] flex items-center justify-center p-4">
   <div class="w-full max-w-sm bg-stone-900 text-stone-100 border border-stone-800 rounded-3xl p-6 shadow-xl relative text-center">
@@ -455,51 +469,158 @@ export const PRESETS: AppPreset[] = [
 ];
 
 export const SIGNS_ZODIAC_LIST = [
-  { name: "Áries", symbol: "♈", element: "Fogo", regente: "Marte", traits: "Iniciativa, pioneirismo, vigor, impaciência.", horoscopo: "Hoje é um dia promissor para assumir novos compromissos, porém tenha paciência com respostas burocráticas retardadas.", cosmicImg: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=400&q=80" },
-  { name: "Touro", symbol: "♉", element: "Terra", regente: "Vênus", traits: "Estabilidade, persistência, sensualidade, teimosia.", horoscopo: "A quadratura lunar sugere revisar gastos apressados. Foque em estabilizar seu solo financeiro.", cosmicImg: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=400&q=80" },
-  { name: "Gêmeos", symbol: "♊", element: "Ar", regente: "Mercúrio", traits: "Comunicação, versatilidade, curiosidade, dispersão.", horoscopo: "Trocar ideias e debater trará excelentes alianças hoje. Cuidado para não dispersar de suas obrigações primordiais.", cosmicImg: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=400&q=80" },
-  { name: "Câncer", symbol: "♋", element: "Água", regente: "Lua", traits: "Acolhimento, sensibilidade, memória, melindre.", horoscopo: "Momento propício para resgatar sua nutrição familiar emocional e meditar e registrar seus sonhos.", cosmicImg: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=400&q=80" },
-  { name: "Leão", symbol: "♌", element: "Fogo", regente: "Sol", traits: "Criatividade, magnetismo, generosidade, orgulho.", horoscopo: "Seu poder pessoal de liderança brilha. Use de empatia nos círculos de negócios para somar forças.", cosmicImg: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80" },
-  { name: "Virgem", symbol: "♍", element: "Terra", regente: "Mercúrio", traits: "Método, aperfeiçoamento, lógica, autocrítica excessiva.", horoscopo: "Organize seus arquivos e cuide de sua rotina de bem estar. Seu corpo pede repouso ativo hoje.", cosmicImg: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=400&q=80" },
-  { name: "Libra", symbol: "♎", element: "Ar", regente: "Vênus", traits: "Equilíbrio, conciliação, estética, indecisão.", horoscopo: "Uma decisão importante na vida afetiva demanda equilíbrio sincero e transparência de palavras.", cosmicImg: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80" },
-  { name: "Escorpião", symbol: "♏", element: "Água", regente: "Plutão", traits: "Profundidade, transformação, garra, controle.", horoscopo: "Energia investigativa poderosa. Suas visões desmascaram mentiras de imediato. Siga sua clarividência.", cosmicImg: "https://images.unsplash.com/photo-1543722530-d2c3201371e7?auto=format&fit=crop&w=400&q=80" },
-  { name: "Sagitário", symbol: "♐", element: "Fogo", regente: "Júpiter", traits: "Aventura, expansão, sabedoria, autoindulgência.", horoscopo: "Novas possibilidades de viagem ou novos saberes de retórica surgem para inspirar sua mente ávida.", cosmicImg: "https://images.unsplash.com/photo-1516339901601-2e1d62dc0c45?auto=format&fit=crop&w=400&q=80" },
-  { name: "Capricórnio", symbol: "♑", element: "Terra", regente: "Saturno", traits: "Estrutura, dever, resiliência, rigidez.", horoscopo: "Foque em planos pragmáticos de longo prazo. A estabilidade decorre de sua dedicação sistemática.", cosmicImg: "https://images.unsplash.com/photo-1504333631150-c8ab2da93b03?auto=format&fit=crop&w=400&q=80" },
-  { name: "Aquário", symbol: "♒", element: "Ar", regente: "Urano", traits: "Independência, originalidade, visionário, intelectual.", horoscopo: "Sua audácia vanguardista flui forte em 2026. Recuse dogmas limitadores e busque criar sua própria órbita.", cosmicImg: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?auto=format&fit=crop&w=400&q=80" },
-  { name: "Peixes", symbol: "♓", element: "Água", regente: "Netuno", traits: "Intuição, sensibilidade poética, compaixão, escapismo.", horoscopo: "Seus sonhos estão extraordinariamente falantes hoje. Mantenha papel e caneta ao lado da cama.", cosmicImg: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=400&q=80" }
+  {
+    get name() { return t("Áries"); },
+    symbol: "♈",
+    get element() { return t("Fogo"); },
+    get regente() { return t("Marte"); },
+    get traits() { return t("Iniciativa, pioneirismo, vigor, impaciência."); },
+    get horoscopo() { return t("Hoje é um dia promissor para assumir novos compromissos, porém tenha paciência com respostas burocráticas retardadas."); },
+    cosmicImg: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Touro"); },
+    symbol: "♉",
+    get element() { return t("Terra"); },
+    get regente() { return t("Vênus"); },
+    get traits() { return t("Estabilidade, persistência, sensualidade, teimosia."); },
+    get horoscopo() { return t("A quadratura lunar sugere revisar gastos apressados. Foque em estabilizar seu solo financeiro."); },
+    cosmicImg: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Gêmeos"); },
+    symbol: "♊",
+    get element() { return t("Ar"); },
+    get regente() { return t("Mercúrio"); },
+    get traits() { return t("Comunicação, versatilidade, curiosidade, dispersão."); },
+    get horoscopo() { return t("Trocar ideias e debater trará excelentes alianças hoje. Cuidado para não dispersar de suas obrigações primordiais."); },
+    cosmicImg: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Câncer"); },
+    symbol: "♋",
+    get element() { return t("Água"); },
+    get regente() { return t("Lua"); },
+    get traits() { return t("Acolhimento, sensibilidade, memória, melindre."); },
+    get horoscopo() { return t("Momento propício para resgatar sua nutrição familiar emocional e meditar e registrar seus sonhos."); },
+    cosmicImg: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Leão"); },
+    symbol: "♌",
+    get element() { return t("Fogo"); },
+    get regente() { return t("Sol"); },
+    get traits() { return t("Criatividade, magnetismo, generosidade, orgulho."); },
+    get horoscopo() { return t("Seu poder pessoal de liderança brilha. Use de empatia nos círculos de negócios para somar forças."); },
+    cosmicImg: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Virgem"); },
+    symbol: "♍",
+    get element() { return t("Terra"); },
+    get regente() { return t("Mercúrio"); },
+    get traits() { return t("Método, aperfeiçoamento, lógica, autocrítica excessiva."); },
+    get horoscopo() { return t("Organize seus arquivos e cuide de sua rotina de bem estar. Seu corpo pede repouso ativo hoje."); },
+    cosmicImg: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Libra"); },
+    symbol: "♎",
+    get element() { return t("Ar"); },
+    get regente() { return t("Vênus"); },
+    get traits() { return t("Equilíbrio, conciliação, estética, indecisão."); },
+    get horoscopo() { return t("Uma decisão importante na vida afetiva demanda equilíbrio sincero e transparência de palavras."); },
+    cosmicImg: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Escorpião"); },
+    symbol: "♏",
+    get element() { return t("Água"); },
+    get regente() { return t("Plutão"); },
+    get traits() { return t("Profundidade, transformação, garra, controle."); },
+    get horoscopo() { return t("Energia investigativa poderosa. Suas visões desmascaram mentiras de imediato. Siga sua clarividência."); },
+    cosmicImg: "https://images.unsplash.com/photo-1543722530-d2c3201371e7?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Sagitário"); },
+    symbol: "♐",
+    get element() { return t("Fogo"); },
+    get regente() { return t("Júpiter"); },
+    get traits() { return t("Aventura, expansão, sabedoria, autoindulgência."); },
+    get horoscopo() { return t("Novas possibilidades de viagem ou novos saberes de retórica surgem para inspirar sua mente ávida."); },
+    cosmicImg: "https://images.unsplash.com/photo-1516339901601-2e1d62dc0c45?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Capricórnio"); },
+    symbol: "♑",
+    get element() { return t("Terra"); },
+    get regente() { return t("Saturno"); },
+    get traits() { return t("Estrutura, dever, resiliência, rigidez."); },
+    get horoscopo() { return t("Foque em planos pragmáticos de longo prazo. A estabilidade decorre de sua dedicação sistemática."); },
+    cosmicImg: "https://images.unsplash.com/photo-1504333631150-c8ab2da93b03?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Aquário"); },
+    symbol: "♒",
+    get element() { return t("Ar"); },
+    get regente() { return t("Urano"); },
+    get traits() { return t("Independência, originalidade, visionário, intelectual."); },
+    get horoscopo() { return t("Sua audácia vanguardista flui forte em 2026. Recuse dogmas limitadores e busque criar sua própria órbita."); },
+    cosmicImg: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    get name() { return t("Peixes"); },
+    symbol: "♓",
+    get element() { return t("Água"); },
+    get regente() { return t("Netuno"); },
+    get traits() { return t("Intuição, sensibilidade poética, compaixão, escapismo."); },
+    get horoscopo() { return t("Seus sonhos estão extraordinariamente falantes hoje. Mantenha papel e caneta ao lado da cama."); },
+    cosmicImg: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=400&q=80"
+  }
 ];
 
 export const BLOG_ARTICLES_LIST = [
   {
     id: 1,
-    title: "O que a Astrologia REALMENTE pode e não pode fazer",
-    author: "Orbia Astróloga",
-    date: "08 Junho 2026",
-    summary: "Descubra como os planetas apenas indicam disposições latentes sem suprimir seu livre-arbítrio espiritual e sua soberania racional.",
-    content: "A grande ilusão do determinismo astrológico é supor que você está preso a carimbos celestes intransponíveis. Na verdade, as configurações energéticas mapeadas na hora de seu nascimento servem como correntes eletromagnéticas subliminares. Comandá-las ou ser comandado por elas é onde reside sua dinâmica de autoconhecimento. O Sol em Aquário abre potencialidades originais, mas é a sua consciência racional ativa que pavimenta as escolhas materiais diárias."
+    get title() { return t("O que a Astrologia REALMENTE pode e não pode fazer"); },
+    get author() { return t("Orbia Astróloga"); },
+    get date() { return t("08 Junho 2026"); },
+    get summary() { return t("Descubra como os planetas apenas indicam disposições latentes sem suprimir seu livre-arbítrio espiritual e sua soberania racional."); },
+    get content() { return t("A grande ilusão do determinismo astrológico é supor que você está preso a carimbos celestes intransponíveis. Na verdade, as configurações energéticas mapeadas na hora de seu nascimento servem como correntes eletromagnéticas subliminares. Comandá-las ou ser comandado por elas é onde reside sua dinâmica de autoconhecimento. O Sol em Aquário abre potencialidades originais, mas é a sua consciência racional ativa que pavimenta as escolhas materiais diárias."); }
   },
   {
     id: 2,
-    title: "Como planejar a rotina usando as 4 Fases da Lua",
-    author: "Orbia Astróloga",
-    date: "05 Junho 2026",
-    summary: "Lua Balsâmica, Nova, Crescente, Minguante. Aprenda os melhores períodos na agricultura doméstica, rotina de beleza e lançamentos comerciais.",
-    content: "A Lua dita o movimento das marés e o fluxo da seiva das plantas. Em nossa consciência, rege as reações imediatas e a disposição íntima. Lançar projetos audaciosos sob a Lua Nova traz inícios pujantes; revisar e desapegar sob a Lua Balsâmica ou Minguante impede que você acumule tarefas infrutíferas. Alinhar suas missões a esses biorritmos lunares otimiza drasticamente seus resultados diários."
+    get title() { return t("Como planejar a rotina usando as 4 Fases da Lua"); },
+    get author() { return t("Orbia Astróloga"); },
+    get date() { return t("05 Junho 2026"); },
+    get summary() { return t("Lua Balsâmica, Nova, Crescente, Minguante. Aprenda os melhores períodos na agricultura doméstica, rotina de beleza e lançamentos comerciais."); },
+    get content() { return t("A Lua dita o movimento das marés e o fluxo da seiva das plantas. Em nossa consciência, rege as reações imediatas e a disposição íntima. Lançar projetos audaciosos sob a Lua Nova traz inícios pujantes; revisar e desapegar sob a Lua Balsâmica ou Minguante impede que você acumule tarefas infrutíferas. Alinhar suas missões a esses biorritmos lunares otimiza drasticamente seus resultados diários."); }
   },
   {
     id: 3,
-    title: "Mercúrio Retrógrado em 2026: Datas de Cuidado Puro",
-    author: "Orbia Astróloga",
-    date: "28 Maio 2026",
-    summary: "Guia definitivo das semanas críticas onde eletrônicos, assinaturas contratuais e mal-entendidos de diálogo exigem cautela metódica.",
-    content: "O aparente retrocesso de Mercúrio traz à superfície todas as fendas ocultas no sistema de comunicação humana. backups desatualizados apagam-se misteriosamente, e-mails de teor sensível são interpretados com melindre e acordos verbais decaem rapidamente. A recomendação de nossa IA conselheira é ler atenciosamente todas as entrelinhas e evitar assinar transações sem a devida vistoria jurídica detalhada."
+    get title() { return t("Mercúrio Retrógrado em 2026: Datas de Cuidado Puro"); },
+    get author() { return t("Orbia Astróloga"); },
+    get date() { return t("28 Maio 2026"); },
+    get summary() { return t("Guia definitivo das semanas críticas onde eletrônicos, assinaturas contratuais e mal-entendidos de diálogo exigem cautela metódica."); },
+    get content() { return t("O aparente retrocesso de Mercúrio traz à superfície todas as fendas ocultas no sistema de comunicação humana. backups desatualizados apagam-se misteriosamente, e-mails de teor sensível são interpretados com melindre e acordos verbais decaem rapidamente. A recomendação de nossa IA conselheira é ler atenciosamente todas as entrelinhas e evitar assinar transações sem a devida vistoria jurídica detalhada."); }
   }
 ];
 
 export const FAQ_LIST = [
-  { q: "O que é o sistema Placidus usado para gerar o Mapa?", a: "O sistema Placidus é o método de divisão matemática de casas astrológicas mais testado e difundido na astrologia ocidental desde o século XVII. Ele leva em conta a latitude exata de nascimento para projetar as 12 cúspides no firmamento celeste no instante de seu sopro vital primário." },
-  { q: "Quantas consultas ao Oráculo do Dia posso submeter?", a: "Para conservar sua reverência mística e valor terapêutico percebido, o aplicativo limita as respostas profundas do Oráculo do Dia a exatamente uma consulta por dia por usuário." },
-  { q: "Meus sonhos analisados no 'Cofre dos Sonhos' são confidenciais?", a: "Sim, absolutamente garantido de forma premium. Todos os seus registros oníricos e interpretações automatizadas por IA ficam criptografados internamente protegendo sua integridade íntima." },
-  { q: "Posso criar e calcular o mapa de outras pessoas importantes?", a: "Perfeitamente. Na aba 'Mapa Estelar' sob a categoria 'Mapas Extras', você poderá salvar e consultar o mapa de até 2 outras pessoas queridas com facilidade sem desfigurar seus dados originais de nascimento." }
+  {
+    get q() { return t("O que é o sistema Placidus usado para gerar o Mapa?"); },
+    get a() { return t("O sistema Placidus é o método de divisão matemática de casas astrológicas mais testado e difundido na astrologia ocidental desde o século XVII. Ele leva em conta a latitude exata de nascimento para projetar as 12 cúspides no firmamento celeste no instante de seu sopro vital primário."); }
+  },
+  {
+    get q() { return t("Quantas consultas ao Oráculo do Dia posso submeter?"); },
+    get a() { return t("Para conservar sua reverência mística e valor terapêutico percebido, o aplicativo limita as respostas profundas do Oráculo do Dia a exatamente uma consulta por dia por usuário."); }
+  },
+  {
+    get q() { return t("Meus sonhos analisados no 'Cofre dos Sonhos' são confidenciais?"); },
+    get a() { return t("Sim, absolutamente garantido de forma premium. Todos os seus registros oníricos e interpretações automatizadas por IA ficam criptografados internamente protegendo sua integridade íntima."); }
+  },
+  {
+    get q() { return t("Posso criar e calcular o mapa de outras pessoas importantes?"); },
+    get a() { return t("Perfeitamente. Na aba 'Mapa Estelar' sob a categoria 'Mapas Extras', você poderá salvar e consultar o mapa de até 2 outras pessoas queridas com facilidade sem desfigurar seus dados originais de nascimento."); }
+  }
 ];
-

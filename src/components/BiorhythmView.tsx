@@ -20,6 +20,7 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { translateUiText, Language } from '../lib/translations';
+import { useIdioma } from '../context/IdiomaContext';
 
 interface BiorhythmViewProps {
   userName?: string;
@@ -40,11 +41,13 @@ const CYCLES = {
 
 export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang }: BiorhythmViewProps) {
   const { t: i18nT } = useTranslation();
+  const { idioma } = useIdioma();
+  const activeLang = (idioma as Language) || (lang as Language) || 'pt';
   const t = (text: string) => {
     if (!text) return "";
     const res = i18nT(text);
     if (res === text || !res) {
-      return translateUiText(text, (lang as Language) || 'pt');
+      return translateUiText(text, activeLang);
     }
     return res;
   };
@@ -132,8 +135,16 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     try {
       return new Intl.DateTimeFormat(lang || 'pt', { weekday: 'long' }).format(date);
     } catch {
-      const daysPt = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-      return daysPt[date.getDay()];
+      const dayIdx = date.getDay();
+      const fallbacks: Record<string, string[]> = {
+        en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        es: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+        de: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+        fr: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+        pt: ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
+      };
+      const days = fallbacks[lang || 'pt'] || fallbacks['pt'];
+      return days[dayIdx];
     }
   };
 
@@ -142,11 +153,16 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     try {
       return new Intl.DateTimeFormat(lang || 'pt', { month: 'long' }).format(date);
     } catch {
-      const monthsPt = [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-      ];
-      return monthsPt[date.getMonth()];
+      const monthIdx = date.getMonth();
+      const fallbacks: Record<string, string[]> = {
+        en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        es: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        de: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+        fr: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+        pt: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+      };
+      const months = fallbacks[lang || 'pt'] || fallbacks['pt'];
+      return months[monthIdx];
     }
   };
 
@@ -159,6 +175,10 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
       const day = targetDateObj.getDate();
       const month = getMonthName(targetDateObj);
       const year = targetDateObj.getFullYear();
+      if (lang === 'en') return `${wDay}, ${month} ${day}, ${year}`;
+      if (lang === 'de') return `${wDay}, ${day}. ${month} ${year}`;
+      if (lang === 'fr') return `${wDay} ${day} ${month} ${year}`;
+      if (lang === 'es') return `${wDay}, ${day} de ${month} de ${year}`;
       return `${wDay}, ${day} de ${month} de ${year}`;
     }
   }, [targetDateObj, lang]);
@@ -482,7 +502,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                             
                             <p className="leading-relaxed font-sans">
                               {key === 'emocional' ? (
-                                t("Com o ciclo emocional em alta (+100%), há um aumento do potential para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma.")
+                                t("Com o ciclo emocional em alta (+100%), há um aumento do potencial para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma.")
                               ) : key === 'fisico' ? (
                                 t("Seu ciclo físico está em recuperação energética. Evite sobrecargas exaustivas musculares, mas aproveite para caminhadas leves contemplativas e alongamentos regulares ao alvorecer.")
                               ) : (

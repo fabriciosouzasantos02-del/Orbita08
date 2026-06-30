@@ -5,6 +5,7 @@ import { Language, translations } from "../translations";
 import { NatalChartData } from "../types";
 import { useTranslation } from "react-i18next";
 import { translateUiText } from "../lib/translations";
+import { useIdioma } from "../context/IdiomaContext";
 
 interface TransitsTabProps {
   natalChart: NatalChartData;
@@ -12,7 +13,9 @@ interface TransitsTabProps {
 }
 
 export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
-  const t = translations[lang];
+  const { idioma } = useIdioma();
+  const activeLang = idioma || lang || 'pt';
+  const t = translations[activeLang];
   const { t: tI18nRaw } = useTranslation();
 
   const localTranslations: Record<string, Record<string, string>> = {
@@ -77,7 +80,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
   const tI18n = (text: string) => {
     if (!text) return "";
     
-    const targetLang = lang || 'pt';
+    const targetLang = activeLang || 'pt';
     if (targetLang !== 'pt' && localTranslations[targetLang] && localTranslations[targetLang][text]) {
       return localTranslations[targetLang][text];
     }
@@ -106,7 +109,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
       { planet: "Saturno", sign: "Peixes", status: "Direct", influence: "Structuring of limits and deep spiritual responsibilities." }
     ],
     es: [
-      { planet: "Mercúrio", sign: "Câncer", status: "Directo", influence: "Comunicación enfocada en la acogida y la escuche íntima." },
+      { planet: "Mercúrio", sign: "Câncer", status: "Directo", influence: "Comunicación enfocada en la acogida y la escucha íntima." },
       { planet: "Vênus", sign: "Escorpião", status: "Directo", influence: "Periodo de afectos pasionales, profundos y magnetismo elevado." },
       { planet: "Marte", sign: "Leão", status: "Directo", influence: "Acciones valientes, nobles y generosidad competitiva acentuada." },
       { planet: "Júpiter", sign: "Gêmeos", status: "Retrógrado", influence: "Reevaluación interna de ideas y estudios acumulados.", isRetrograde: true },
@@ -128,7 +131,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
     ]
   };
 
-  const currentTransits = localizedTransits[lang] || localizedTransits['pt'];
+  const currentTransits = localizedTransits[activeLang] || localizedTransits['pt'];
 
   return (
     <div className="space-y-6">

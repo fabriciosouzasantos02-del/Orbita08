@@ -5,19 +5,22 @@ import { performTarotReading } from "../tarot";
 import { Language, translations } from "../translations";
 import { TarotCard } from "../types";
 import { useTranslation } from "react-i18next";
+import { useIdioma } from "../context/IdiomaContext";
 
 interface TarotTabProps {
   lang: Language;
 }
 
 export default function TarotTab({ lang }: TarotTabProps) {
+  const { idioma } = useIdioma();
+  const activeLang = idioma || lang || 'pt';
   const [question, setQuestion] = useState("");
   const [reading, setReading] = useState<{ card: TarotCard; isReversed: boolean; position: 'passado' | 'presente' | 'futuro' }[] | null>(null);
   const [interpretation, setInterpretation] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
 
-  const t = translations[lang];
+  const t = translations[activeLang];
   const { t: tI18n } = useTranslation();
 
   const handleDrawCards = () => {
@@ -42,14 +45,14 @@ export default function TarotTab({ lang }: TarotTabProps) {
         body: JSON.stringify({
           question,
           cards: reading,
-          lang,
+          lang: activeLang,
         }),
       });
       const data = await response.json();
       setInterpretation(data.interpretation);
     } catch (err) {
       console.error(err);
-      setInterpretation(tI18n("Erro ao contatar oráculo cósmico."));
+      setInterpretation(t.tarotAiError);
     } finally {
       setLoadingAI(false);
     }
@@ -112,7 +115,7 @@ export default function TarotTab({ lang }: TarotTabProps) {
       <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm space-y-4">
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider">
-            {tI18n("Sua Pergunta ou Afirmação de Foco")}
+            {t.tarotFocusLabel}
           </label>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
@@ -130,7 +133,7 @@ export default function TarotTab({ lang }: TarotTabProps) {
               {isShuffling ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>{tI18n("Embaralhando arcanos...")}</span>
+                  <span>{t.tarotShuffling}</span>
                 </>
               ) : (
                 <>
@@ -171,7 +174,7 @@ export default function TarotTab({ lang }: TarotTabProps) {
                     {/* Classic Tarot card visual frame with rotation representation */}
                     <div className="relative w-36 h-56 bg-gradient-to-b from-indigo-900/10 to-indigo-950/25 border-4 border-indigo-900/10 rounded-2xl p-3 flex flex-col justify-between items-center shadow-md select-none transform transition overflow-hidden">
                       <div className="text-[10px] uppercase font-bold tracking-widest text-indigo-300">
-                        Arcano {drawn.card.arcana}
+                        {t.tarotArcanaLabel} {drawn.card.arcana}
                       </div>
                       
                       <div className={`text-5xl my-4 transition duration-500 ${drawn.isReversed ? "rotate-180" : ""}`}>
@@ -179,7 +182,7 @@ export default function TarotTab({ lang }: TarotTabProps) {
                       </div>
 
                       <div className="w-full text-center">
-                        <span className="block text-[10px] text-neutral-400 font-medium">{tI18n("Posição:")}</span>
+                        <span className="block text-[10px] text-neutral-400 font-medium">{t.tarotPositionLabel}</span>
                         <span className="block text-[10px] font-bold text-neutral-600">
                           {drawn.isReversed ? t.reversedPosition : t.uprightPosition}
                         </span>
@@ -203,7 +206,7 @@ export default function TarotTab({ lang }: TarotTabProps) {
               {/* Dynamic AI Interpretation button selector for tarot */}
               <div className="pt-4 border-t border-neutral-200/50 flex flex-col items-center text-center space-y-3">
                 <p className="text-xs text-neutral-500 max-w-md">
-                  {tI18n("Gostaria que nosso sábio místico unificasse a leitura destas 3 cartas no seu contexto pessoal?")}
+                  {t.tarotAiPrompt}
                 </p>
                 <button
                   onClick={handleGetInterpretation}
@@ -213,12 +216,12 @@ export default function TarotTab({ lang }: TarotTabProps) {
                   {loadingAI ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>{tI18n("Invocando Oráculo místico...")}</span>
+                      <span>{t.tarotAiInvocating}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                      <span>{tI18n("Interpretar Leitura Geral")}</span>
+                      <span>{t.tarotAiInterpretButton}</span>
                     </>
                   )}
                 </button>

@@ -832,11 +832,39 @@ function performPreciseServerCalculation(
           }
         });
         
-        const baseInterp = h.interpretation.split(" Cúspide posicionada")[0] || h.interpretation;
-        const cuspStr = `Cúspide posicionada em ${h.sign} (${Math.floor(cusp % 30)}°${Math.floor((cusp % 30) * 60 % 60).toString().padStart(2, "0")}')`;
-        const plantStr = planetsInHouse.length > 0
-          ? ` Planetas presentes ativando esta área: ${planetsInHouse.join(", ")}.`
-          : " Nossos astros celestes não ocupam esta casa diretamente, sendo regida de longe por seu respectivo regente planetário.";
+        const baseInterp = h.interpretation.split(" Cúspide posicionada")[0]
+          .split(" Cusp positioned")[0]
+          .split(" Spitze positioniert")[0]
+          .split(" Cuspide positionnée")[0] || h.interpretation;
+
+        const cuspStrFormats: Record<string, string> = {
+          pt: `Cúspide posicionada em ${translateSign(h.sign)} (${Math.floor(cusp % 30)}°${Math.floor((cusp % 30) * 60 % 60).toString().padStart(2, "0")}')`,
+          en: `Cusp positioned in ${translateSign(h.sign)} (${Math.floor(cusp % 30)}°${Math.floor((cusp % 30) * 60 % 60).toString().padStart(2, "0")}')`,
+          es: `Cúspide posicionada en ${translateSign(h.sign)} (${Math.floor(cusp % 30)}°${Math.floor((cusp % 30) * 60 % 60).toString().padStart(2, "0")}')`,
+          de: `Spitze positioniert in ${translateSign(h.sign)} (${Math.floor(cusp % 30)}°${Math.floor((cusp % 30) * 60 % 60).toString().padStart(2, "0")}')`,
+          fr: `Cuspide positionnée en ${translateSign(h.sign)} (${Math.floor(cusp % 30)}°${Math.floor((cusp % 30) * 60 % 60).toString().padStart(2, "0")}')`
+        };
+        const cuspStr = cuspStrFormats[activeLang] || cuspStrFormats["pt"];
+
+        const translatedPlanets = planetsInHouse.map(translatePlanet);
+        const plantStrFormats: Record<string, string> = {
+          pt: planetsInHouse.length > 0
+            ? ` Planetas presentes ativando esta área: ${translatedPlanets.join(", ")}.`
+            : " Nossos astros celestes não ocupam esta casa diretamente, sendo regida de longe por seu respectivo regente planetário.",
+          en: planetsInHouse.length > 0
+            ? ` Present planets activating this area: ${translatedPlanets.join(", ")}.`
+            : " Our celestial bodies do not occupy this house directly, being governed from afar by their respective planetary ruler.",
+          es: planetsInHouse.length > 0
+            ? ` Planetas presentes activando esta área: ${translatedPlanets.join(", ")}.`
+            : " Nuestros astros celestes no ocupan esta casa directamente, siendo regida de lejos por su respectivo regente planetario.",
+          de: planetsInHouse.length > 0
+            ? ` Vorhandene Planeten, die diesen Bereich aktivieren: ${translatedPlanets.join(", ")}.`
+            : " Unsere Himmelskörper besetzen dieses Haus nicht direkt und werden aus der Ferne von ihrem jeweiligen Planetenherrscher regiert.",
+          fr: planetsInHouse.length > 0
+            ? ` Planètes présentes activant cette zone : ${translatedPlanets.join(", ")}.`
+            : " Nos corps célestes n'occupent pas directement cette maison, étant gouvernés de loin par leur maître planétaire respectif."
+        };
+        const plantStr = plantStrFormats[activeLang] || plantStrFormats["pt"];
           
         return {
           ...h,
@@ -873,21 +901,41 @@ function generateMapData(
   // Calculate high-precision astronomical chart using local Swiss Ephemeris offline library
   const chart = performPreciseServerCalculation(dDate, dTime, coords.latitude, coords.longitude, timezoneOffset, lang);
   
+  const activeLang = (lang || "pt").toLowerCase();
+  const welcomeMessages: Record<string, string> = {
+    pt: `Olá ${name}, seja bem-vindo ao seu Mapa Astral. Aqui começa a sua jornada astrológica profissional baseada em efemérides reais de altíssima precisão!`,
+    en: `Hello ${name}, welcome to your Birth Chart. Here begins your professional astrological journey based on highly precise real ephemerides!`,
+    es: `Hola ${name}, bienvenido a tu Carta Astral. ¡Aquí comienza tu viaje astrológico profesional basado en efemérides reales de altísima precisión!`,
+    de: `Hallo ${name}, willkommen in Ihrem Geburtshoroskop. Hier beginnt Ihre professionelle astrologische Reise auf der Grundlage hochpräziser realer Ephemeriden!`,
+    fr: `Bonjour ${name}, bienvenue dans votre Carte Astrale. Ici commence votre voyage astrologique professionnel basé sur des éphémérides réelles de haute précision !`
+  };
+
+  const harmoniousTraits: Record<string, string[]> = {
+    pt: ["Socialmente consciente", "Inventivo", "Esperançoso", "Amigável", "Curioso", "Independente", "Futurista", "Visionário", "Altruísta"],
+    en: ["Socially conscious", "Inventive", "Hopeful", "Friendly", "Curious", "Independent", "Futuristic", "Visionary", "Altruistic"],
+    es: ["Socialmente consciente", "Inventivo", "Esperanzado", "Amigable", "Curioso", "Independiente", "Futurista", "Visionario", "Altruista"],
+    de: ["Sozial bewusst", "Erfinderisch", "Hoffnungsvoll", "Freundlich", "Neugierig", "Unabhängig", "Futuristisch", "Visionär", "Uneigennützig"],
+    fr: ["Socialement conscient", "Inventif", "Plein d'espoir", "Amical", "Curieux", "Indépendant", "Futuriste", "Visionnaire", "Altruiste"]
+  };
+
+  const disharmoniousTraits: Record<string, string[]> = {
+    pt: ["Temperamental", "Disperso", "Imprevisível", "Teimoso", "Sarcástico"],
+    en: ["Temperamental", "Dispersed", "Unpredictable", "Stubborn", "Sarcastic"],
+    es: ["Temperamental", "Disperso", "Impredecible", "Terco", "Sarcástico"],
+    de: ["Launenhaft", "Zerstreut", "Unberechenbar", "Eigensinnig", "Sarkastisch"],
+    fr: ["Capricieux", "Dispersé", "Imprévisible", "Têtu", "Sarcastique"]
+  };
+
   const finalMap = {
-    welcomeMessage: `Olás ${name}, seja bem-vindo ao seu Mapa Astral. Aqui começa a sua jornada astrológica profissional baseada em efemérides reais de altíssima precisão!`,
+    welcomeMessage: welcomeMessages[activeLang] || welcomeMessages.pt,
     is_dst: isDst || false,
     timezone: coords.timezone,
     originalTime: time || "12:00",
     adjustedTime: dTime,
     distribution: chart.distribution,
     personalityTraits: {
-      harmonious: [
-        "Socialmente consciente", "Inventivo", "Esperançoso", "Amigável",
-        "Curioso", "Independente", "Futurista", "Visionário", "Altruísta"
-      ],
-      disharmonious: [
-        "Temperamental", "Disperso", "Imprevisível", "Teimoso", "Sarcástico"
-      ]
+      harmonious: harmoniousTraits[activeLang] || harmoniousTraits.pt,
+      disharmonious: disharmoniousTraits[activeLang] || disharmoniousTraits.pt
     },
     astros: chart.astros.map(ast => ({
       name: ast.name,
@@ -933,7 +981,7 @@ function getAscendedAstrologicalSign(dateString: string, offset: number): string
 }
 
 // Calculate Numerology
-function calculateNumerologyData(name: string, birthDate: string): any {
+function calculateNumerologyData(name: string, birthDate: string, lang?: string): any {
   // Summing digits
   const sumDigits = (str: string) => {
     return str.replace(/\D/g, '').split('').reduce((acc, curr) => acc + parseInt(curr), 0);
@@ -954,23 +1002,57 @@ function calculateNumerologyData(name: string, birthDate: string): any {
   const motivacao = reduceToSingleDigit(nameVal * 2 || 9);
   const personalidade = reduceToSingleDigit(Math.abs(nameVal - (birthVal % 10)) || 1);
 
+  const activeLang = (lang || "pt").toLowerCase();
+  const descriptions: Record<string, string> = {
+    pt: `Você é um perfil de vibração ${caminhoDeVida}. Este número denota que seu caminho principal de aprendizado incentiva a independência, curiosidade ativa e forte desenvolvimento pessoal.`,
+    en: `You have a profile of vibration ${caminhoDeVida}. This number denotes that your primary path of learning encourages independence, active curiosity, and strong personal development.`,
+    es: `Tienes un perfil de vibración ${caminhoDeVida}. Este número denota que tu camino principal de aprendizaje fomenta la independencia, la curiosidad activa y un fuerte desarrollo personal.`,
+    de: `Sie haben ein Profil der Schwingung ${caminhoDeVida}. Diese Zahl zeigt an, dass Ihr primärer Lernweg Unabhängigkeit, aktive Neugier und eine starke persönliche Entwicklung fördert.`,
+    fr: `Vous avez un profil de vibration ${caminhoDeVida}. Ce nombre indique que votre principal chemin d'apprentissage encourage l'indépendance, une curiosité active et un fort développement personnel.`
+  };
+
+  const formattedCycles: Record<string, string[]> = {
+    pt: [
+      `Ciclo Formativo (0-28 anos): Vibração ${expressao} - Ênfase nos estudos e compreensão analítica da vida.`,
+      `Ciclo Produtivo (28-56 anos): Vibração ${caminhoDeVida} - Período de conquistas de independência e materialização profissional.`,
+      `Ciclo de Colheita (56+ anos): Vibração ${motivacao} - Transmissão de visão idealista e espiritual ao coletivo.`
+    ],
+    en: [
+      `Formative Cycle (0-28 years): Vibration ${expressao} - Emphasis on studies and analytical understanding of life.`,
+      `Productive Cycle (28-56 years): Vibration ${caminhoDeVida} - Period of achievements of independence and professional materialization.`,
+      `Harvest Cycle (56+ years): Vibration ${motivacao} - Transmission of idealistic and spiritual vision to the collective.`
+    ],
+    es: [
+      `Ciclo Formativo (0-28 años): Vibración ${expressao} - Énfasis en los estudios y comprensión analítica de la vida.`,
+      `Ciclo Produtivo (28-56 años): Vibración ${caminhoDeVida} - Período de logros de independencia y materialización profesional.`,
+      `Ciclo de Cosecha (56+ años): Vibración ${motivacao} - Transmisión de visión idealista y espiritual al colectivo.`
+    ],
+    de: [
+      `Formative Phase (0-28 Jahre): Schwingung ${expressao} - Schwerpunkt auf Studium und analytischem Verständnis des Lebens.`,
+      `Produktive Phase (28-56 Jahre): Schwingung ${caminhoDeVida} - Zeit der Erlangung von Unabhängigkeit und beruflicher Verwirklichung.`,
+      `Erntephase (56+ Jahre): Schwingung ${motivacao} - Weitergabe idealistischer und spiritueller Visionen an das Kollektiv.`
+    ],
+    fr: [
+      `Cycle Formatif (0-28 ans): Vibration ${expressao} - Accent sur les études et la compréhension analytique de la vie.`,
+      `Cycle Productif (28-56 ans): Vibration ${caminhoDeVida} - Période d'accomplissement de l'indépendance et de matérialisation professionnelle.`,
+      `Cycle de Récolte (56+ ans): Vibration ${motivacao} - Transmission d'une vision idéaliste et spirituelle au collectif.`
+    ]
+  };
+
   return {
     caminhoDeVida,
     expressao,
     motivacao,
     personalidade,
-    description: `Você é um perfil de vibração ${caminhoDeVida}. Este número denota que seu caminho principal de aprendizado incentiva a independência, curiosidade ativa e forte desenvolvimento pessoal.`,
-    ciclos: [
-      `Ciclo Formativo (0-28 anos): Vibração ${expressao} - Ênfase nos estudos e compreensão analítica da vida.`,
-      `Ciclo Produtivo (28-56 anos): Vibração ${caminhoDeVida} - Período de conquistas de independência e materialização profissional.`,
-      `Ciclo de Colheita (56+ anos): Vibração ${motivacao} - Transmissão de visão idealista e espiritual ao coletivo.`
-    ]
+    description: descriptions[activeLang] || descriptions.pt,
+    ciclos: formattedCycles[activeLang] || formattedCycles.pt
   };
 }
 
 // API: City offline lookup autocomplete
 app.get("/api/cities/search", (req, res) => {
   const query = (req.query.q || "").toString().trim();
+  const lang = (req.query.lang || "pt").toString().toLowerCase();
   if (query.length < 2) {
     return res.json([]);
   }
@@ -985,61 +1067,100 @@ app.get("/api/cities/search", (req, res) => {
     countriesMap.set(c.isoCode, c.name);
   });
 
-  // Translation helpers for country and state names to Portuguese
-  function getPortugueseCountryName(countryCode: string, defaultName: string): string {
-    const customMap: Record<string, string> = {
-      "FR": "França",
-      "US": "EUA",
-      "CA": "Canadá",
-      "BR": "Brasil",
-      "PT": "Portugal",
-      "GB": "Reino Unido",
-      "ES": "Espanha",
-      "IT": "Itália",
-      "DE": "Alemanha",
-      "AR": "Argentina",
-      "UY": "Uruguai",
-      "CL": "Chile",
-      "MX": "México",
-      "CO": "Colômbia",
-      "JP": "Japão",
-      "CN": "China",
-      "IN": "Índia",
-      "IE": "Irlanda",
-      "RU": "Rússia",
-      "CH": "Suíça",
-      "SE": "Suécia",
-      "NO": "Noruega",
-      "NL": "Holanda",
-      "BE": "Bélgica",
-      "ZA": "África do Sul",
-      "AU": "Austrália",
-      "NZ": "Nova Zelândia",
-      "GR": "Grécia",
-      "TR": "Turquia",
-      "EG": "Egito",
-      "IL": "Israel"
+  // Translation helpers for country and state names
+  function getLocalizedCountryName(countryCode: string, defaultName: string, langCode: string): string {
+    const code = countryCode.toUpperCase();
+    if (langCode === "en") return defaultName;
+    
+    const ptMap: Record<string, string> = {
+      "FR": "França", "US": "EUA", "CA": "Canadá", "BR": "Brasil", "PT": "Portugal",
+      "GB": "Reino Unido", "ES": "Espanha", "IT": "Itália", "DE": "Alemanha",
+      "AR": "Argentina", "UY": "Uruguai", "CL": "Chile", "MX": "México",
+      "CO": "Colômbia", "JP": "Japão", "CN": "China", "IN": "Índia", "IE": "Irlanda",
+      "RU": "Rússia", "CH": "Suíça", "SE": "Suécia", "NO": "Noruega", "NL": "Holanda",
+      "BE": "Bélgica", "ZA": "África do Sul", "AU": "Austrália", "NZ": "Nova Zelândia",
+      "GR": "Grécia", "TR": "Turquia", "EG": "Egito", "IL": "Israel"
     };
-    return customMap[countryCode.toUpperCase()] || defaultName;
+
+    const esMap: Record<string, string> = {
+      "FR": "Francia", "US": "EE. UU.", "CA": "Canadá", "BR": "Brasil", "PT": "Portugal",
+      "GB": "Reino Unido", "ES": "España", "IT": "Italia", "DE": "Alemania",
+      "AR": "Argentina", "UY": "Uruguay", "CL": "Chile", "MX": "México",
+      "CO": "Colombia", "JP": "Japón", "CN": "China", "IN": "India", "IE": "Irlanda",
+      "RU": "Rusia", "CH": "Suiza", "SE": "Suecia", "NO": "Noruega", "NL": "Holanda",
+      "BE": "Bélgica", "ZA": "Sudáfrica", "AU": "Australia", "NZ": "Nueva Zelanda",
+      "GR": "Grecia", "TR": "Turquía", "EG": "Egipto", "IL": "Israel"
+    };
+
+    const deMap: Record<string, string> = {
+      "FR": "Frankreich", "US": "USA", "CA": "Kanada", "BR": "Brasilien", "PT": "Portugal",
+      "GB": "Vereinigtes Königreich", "ES": "Spanien", "IT": "Italien", "DE": "Deutschland",
+      "AR": "Argentinien", "UY": "Uruguay", "CL": "Chile", "MX": "Mexiko",
+      "CO": "Kolumbien", "JP": "Japan", "CN": "China", "IN": "Indien", "IE": "Irland",
+      "RU": "Russland", "CH": "Schweiz", "SE": "Schweden", "NO": "Norwegen", "NL": "Niederlande",
+      "BE": "Belgien", "ZA": "Südafrika", "AU": "Australien", "NZ": "Neuseeland",
+      "GR": "Griechenland", "TR": "Türkei", "EG": "Ägypten", "IL": "Israel"
+    };
+
+    const frMap: Record<string, string> = {
+      "FR": "France", "US": "États-Unis", "CA": "Canada", "BR": "Brésil", "PT": "Portugal",
+      "GB": "Royaume-Uni", "ES": "Espagne", "IT": "Italie", "DE": "Allemagne",
+      "AR": "Argentine", "UY": "Uruguay", "CL": "Chili", "MX": "Mexique",
+      "CO": "Colombie", "JP": "Japon", "CN": "Chine", "IN": "Inde", "IE": "Irlande",
+      "RU": "Russie", "CH": "Suisse", "SE": "Suède", "NO": "Norvège", "NL": "Pays-Bas",
+      "BE": "Belgique", "ZA": "Afrique du Sud", "AU": "Australie", "NZ": "Nouvelle-Zélande",
+      "GR": "Grèce", "TR": "Turquie", "EG": "Égypte", "IL": "Israël"
+    };
+
+    if (langCode === "es") return esMap[code] || defaultName;
+    if (langCode === "de") return deMap[code] || defaultName;
+    if (langCode === "fr") return frMap[code] || defaultName;
+    return ptMap[code] || defaultName;
   }
 
-  function getPortugueseStateName(stateCode: string, countryCode: string, defaultName: string): string {
+  function getLocalizedStateName(stateCode: string, countryCode: string, defaultName: string, langCode: string): string {
     if (!stateCode) return "";
     const key = `${countryCode.toUpperCase()}-${stateCode.toUpperCase()}`;
-    const customStates: Record<string, string> = {
+    
+    if (langCode === "en") {
+      try {
+        const s = State.getStateByCodeAndCountry(stateCode, countryCode);
+        if (s && s.name) return s.name;
+      } catch (err) {}
+      return defaultName;
+    }
+
+    const customStatesPt: Record<string, string> = {
       "CA-ON": "Ontário",
       "US-TX": "Texas",
     };
-    if (customStates[key]) return customStates[key];
-    
+    const customStatesEs: Record<string, string> = {
+      "CA-ON": "Ontario",
+      "US-TX": "Texas",
+    };
+    const customStatesDe: Record<string, string> = {
+      "CA-ON": "Ontario",
+      "US-TX": "Texas",
+    };
+    const customStatesFr: Record<string, string> = {
+      "CA-ON": "Ontario",
+      "US-TX": "Texas",
+    };
+
+    let result = defaultName;
     try {
       const s = State.getStateByCodeAndCountry(stateCode, countryCode);
       if (s && s.name) {
-        if (s.name === "Ontario") return "Ontário";
-        return s.name;
+        result = s.name;
       }
     } catch (err) {}
-    return defaultName || stateCode;
+
+    if (langCode === "es") return customStatesEs[key] || result;
+    if (langCode === "de") return customStatesDe[key] || result;
+    if (langCode === "fr") return customStatesFr[key] || result;
+    
+    if (result === "Ontario") return "Ontário";
+    return customStatesPt[key] || result;
   }
   
   const matches = [];
@@ -1047,8 +1168,8 @@ app.get("/api/cities/search", (req, res) => {
     const normCityName = cleanStr(city.name);
     if (normCityName.startsWith(normalizedQuery) || normCityName.includes(normalizedQuery)) {
       const origCountryName = countriesMap.get(city.countryCode) || city.countryCode;
-      const countryName = getPortugueseCountryName(city.countryCode, origCountryName);
-      const stateName = city.stateCode ? getPortugueseStateName(city.stateCode, city.countryCode, city.stateCode) : "";
+      const countryName = getLocalizedCountryName(city.countryCode, origCountryName, lang);
+      const stateName = city.stateCode ? getLocalizedStateName(city.stateCode, city.countryCode, city.stateCode, lang) : "";
       
       let label = city.name;
       if (city.countryCode === 'FR') {
@@ -1147,7 +1268,7 @@ app.post("/api/astrology/generate", async (req, res) => {
 
     const timezoneOffsetHours = mt.utcOffset() / 60;
 
-    const numerology = calculateNumerologyData(name, safeBirthDate);
+    const numerology = calculateNumerologyData(name, safeBirthDate, lang);
     const localMap = generateMapData(
       name, 
       safeBirthDate, 

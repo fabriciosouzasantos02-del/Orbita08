@@ -1,6 +1,7 @@
 import React, { useState, useMemo, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateUiText, Language } from '../lib/translations';
+import { useIdioma } from '../context/IdiomaContext';
 import { AstrologyMap, AstroAstroPosition, UserProfile } from '../types';
 import CircularChart from './CircularChart';
 import { 
@@ -41,6 +42,7 @@ interface ExtraMap {
 
 const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainMap, readOnly = false }: AstrologyViewProps) {
   const { t: i18nT, i18n } = useTranslation();
+  const { idioma } = useIdioma();
 
   const LOCAL_UI_TRANSLATIONS: Record<string, Record<string, string>> = {
     en: {
@@ -55,7 +57,11 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
       "De": "From",
       "a": "to",
       "Ver menos": "Show less",
-      "Ler mais": "Read more"
+      "Ler mais": "Read more",
+      "Desconhecida": "Unknown",
+      "e.g. São Paulo": "e.g. Sao Paulo",
+      "e.g. Maria Silva": "e.g. Jane Doe",
+      "e.g. Rio de Janeiro": "e.g. Rio de Janeiro"
     },
     es: {
       "Resumo / Trânsitos": "Resumen / Tránsitos",
@@ -69,7 +75,11 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
       "De": "De",
       "a": "a",
       "Ver menos": "Ver menos",
-      "Ler mais": "Leer más"
+      "Ler mais": "Leer más",
+      "Desconhecida": "Desconocida",
+      "e.g. São Paulo": "e.g. São Paulo",
+      "e.g. Maria Silva": "e.g. María Silva",
+      "e.g. Rio de Janeiro": "e.g. Río de Janeiro"
     },
     de: {
       "Resumo / Trânsitos": "Zusammenfassung / Transite",
@@ -83,7 +93,11 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
       "De": "Vom",
       "a": "bis",
       "Ver menos": "Weniger anzeigen",
-      "Ler mais": "Mehr lesen"
+      "Ler mais": "Mehr lesen",
+      "Desconhecida": "Unbekannt",
+      "e.g. São Paulo": "z.B. São Paulo",
+      "e.g. Maria Silva": "z.B. Maria Müller",
+      "e.g. Rio de Janeiro": "z.B. Rio de Janeiro"
     },
     fr: {
       "Resumo / Trânsitos": "Résumé / Transits",
@@ -93,17 +107,21 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
       "RESUMO DE HOJE": "RÉSUMÉ D'AUJOURD'HUI",
       "Trânsitos de": "Transits de",
       "Buscador": "Chercheur",
-      "Você tem 8 influências ativas": "Vous avez 8 influences actives",
+      "Você tem 8 influences actives": "Vous avez 8 influences actives",
       "De": "Du",
       "a": "au",
       "Ver menos": "Voir moins",
-      "Ler mais": "En savoir plus"
+      "Ler mais": "En savoir plus",
+      "Desconhecida": "Inconnue",
+      "e.g. São Paulo": "par ex. São Paulo",
+      "e.g. Maria Silva": "par ex. Marie Dupont",
+      "e.g. Rio de Janeiro": "par ex. Rio de Janeiro"
     }
   };
 
   const t = (text: string) => {
     if (!text) return "";
-    const currentLang = (i18n.language || 'pt').toLowerCase();
+    const currentLang = (idioma || i18n.language || 'pt').toLowerCase();
 
     // 1. Regex Match for Astro Position Description
     // "Exibindo posição do astro [Astro] no signo de [Signo] na Casa [Casa]."
@@ -840,7 +858,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
       name: newExtraName,
       birthDate: newExtraDate,
       birthTime: newExtraTime || "12:00",
-      birthCity: newExtraCity || "Desconhecida"
+      birthCity: newExtraCity || t("Desconhecida")
     }]);
     setNewExtraName('');
     setNewExtraDate('');
@@ -921,7 +939,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                   value={overwriteTime} 
                   onChange={(e) => setOverwriteTime(e.target.value)} 
                   className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200"
-                  placeholder="e.g. 15:30"
+                  placeholder={t("e.g. 15:30")}
                 />
               </div>
               <div>
@@ -931,7 +949,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                   value={overwriteCity} 
                   onChange={(e) => setOverwriteCity(e.target.value)} 
                   className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200"
-                  placeholder="e.g. São Paulo"
+                  placeholder={t("e.g. São Paulo")}
                 />
               </div>
               <div className="sm:col-span-3 flex justify-end gap-2 mt-2">
@@ -1028,7 +1046,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
           <div className="lg:col-span-2 flex flex-col items-center justify-center bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
             <CircularChart astros={mapData.astros} />
             <span className="text-[10px] font-mono text-slate-500 mt-3 text-center uppercase tracking-wide">
-              {t("Diagrama do firmamento no nascimento")} ({user.birthCity})
+              {t("Diagrama do firmamento no nascimento")} ({t(user.birthCity)})
             </span>
           </div>
 
@@ -1614,7 +1632,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                 <input 
                   type="text" 
                   required
-                  placeholder="e.g. Maria Silva"
+                  placeholder={t("e.g. Maria Silva")}
                   value={newExtraName}
                   onChange={(e) => setNewExtraName(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -1637,7 +1655,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                   <label className="block text-[10px] font-mono text-slate-400 mb-1">{t("HORA (HH:MM)")}</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. 18:45"
+                    placeholder={t("e.g. 18:45")}
                     value={newExtraTime}
                     onChange={(e) => setNewExtraTime(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden"
@@ -1647,7 +1665,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                   <label className="block text-[10px] font-mono text-slate-400 mb-1">{t("CIDADE")}</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Rio de Janeiro"
+                    placeholder={t("e.g. Rio de Janeiro")}
                     value={newExtraCity}
                     onChange={(e) => setNewExtraCity(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden"
@@ -1686,7 +1704,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                       </span>
                       <h4 className="text-xs font-bold text-slate-200">{map.name}</h4>
                       <p className="text-[10px] text-slate-400">
-                        {map.birthDate.split('-').reverse().join('/')} {t("às")} {map.birthTime} · {map.birthCity}
+                        {map.birthDate.split('-').reverse().join('/')} {t("às")} {map.birthTime} · {t(map.birthCity)}
                       </p>
                     </div>
 

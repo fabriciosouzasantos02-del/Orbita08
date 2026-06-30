@@ -15,6 +15,7 @@ import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 import { getAvatarUrl } from '../lib/avatars';
 import { translateUiText, Language } from '../lib/translations';
+import { useIdioma } from '../context/IdiomaContext';
 
 function getLifePathNumber(birthDate: string): number {
   if (!birthDate) return 8; // default fallback
@@ -90,6 +91,56 @@ interface UserDashboardPortalProps {
 
 const localPortalTranslations: Record<string, Record<string, string>> = {
   en: {
+    "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Harmonious Intuition & Singular Focus (Sun and Mercury in Trigon)",
+    "Energia Vital": "Vital Energy",
+    "Sua vitalidade celular física e impulso vital ativo sob sua regência estelar.": "Your physical cellular vitality and active vital impulse under your stellar ruling.",
+    "Retenção intelectual e foco singular de mercúrio ativo.": "Intellectual retention and singular focus of active mercury.",
+    "Expressão de afetos, diplomacia e conexões áuricas com base em Vênus.": "Expression of affection, diplomacy, and auric connections based on Venus.",
+    "Estruturação de afazeres diários sob o Caminho de Vida 8.": "Structuring of daily chores under Life Path 8.",
+    "Centramento emocional e quietude mental do respirar.": "Emotional centering and mental quietness of breathing.",
+    "Amor": "Love",
+    "Família": "Family",
+    "Trabalho": "Work",
+    "Dinheiro": "Money",
+    "Saúde": "Health",
+    "Espiritualidade": "Spirituality",
+    "Medos": "Fears",
+    "Desejos": "Desires",
+    "Transformações": "Transformations",
+    "Clique no botão de instalar abaixo ou nos 3 pontinhos (⋮) no canto superior e selecione \"Instalar aplicativo\" ou \"Adicionar à tela inicial\".": "Click the install button below or the 3 dots (⋮) in the top corner and select \"Install application\" or \"Add to home screen\".",
+    "Toque no ícone de compartilhamento (↑) no Safari e selecione \"Adicionar à Tela de Início\".": "Tap the share icon (↑) in Safari and select \"Add to Home Screen\".",
+    "Portal Órbita - Astrologia Premium": "Portal Orbita - Premium Astrology",
+    "Venha desvendar seu mapa de nascimento, biorritmo, tarô e conselhos da IA Orbia no Portal Órbita!": "Come unveil your birth chart, biorhythm, tarot, and advice from Orbia AI at Portal Orbita!",
+    "Orientação Única Diária de Osíris": "Unique Daily Guidance from Osiris",
+    "Fila Push Offline (Hoje)": "Offline Push Queue (Today)",
+    "Últimas 3 Notificações": "Last 3 Notifications",
+    "Mensagens despachadas pelas esferas celestes enquanto você estava em desconexão prática.": "Messages dispatched by celestial spheres while you were in practical disconnection.",
+    "Mensagem Contextual de Osíris": "Contextual Message from Osiris",
+    "Esta semana tente resolver uma pendência antiga": "This week try to resolve an old pending issue",
+    "Identifique uma pendência material ou burocrática acumulada e tome uma ação para resolvê-la, liberando fluxo de Saturno.": "Identify an accumulated material or bureaucratic pending issue and take action to resolve it, releasing Saturn's flow.",
+    "Esta semana fortaleça um relacionamento importante": "This week strengthen an important relationship",
+    "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo.": "Send a genuine message of affection or make a gesture of consideration to someone in your inner circle.",
+    "Esta semana dedique tempo ao aprendizado": "This week dedicate time to learning",
+    "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.": "Invest at least 1 hour in a book, course, or meditation audio aimed at your personal development.",
+    "Elias & Sinais": "Elias & Signals",
+    "Missões do Portal": "Portal Missions",
+    "Símbolos & Amuletos": "Symbols & Amulets",
+    "Radar Oportunidades": "Opportunities Radar",
+    "Calendário Inteligente": "Smart Calendar",
+    "Cores do Mês": "Colors of the Month",
+    "Mensagem & Alertas": "Message & Alerts",
+    "Prosperidade e Capital": "Prosperity and Capital",
+    "Amor & Intimidade": "Love & Intimacy",
+    "Sinergia Social": "Social Synergy",
+    "Desenv. Pessoal": "Personal Dev.",
+    "Energia da Casa": "Home Energy",
+    "Instalar APK / PWA": "Install APK / PWA",
+    "Sintonia de Foco Celular": "Cellular Focus Tuning",
+    "Sua bússola biológica e o trânsito do Sol em": "Your biological compass and the transit of the Sun in",
+    "orientam seu fluxo prático nesta coordenada.": "guide your practical flow in this coordinate.",
+    "Sincronia": "Sync",
+    "Status:": "Status:",
+    "Resposta inválida do Osíris": "Invalid response from Osiris",
     "Olá, meu caro buscador stelar! Eu sou OSÍRIS, seu mentor astrológico supremo e guia de cura energética. Estou em plena sintonia com suas frequências cósmicas de hoje para alinhar seu dharma e afastar de forma precisa as negatividades kármicas. O que você gostaria de desvendar no momento? Me pergunte sobre o clima, biorritmo celular ou seus sonhos profundos.": "Hello, my dear stellar seeker! I am OSIRIS, your supreme astrological mentor and energy healing guide. I am in full sync with your cosmic frequencies today to align your dharma and precisely ward off karmic negativities. What would you like to unveil right now? Ask me about the weather, cellular biorhythm, or your deep dreams.",
     "✦ Osíris está sintonizando energias...": "✦ Osiris is tuning energies...",
     "Pergunte ao Osíris sobre seus trânsitos, clima ou sonhos de hoje...": "Ask Osiris about your transits, weather, or dreams today...",
@@ -333,7 +384,6 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Todos os Dias": "All Days",
     "Produtividade": "Productivity",
     "Descanso": "Rest",
-    "Família": "Family",
     "Encontros": "Meetings",
     "Diversão": "Fun",
     "Entrevistas": "Interviews",
@@ -347,7 +397,6 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Estudos": "Studies",
     "Exercícios Físicos": "Physical Exercises",
     "Meditação": "Meditation",
-    "Espiritualidade": "Spirituality",
     "Compras Importantes": "Important Purchases",
     "Oportunidades de ganhos secundários intelectuais sob ar ativo.": "Opportunities for secondary intellectual gains under active air.",
     "O trânsito atual favorece a formatação de serviços de mentoria ou rascunhos de propostas comerciais. Fique atento a propostas nas terças ou quintas-feiras.": "The current transit favors the formatting of mentoring services or drafts of commercial proposals. Stay tuned for proposals on Tuesdays or Thursdays.",
@@ -373,9 +422,87 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Área focada": "Focused area",
     "Conselho Especial Hoje": "Special Advice Today",
     "Foco Ativo": "Active Focus",
-    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Place a blue napkin in your left pocket or use a black ink pen to anchor actions taken now under the influence of this vibration."
+    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Place a blue napkin in your left pocket or use a black ink pen to anchor actions taken now under the influence of this vibration.",
+    "Viajante": "Traveler",
+    "Parcialmente Nublado": "Partly Cloudy",
+    "Influências Gerais Neutras": "General Neutral Influences",
+    "Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais.": "A day dominated by the Moon's reflective energy. Perfect for structuring old business ideas or reviewing the flow of finances with Saturnian discernment. Tiredness is sacred — respect natural pauses.",
+    "Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma descontraída com parceiros ou ler sobre espiritualidade onírica.": "A day marked by the solar impulse of the Air element. Excellent for verbally expressing business proposals, discussing ideas casually with partners or reading about oneiric spirituality.",
+    "Acenda um incenso de sândalo de manhã para sintonizar a sabedoria e limpe sua mesa.": "Light a sandalwood incense in the morning to tune into wisdom and clear your desk.",
+    "Evite comprar itens supérfluos no final do dia. Aguarde 24 horas antes de decidir.": "Avoid buying superfluous items at the end of the day. Wait 24 hours before deciding.",
+    "Faça alongamentos respiratórios intensificados de 5 minutos logo ao despertar.": "Do 5 minutes of intensive breathing stretches right when you wake up.",
+    "Portal Ativo Sincronizado": "Active Synchronized Portal",
+    "Acelere Seus Objetivos, Navegue pelos Portais Ativos": "Accelerate Your Goals, Navigate the Active Portals",
+    "Veja o que o universe quer te mostrando": "See what the universe wants to show you",
+    "Veja o que o universo quer te mostrando": "See what the universe wants to show you",
+    "Painel do mês e orientações cósmicas.": "Monthly panel and cosmic guidance.",
+    "Ver tudo →": "See all →",
+    "Kosmische Navigation": "Cosmic Navigation",
+    "Nenhum sonho sintonizado": "No dream synced",
+    "Sem símbolos": "No symbols",
+    "Neutro": "Neutral",
+    "Nenhuma observada": "None observed",
+    "Métricas & Estatísticas do Centro de Sonhos": "Dream Center Metrics & Statistics",
+    "Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.": "Analytical intelligence based on records archived in the Dream Vault.",
+    "Relatório Onírico": "Dream Report",
+    "Sonho": "Dream",
+    "Sonhos": "Dreams",
+    "Sintonizado em {date}": "Synced on {date}",
+    "Variação Energética Onírica (Suas Sintonizações Recentes)": "Oneiric Energy Variation (Your Recent Syncs)",
+    "Baixar Arquivo APK": "Download APK File",
+    "Sintonize com sua câmera 🪐": "Tune in with your camera 🪐"
   },
   es: {
+    "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Intuición Armoniosa & Enfoque Singular (Sol y Mercurio en Trígono)",
+    "Energia Vital": "Energía Vital",
+    "Sua vitalidade celular física e impulso vital ativo sob sua regência estelar.": "Tu vitalidad celular física e impulso vital activo bajo tu regencia estelar.",
+    "Retenção intelectual e foco singular de mercúrio ativo.": "Retención intelectual y enfoque singular del mercurio activo.",
+    "Expressão de afetos, diplomacia e conexões áuricas com base em Vênus.": "Expresión de afectos, diplomacia y conexiones áuricas basadas en Venus.",
+    "Estruturação de afazeres diários sob o Caminho de Vida 8.": "Estructuración de quehaceres diarios bajo el Camino de Vida 8.",
+    "Centramento emocional e quietude mental do respirar.": "Centramiento emocional y quietud mental del respirar.",
+    "Amor": "Amor",
+    "Família": "Familia",
+    "Trabalho": "Trabajo",
+    "Dinheiro": "Dinero",
+    "Saúde": "Salud",
+    "Espiritualidade": "Espiritualidad",
+    "Medos": "Miedos",
+    "Desejos": "Deseos",
+    "Transformações": "Transformaciones",
+    "Clique no botão de instalar abaixo ou nos 3 pontinhos (⋮) no canto superior e selecione \"Instalar aplicativo\" ou \"Adicionar à tela inicial\".": "Haga clic en el botón de instalar abajo o en los 3 puntos (⋮) en la esquina superior y seleccione \"Instalar aplicación\" o \"Agregar a la pantalla de inicio\".",
+    "Toque no ícone de compartilhamento (↑) no Safari e selecione \"Adicionar à Tela de Início\".": "Toque el icono de compartir (↑) en Safari y seleccione \"Agregar a la pantalla de inicio\".",
+    "Portal Órbita - Astrologia Premium": "Portal Órbita - Astrología Premium",
+    "Venha desvendar seu mapa de nascimento, biorritmo, tarô e conselhos da IA Orbia no Portal Órbita!": "¡Ven a descubrir tu carta natal, biorritmo, tarot y consejos de la IA Orbia en el Portal Órbita!",
+    "Orientação Única Diária de Osíris": "Orientación Única Diaria de Osiris",
+    "Fila Push Offline (Hoje)": "Cola de Push Offline (Hoy)",
+    "Últimas 3 Notificações": "Últimas 3 Notificaciones",
+    "Mensagens despachadas pelas esferas celestes enquanto você estava em desconexão prática.": "Mensajes despachados por las esferas celestes mientras estabas en desconexión práctica.",
+    "Mensagem Contextual de Osíris": "Mensaje Contextual de Osiris",
+    "Esta semana tente resolver uma pendência antiga": "Esta semana intenta resolver un asunto pendiente antiguo",
+    "Identifique uma pendência material ou burocrática acumulada e tome uma ação para resolvê-la, liberando fluxo de Saturno.": "Identifica un asunto pendiente material o burocrático acumulado y toma acción para resolverlo, liberando el flujo de Saturno.",
+    "Esta semana fortaleça um relacionamento importante": "Esta semana fortalece una relación importante",
+    "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo.": "Envía un mensaje genuino de cariño o haz un gesto de consideración a alguien en tu círculo íntimo.",
+    "Esta semana dedique tempo ao aprendizado": "Esta semana dedica tiempo al aprendizaje",
+    "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.": "Invierte al menos 1 hora en un libro, curso o audio de meditación enfocado en tu desarrollo personal.",
+    "Elias & Sinais": "Elias & Señales",
+    "Missões do Portal": "Misiones del Portal",
+    "Símbolos & Amuletos": "Símbolos & Amuletos",
+    "Radar Oportunidades": "Radar de Oportunidades",
+    "Calendário Inteligente": "Calendario Inteligente",
+    "Cores do Mês": "Colores del Mes",
+    "Mensagem & Alertas": "Mensaje & Alertas",
+    "Prosperidade e Capital": "Prosperidad y Capital",
+    "Amor & Intimidade": "Amor & Intimidad",
+    "Sinergia Social": "Sinergia Social",
+    "Desenv. Pessoal": "Des. Personal",
+    "Energia da Casa": "Energía de la Casa",
+    "Instalar APK / PWA": "Instalar APK / PWA",
+    "Sintonia de Foco Celular": "Sintonía de Enfoque Celular",
+    "Sua bússola biológica e o trânsito do Sol em": "Tu brújula biológica y el tránsito del Sol en",
+    "orientam seu fluxo prático nesta coordenada.": "orientan tu flujo práctico en esta coordenada.",
+    "Sincronia": "Sincronía",
+    "Status:": "Status:",
+    "Resposta inválida do Osíris": "Respuesta inválida de Osiris",
     "Olá, meu caro buscador stelar! Eu sou OSÍRIS, seu mentor astrológico supremo e guia de cura energética. Estou em plena sintonia com suas frequências cósmicas de hoje para alinhar seu dharma e afastar de forma precisa as negatividades kármicas. O que você gostaria de desvendar no momento? Me pergunte sobre o clima, biorritmo celular ou seus sonhos profundos.": "¡Hola, mi querido buscador estelar! Soy OSIRIS, tu mentor astrológico supremo y guía de sanación energética. Estoy en plena sintonía con tus frecuencias cósmicas de hoy para alinear tu dharma y alejar de forma precisa las negatividades kármicas. ¿Qué te gustaría desvelar en este momento? Pregúntame sobre el clima, biorritmo celular o tus sueños profundos.",
     "✦ Osíris está sintonizando energias...": "✦ Osiris está sintonizando energías...",
     "Pergunte ao Osíris sobre seus trânsitos, clima ou sonhos de hoje...": "Pregúntale a Osiris sobre tus tránsitos, clima o sueños de hoy...",
@@ -619,7 +746,6 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Todos os Dias": "Todos los Días",
     "Produtividade": "Productividad",
     "Descanso": "Descanso",
-    "Família": "Familia",
     "Encontros": "Encuentros",
     "Diversão": "Diversión",
     "Entrevistas": "Entrevistas",
@@ -633,7 +759,6 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Estudos": "Estudios",
     "Exercícios Físicos": "Ejercicios Físicos",
     "Meditação": "Meditación",
-    "Espiritualidade": "Espiritualidad",
     "Compras Importantes": "Compras Importantes",
     "Oportunidades de ganhos secundários intelectuais sob ar ativo.": "Oportunidades de ganancias secundarias intelectuales bajo aire activo.",
     "O trânsito atual favorece a formatação de serviços de mentoria ou rascunhos de propostas comerciais. Fique atento a propostas nas terças ou quintas-feiras.": "El tránsito actual favorece la formatación de servicios de mentoría o borradores de propuestas comerciales. Mantente atento a las propuestas los martes o jueves.",
@@ -659,7 +784,110 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Área focada": "Área enfocada",
     "Conselho Especial Hoje": "Consejo Especial Hoy",
     "Foco Ativo": "Foco Activo",
-    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Coloque una servilleta azul en su bolsillo izquierdo o use un bolígrafo de tinta negra para fijar las acciones tomadas ahora bajo la influencia de esta vibración."
+    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Coloque una servilleta azul en su bolsillo izquierdo o use un bolígrafo de tinta negra para fijar las acciones tomadas ahora bajo la influencia de esta vibración.",
+    "Viajante": "Viajero",
+    "Parcialmente Nublado": "Parcialmente Nublado",
+    "Influências Gerais Neutras": "Influencias Generales Neutras",
+    "Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais.": "Un día dominado por la energía reflexiva de la Luna. Perfecto para estructurar ideas antiguas de negocios o revisar el flujo de las finanzas con criterio saturnino. El cansancio es sagrado, respeta las pausas naturales.",
+    "Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma distendida com socios ou ler sobre espiritualidade onírica.": "Un día marcado por el impulso solar del elemento Aire. Excelente para expressar verbalmente propuestas comerciales, debatir ideas de forma distendida con socios o leer sobre espiritualidad onírica.",
+    "Acenda um incenso de sândalo de manhã para sintonizar a sabedoria e limpe sua mesa.": "Enciende un incienso de sándolo por la mañana para sintonizar la sabiduría y limpia tu mesa.",
+    "Evite comprar itens supérfluos no final do dia. Aguarde 24 horas antes de decidir.": "Evita comprar artículos superfluos al final del día. Espera 24 horas antes de decidir.",
+    "Faça alongamentos respiratórios intensificados de 5 minutos logo ao despertar.": "Haz estiramientos respiratorios intensificados de 5 minutos al despertar.",
+    "Portal Ativo Sincronizado": "Portal Activo Sincronizado",
+    "Acelere Seus Objetivos, Navegue pelos Portais Ativos": "Acelera tus Objetivos, Navega por los Portales Activos",
+    "Veja o que o universo quer te mostrando": "Ve lo que el universo quiere mostrarte",
+    "Painel do mês e orientações cósmicas.": "Panel del mes y orientaciones cósmicas.",
+    "Ver tudo →": "Ver todo →",
+    "Kosmische Navigation": "Navegación Cósmica",
+    "Nenhum sonho sintonizado": "Ningún sueño sintonizado",
+    "Sem símbolos": "Sin símbolos",
+    "Neutro": "Neutro",
+    "Nenhuma observada": "Ninguna observada",
+    "Métricas & Estatísticas do Centro de Sonhos": "Métricas & Estadísticas del Centro de Sueños",
+    "Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.": "Visión analítica de inteligencia basada en los registros archivados en el Cofre de Sueños.",
+    "Relatório Onírico": "Reporte Onírico",
+    "Sonho": "Sueño",
+    "Sonhos": "Sueños",
+    "Sintonizado em {date}": "Sintonizado el {date}",
+    "Variação Energética Onírica (Suas Sintonizações Recentes)": "Variación Energética Onírica (Sus Sintonizaciones Recientes)",
+    "Baixar Arquivo APK": "Descargar Archivo APK",
+    "Sintonize com sua câmera 🪐": "Sintoniza con tu cámara 🪐"
+  },
+  de: {
+    "Viajante": "Reisender",
+    "Parcialmente Nublado": "Teilweise bewölkt",
+    "Influências Gerais Neutras": "Allgemeine neutrale Einflüsse",
+    "Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais.": "Ein Tag, der von der reflektiven Energie des Mondes dominiert wird. Ideal, um alte Geschäftsideen zu strukturieren oder den Finanzfluss mit saturnischem Urteil zu überprüfen. Müdigkeit ist heilig — respektiere natürliche Pausen.",
+    "Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma descontraída com parceiros ou ler sobre espiritualidade onírica.": "Ein Tag, der vom Sonnenimpuls des Luftelements geprägt ist. Ausgezeichnet, um Geschäftsvorschläge mündlich zu äußern, Ideen mit Partnern ungezwungen zu diskutieren oder über onirologische Spiritualität zu lesen.",
+    "Acenda um incenso de sândalo de manhã para sintonizar a sabedoria e limpe sua mesa.": "Zünde morgens ein Sandelholzräucherstäbchen an, um Weisheit zu empfangen und deinen Schreibtisch aufzuräumen.",
+    "Evite comprar itens supérfluos no final do dia. Aguarde 24 horas antes de decidir.": "Vermeide es, am Ende des Tages überflüssige Dinge zu kaufen. Warte 24 Stunden vor einer Entscheidung.",
+    "Faça alongamentos respiratórios intensificados de 5 minutos logo ao despertar.": "Mache beim Aufwachen 5 Minuten intensive Atemübungen.",
+    "Portal Ativo Sincronizado": "Aktives synchronisiertes Portal",
+    "Acelere Seus Objetivos, Navegue pelos Portais Ativos": "Beschleunige deine Ziele, navigiere durch die aktiven Portale",
+    "Veja o que o universo quer te mostrando": "Sieh was das Universum dir zeigen möchte",
+    "Painel do mês e orientações cósmicas.": "Monatspanel und kosmische Orientierungen.",
+    "Ver tudo →": "Alles sehen →",
+    "Kosmische Navigation": "Kosmische Navigation",
+    "Nenhum sonho sintonizado": "Kein Traum synchronisiert",
+    "Sem símbolos": "Keine Symbole",
+    "Neutro": "Neutral",
+    "Nenhuma observada": "Keine beobachtet",
+    "Métricas & Estatísticas do Centro de Sonhos": "Metriken & Statistiken des Traumzentrums",
+    "Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.": "Analytische Intelligenz basierend auf den im Traumtresor archivierten Aufzeichnungen.",
+    "Relatório Onírico": "Traumreport",
+    "Sonho": "Traum",
+    "Sonhos": "Träume",
+    "Sintonizado em {date}": "Synchronisiert am {date}",
+    "Variação Energética Onírica (Suas Sintonizações Recentes)": "Traumenergetische Variation (Ihre letzten Synchronisierungen)",
+    "Baixar Arquivo APK": "APK-Datei herunterladen",
+    "Sintonize com sua câmera 🪐": "Mit deiner Kamera synchronisieren 🪐",
+    "Método 2: Aplicativo Instantâneo (PWA)": "Methode 2: Sofort-App (PWA)",
+    "Como Instalar no Celular:": "Wie man auf dem Handy installiert:",
+    "No Android / Chrome:": "Auf Android / Chrome:",
+    "No iPhone / Safari:": "Auf iPhone / Safari:",
+    "Ativar Instrução PWA": "PWA-Anweisung aktivieren",
+    "Não consome memória de armazenamento físico adicional. Atualiza em tempo real.": "Verbraucht keinen zusätzlichen physischen Speicher. Aktualisiert in Echtzeit.",
+    "Sincronizar Celular Via QR Code / Compartilhar": "Handy über QR-Code synchronisieren / Teilen",
+    "Copiar Link do App": "App-Link kopieren",
+    "A tecnologia PWA permite adicionar o aplicativo direto na tela de início sem precisar instalar arquivos separados. É compatível com Android e iOS (iPhone).": "Die PWA-Technologie ermöglicht es, die App direkt zum Startbildschirm hinzuzufügen, ohne separate Dateien installieren zu müssen. Es ist mit Android und iOS (iPhone) kompatibel."
+  },
+  fr: {
+    "Viajante": "Voyageur",
+    "Parcialmente Nublado": "Partiellement Nuageux",
+    "Influências Gerais Neutras": "Influences Générales Neutres",
+    "Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais.": "Une journée dominée par l'énergie réflexive de la Lune. Parfait pour structurer d'anciennes idées d'affaires ou revoir le flux de vos finances avec discernement saturnien. La fatigue est sacrée — respectez les pauses naturelles.",
+    "Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma descontraída com parceiros ou ler sobre espiritualidade onírica.": "Une journée marquée par l'impulsion solaire de l'élément Air. Excellent pour exprimer verbalement des propositions commerciales, discuter d'idées de manière décontractée avec des partenaires ou lire sur la spiritualité onirique.",
+    "Acenda um incenso de sândalo de manhã para sintonizar a sabedoria e limpe sua mesa.": "Allumez un encens de santal le matin pour vous accorder à la sagesse et nettoyez votre bureau.",
+    "Evite comprar itens supérfluos no final do dia. Aguarde 24 horas antes de decidir.": "Évitez d'acheter des articles superflus en fin de journée. Attendez 24 heures avant de décider.",
+    "Faça alongamentos respiratórios intensificados de 5 minutos logo ao despertar.": "Faites des étirements respiratoires intensifiés de 5 minutes dès le réveil.",
+    "Portal Ativo Sincronizado": "Portail Actif Synchronisé",
+    "Acelere Seus Objetivos, Navegue pelos Portais Ativos": "Accélérez vos Objectifs, Naviguez à travers les Portails Actifs",
+    "Veja o que o universo quer te mostrando": "Voyez ce que l'univers veut vous montrer",
+    "Painel do mês e orientações cósmicas.": "Tableau mensuel et orientations cosmiques.",
+    "Ver tudo →": "Tout voir →",
+    "Kosmische Navigation": "Navigation Cosmique",
+    "Nenhum sonho sintonizado": "Aucun rêve synchronisé",
+    "Sem símbolos": "Aucun symbole",
+    "Neutro": "Neutre",
+    "Nenhuma observada": "Aucune observée",
+    "Métricas & Estatísticas do Centro de Sonhos": "Mesures & Statistiques du Centre de Rêves",
+    "Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.": "Intelligence analytique basée sur les enregistrements archivés dans le Coffre de Rêves.",
+    "Relatório Onírico": "Rapport Onirique",
+    "Sonho": "Rêve",
+    "Sonhos": "Rêves",
+    "Sintonizado em {date}": "Synchronisé le {date}",
+    "Variação Energética Onírica (Suas Sintonizações Recentes)": "Variation d'Énergie Onirique (Vos Récentes Synchronisations)",
+    "Baixar Arquivo APK": "Télécharger le fichier APK",
+    "Sintonize com sua câmera 🪐": "Synchronisez avec votre appareil photo 🪐",
+    "Método 2: Aplicativo Instantâneo (PWA)": "Méthode 2: Application Instantanée (PWA)",
+    "Como Instalar no Celular:": "Comment installer sur mobile:",
+    "No Android / Chrome:": "Sur Android / Chrome:",
+    "No iPhone / Safari:": "Sur iPhone / Safari:",
+    "Ativar Instrução PWA": "Activer l'instruction PWA",
+    "Não consome memória de armazenamento físico adicional. Atualiza em tempo real.": "Ne consomme pas de mémoire de stockage physique supplémentaire. Se met à jour en temps réel.",
+    "Sincronizar Celular Via QR Code / Compartilhar": "Synchroniser le mobile via code QR / Partager",
+    "Copiar Link do App": "Copier le lien de l'application",
+    "A tecnologia PWA permite adicionar o aplicativo direto na tela de início sem precisar instalar arquivos separados. É compatível com Android e iOS (iPhone).": "La technologie PWA permet d'ajouter l'application directement sur l'écran d'accueil sans avoir besoin d'installer de fichiers séparés. Elle est compatible avec Android et iOS (iPhone)."
   }
 };
 
@@ -677,9 +905,10 @@ export default function UserDashboardPortal({
   lang
 }: UserDashboardPortalProps) {
   const { t: i18nT } = useTranslation();
+  const { idioma } = useIdioma();
+  const activeLang = idioma || lang || 'pt';
   const t = (text: string) => {
     if (!text) return "";
-    const activeLang = lang || 'pt';
     if (activeLang !== 'pt') {
       const dict = localPortalTranslations[activeLang] || localPortalTranslations['en'];
       if (dict?.[text]) {
@@ -692,7 +921,7 @@ export default function UserDashboardPortal({
     }
     return res;
   };
-  const travelerFallback = lang === 'de' ? 'Reisender' : lang === 'en' ? 'Traveler' : lang === 'es' ? 'Viajero' : 'Viajante';
+  const travelerFallback = t("Viajante");
   const userFirstName = user?.name ? user.name.split(' ')[0] : travelerFallback;
   const zodiacSign = getZodiacSign(user?.birthDate);
   const lifePathNumber = getLifePathNumber(user?.birthDate);
@@ -808,7 +1037,7 @@ export default function UserDashboardPortal({
     const fetchMissions = async () => {
       try {
         if (email) {
-          const cachedMissions = await loadCalculationCache(email, `daily_missions_${todayStr}_${lang}`);
+          const cachedMissions = await loadCalculationCache(email, `daily_missions_${todayStr}_${activeLang}`);
           if (cachedMissions && Array.isArray(cachedMissions)) {
             const updated = cachedMissions.map((m: any) => {
               const matched = dailyMissions.find(curr => curr.id === m.id);
@@ -825,7 +1054,7 @@ export default function UserDashboardPortal({
         const res = await fetch("/api/astrology/daily-missions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userProfile: user, lang: lang })
+          body: JSON.stringify({ userProfile: user, lang: activeLang })
         });
         if (res.ok) {
           const data = await res.json();
@@ -840,7 +1069,7 @@ export default function UserDashboardPortal({
             });
             setDailyMissions(updated);
             if (email) {
-              await saveCalculationCache(email, `daily_missions_${todayStr}_${lang}`, data.missions);
+              await saveCalculationCache(email, `daily_missions_${todayStr}_${activeLang}`, data.missions);
             }
           }
         }
@@ -854,7 +1083,7 @@ export default function UserDashboardPortal({
       setOsirisLoading(true);
       try {
         if (email) {
-          const cachedDashboard = await loadCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${lang}`);
+          const cachedDashboard = await loadCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${activeLang}`);
           if (cachedDashboard) {
             setOsirisDashboard(cachedDashboard);
             setOsirisLoading(false);
@@ -863,7 +1092,7 @@ export default function UserDashboardPortal({
         }
 
         const defaultBiorhythm = { physical: 78, emotional: 82, intellectual: 65 };
-        const defaultWeather = { temperature: 24, condition: lang === 'de' ? "Teilweise bewölkt" : lang === 'en' ? "Partly Cloudy" : lang === 'es' ? "Parcialmente Nublado" : "Parcialmente Nublado" };
+        const defaultWeather = { temperature: 24, condition: t("Parcialmente Nublado") };
         const locationStr = user?.birthCity || "São Paulo, SP";
 
         const res = await fetch("/api/osiris/dashboard", {
@@ -875,14 +1104,14 @@ export default function UserDashboardPortal({
             biorhythm: defaultBiorhythm,
             location: locationStr,
             lastDream: dreamsHistory && dreamsHistory.length > 0 ? dreamsHistory[0] : null,
-            lang: lang
+            lang: activeLang
           })
         });
         if (res.ok) {
           const data = await res.json();
           setOsirisDashboard(data);
           if (email) {
-            await saveCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${lang}`, data);
+            await saveCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${activeLang}`, data);
           }
         }
       } catch (err) {
@@ -894,7 +1123,7 @@ export default function UserDashboardPortal({
 
     fetchMissions();
     fetchOsirisDashboard();
-  }, [user, lang]);
+  }, [user, activeLang]);
 
   const handleSendOsirisMessage = async () => {
     if (!osirisChatInput.trim() || osirisChatSending) return;
@@ -905,7 +1134,7 @@ export default function UserDashboardPortal({
 
     try {
       const defaultBiorhythm = { physical: 78, emotional: 82, intellectual: 65 };
-      const defaultWeather = { temperature: 24, condition: lang === 'de' ? "Teilweise bewölkt" : lang === 'en' ? "Partly Cloudy" : lang === 'es' ? "Parcialmente Nublado" : "Parcialmente Nublado" };
+      const defaultWeather = { temperature: 24, condition: t("Parcialmente Nublado") };
       const locationStr = user?.birthCity || "São Paulo, SP";
 
       const res = await fetch("/api/osiris/chat", {
@@ -921,7 +1150,7 @@ export default function UserDashboardPortal({
           biorhythm: defaultBiorhythm,
           location: locationStr,
           dreams: dreamsHistory,
-          lang
+          lang: activeLang
         })
       });
 
@@ -932,12 +1161,12 @@ export default function UserDashboardPortal({
           return;
         }
       }
-      throw new Error("Resposta inválida do Osíris");
+      throw new Error(t("Resposta inválida do Osíris"));
     } catch (err) {
       console.warn("Erro no chat com Osíris:", err);
       setOsirisChatMessages(prev => [
         ...prev,
-        { sender: 'osiris', text: `Desculpe, sinto uma instabilidade temporária nas esferas celestes. Mas recorde: a força solar brilha firme em sua alma hoje.` }
+        { sender: 'osiris', text: t("Desculpe, sinto uma instabilidade temporária nas esferas celestes. Mas recorde: a força solar brilha firme em sua alma hoje.") }
       ]);
     } finally {
       setOsirisChatSending(false);
@@ -976,7 +1205,7 @@ export default function UserDashboardPortal({
               </div>
               <div className="text-slate-450 text-xs font-sans space-y-1">
                 {user.email && <p>{t("E-mail")}: <span className="font-mono text-slate-300">{user.email}</span></p>}
-                <p>Status: <span className="text-amber-400 font-bold font-mono">{t("Aguardando seu Mapa Primordial")}</span></p>
+                <p>{t("Status:")} <span className="text-amber-400 font-bold font-mono">{t("Aguardando seu Mapa Primordial")}</span></p>
               </div>
             </div>
           </div>
@@ -1194,7 +1423,7 @@ export default function UserDashboardPortal({
       de: ["Erholung", "Produktivität", "Treffen", "Warnungen", "Finanzen", "Soziales"],
       es: ["Descanso", "Productividad", "Encuentros", "Avisos", "Financiero", "Social"],
     };
-    const labels = calLabels[lang || 'pt'] || calLabels['pt'];
+    const labels = calLabels[activeLang] || calLabels['pt'];
     const syms = ["🌙", "🎯", "💖", "⚡", "💸", "💬"];
     if (activeCalendarFilter === 'todos') {
       return { sym: syms[day % 6], label: labels[day % 6] };
@@ -1215,49 +1444,23 @@ export default function UserDashboardPortal({
       }
     });
 
-    const neutralInfluences = lang === 'de' ? 'Allgemeine neutrale Einflüsse' : lang === 'en' ? 'General Neutral Influences' : lang === 'es' ? 'Influencias Generales Neutras' : 'Influências Gerais Neutras';
-    const guidanceEven = lang === 'de'
-      ? "Ein Tag, der von der reflektiven Energie des Mondes dominiert wird. Ideal, um alte Geschäftsideen zu strukturieren oder den Finanzfluss mit saturnischem Urteil zu überprüfen. Müdigkeit ist heilig — respektiere natürliche Pausen."
-      : lang === 'en'
-      ? "A day dominated by the Moon's reflective energy. Perfect for structuring old business ideas or reviewing the flow of finances with Saturnian discernment. Tiredness is sacred — respect natural pauses."
-      : lang === 'es'
-      ? "Un día dominado por la energía reflexiva de la Luna. Perfecto para estructurar ideas antiguas de negocios o revisar el flujo de las finanzas con criterio saturnino. El cansancio es sagrado, respeta las pausas naturales."
-      : "Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais.";
-    const guidanceOdd = lang === 'de'
-      ? "Ein Tag, der vom Sonnenimpuls des Luftelements geprägt ist. Ausgezeichnet, um Geschäftsvorschläge mündlich zu äußern, Ideen mit Partnern ungezwungen zu diskutieren oder über onirologische Spiritualität zu lesen."
-      : lang === 'en'
-      ? "A day marked by the solar impulse of the Air element. Excellent for verbally expressing business proposals, discussing ideas casually with partners or reading about oneiric spirituality."
-      : lang === 'es'
-      ? "Un día marcado por el impulso solar del elemento Aire. Excelente para expressar verbalmente propuestas comerciales, debatir ideas de forma distendida con socios o leer sobre espiritualidad onírica."
-      : "Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma descontraída com parceiros ou ler sobre espiritualidade onírica.";
-    const tips: Record<string, string[]> = {
-      pt: [
-        "Acenda um incenso de sândalo de manhã para sintonizar a sabedoria e limpe sua mesa.",
-        "Evite comprar itens supérfluos no final do dia. Aguarde 24 horas antes de decidir.",
-        "Faça alongamentos respiratórios intensificados de 5 minutos logo ao despertar."
-      ],
-      en: [
-        "Light a sandalwood incense in the morning to tune into wisdom and clear your desk.",
-        "Avoid buying superfluous items at the end of the day. Wait 24 hours before deciding.",
-        "Do 5 minutes of intensive breathing stretches right when you wake up."
-      ],
-      de: [
-        "Zünde morgens ein Sandelholzräucherstäbchen an, um Weisheit zu empfangen und deinen Schreibtisch aufzuräumen.",
-        "Vermeide es, am Ende des Tages überflüssige Dinge zu kaufen. Warte 24 Stunden vor einer Entscheidung.",
-        "Mache beim Aufwachen 5 Minuten intensive Atemübungen."
-      ],
-      es: [
-        "Enciende un incienso de sándalo por la mañana para sintonizar la sabiduría y limpia tu mesa.",
-        "Evita comprar artículos superfluos al final del día. Espera 24 horas antes de decidir.",
-        "Haz estiramientos respiratorios intensificados de 5 minutos al despertar."
-      ],
-    };
-    const langTips = tips[lang || 'pt'] || tips['pt'];
+    const neutralInfluences = t("Influências Gerais Neutras");
+    const guidanceEven = t("Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais.");
+    const guidanceOdd = t("Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma descontraída com parceiros ou ler sobre espiritualidade onírica.");
+
+    const defaultTips = [
+      "Acenda um incenso de sândalo de manhã para sintonizar a sabedoria e limpe sua mesa.",
+      "Evite comprar itens supérfluos no final do dia. Aguarde 24 horas antes de decidir.",
+      "Faça alongamentos respiratórios intensificados de 5 minutos logo ao despertar."
+    ];
+
+    const tipIndex = day % 3;
+    const selectedTip = t(defaultTips[tipIndex]);
 
     return {
       favorable: matchedFavorableTypes.length > 0 ? matchedFavorableTypes.join(', ') : neutralInfluences,
       guidance: day % 2 === 0 ? guidanceEven : guidanceOdd,
-      tip: day % 3 === 0 ? langTips[0] : day % 3 === 1 ? langTips[1] : langTips[2],
+      tip: selectedTip,
     };
   };
 
@@ -1271,10 +1474,10 @@ export default function UserDashboardPortal({
         <div className="text-left space-y-1 z-10 max-w-xl">
           <span className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            {lang === 'de' ? 'Aktives synchronisiertes Portal' : lang === 'en' ? 'Active Synchronized Portal' : lang === 'es' ? 'Portal Activo Sincronizado' : 'Portal Ativo Sincronizado'}
+            {t("Portal Ativo Sincronizado")}
           </span>
           <h2 className="text-base sm:text-lg font-black text-slate-100 tracking-tight leading-snug">
-            {lang === 'de' ? 'Beschleunige deine Ziele, navigiere durch die aktiven Portale' : lang === 'en' ? 'Accelerate Your Goals, Navigate the Active Portals' : lang === 'es' ? 'Acelera tus Objetivos, Navega por los Portales Activos' : 'Acelere Seus Objetivos, Navegue pelos Portais Ativos'}
+            {t("Acelere Seus Objetivos, Navegue pelos Portais Ativos")}
           </h2>
         </div>
 
@@ -1290,13 +1493,13 @@ export default function UserDashboardPortal({
             </div>
             <div className="space-y-0.5 min-w-0">
               <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-400 tracking-wide uppercase flex items-center gap-1 flex-wrap font-sans">
-                🪐 {lang === 'de' ? 'Sieh was das Universum dir zeigen möchte' : lang === 'en' ? 'See what the universe wants to show you' : lang === 'es' ? 'Ve lo que el universo quiere mostrarte' : 'Veja o que o universo quer te mostrando'}
+                🪐 {t("Veja o que o universo quer te mostrando")}
               </span>
-              <p className="text-[9px] text-slate-400 font-medium">{lang === 'de' ? 'Monatspanel und kosmische Orientierungen.' : lang === 'en' ? 'Monthly panel and cosmic guidance.' : lang === 'es' ? 'Panel del mes y orientaciones cósmicas.' : 'Painel do mês e orientações cósmicas.'}</p>
+              <p className="text-[9px] text-slate-400 font-medium">{t("Painel do mês e orientações cósmicas.")}</p>
             </div>
           </div>
           <span className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider self-end sm:self-center shrink-0 transition shadow-md hover:shadow-amber-500/10 hover:scale-102">
-            {lang === 'de' ? 'Alles sehen →' : lang === 'en' ? 'See all →' : lang === 'es' ? 'Ver todo →' : 'Ver tudo →'}
+            {t("Ver tudo →")}
           </span>
         </button>
       </div>
@@ -1357,7 +1560,7 @@ export default function UserDashboardPortal({
           <div className="p-4 bg-slate-950/60 rounded-3xl border border-slate-850/80 space-y-4">
             <div className="flex justify-between items-center border-b border-slate-900 pb-2">
               <span className="text-[10px] font-mono font-black text-slate-500 uppercase tracking-wider block">
-                {lang === 'de' ? 'Kosmische Navigation' : lang === 'en' ? 'Cosmic Navigation' : lang === 'es' ? 'Navegación Cósmica' : 'Navegação Cósmica'}
+                {t("Kosmische Navigation")}
               </span>
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
             </div>
@@ -1493,10 +1696,10 @@ export default function UserDashboardPortal({
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="px-2.5 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-mono text-indigo-400 font-extrabold rounded-lg uppercase tracking-wider">
-                        ★ Prioridade do Dia: {osirisDashboard?.prioridadeDia?.category || "Espiritualidade"}
+                        ★ {t("Prioridade do Dia")}: {osirisDashboard?.prioridadeDia?.category ? t(osirisDashboard.prioridadeDia.category) : t("Espiritualidade")}
                       </span>
                       <span className="text-[10px] font-mono text-amber-500 font-extrabold flex items-center gap-1">
-                        ✦ Sincronia: {osirisDashboard?.prioridadeDia?.rating || "4.9"}/5
+                        ✦ {t("Sincronia")}: {osirisDashboard?.prioridadeDia?.rating || "4.9"}/5
                       </span>
                     </div>
 
@@ -1509,15 +1712,15 @@ export default function UserDashboardPortal({
                     ) : (
                       <div className="space-y-2">
                         <h4 className="text-sm font-black text-slate-100 tracking-tight font-sans">
-                          {osirisDashboard?.prioridadeDia?.title || "Sintonia de Foco Celular"}
+                          {osirisDashboard?.prioridadeDia?.title ? t(osirisDashboard.prioridadeDia.title) : t("Sintonia de Foco Celular")}
                         </h4>
                         <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                          {osirisDashboard?.prioridadeDia?.description || `Sua bússola biológica e o trânsito do Sol em de ${zodiacSign} orientam seu fluxo prático nesta coordenada.`}
+                          {osirisDashboard?.prioridadeDia?.description ? t(osirisDashboard.prioridadeDia.description) : `${t("Sua bússola biológica e o trânsito do Sol em")} ${t(zodiacSign)} ${t("orientam seu fluxo prático nesta coordenada.")}`}
                         </p>
                         <div className="p-3 bg-slate-900/60 border border-slate-850 rounded-xl mt-3">
-                          <span className="text-[8px] font-mono font-bold text-amber-400 uppercase tracking-widest block mb-0.5">Conselho do Místico</span>
+                          <span className="text-[8px] font-mono font-bold text-amber-400 uppercase tracking-widest block mb-0.5">{t("Conselho do Místico")}</span>
                           <p className="text-[11px] text-slate-300 font-serif italic leading-relaxed">
-                            "{osirisDashboard?.prioridadeDia?.advice || 'Seja vigilante ao seu biorritmo. Pequenas reflexões de 3 minutos trarão alinhamento.'}"
+                            "{osirisDashboard?.prioridadeDia?.advice ? t(osirisDashboard.prioridadeDia.advice) : t('Seja vigilante ao seu biorritmo. Pequenas reflexões de 3 minutos trarão alinhamento.')}"
                           </p>
                         </div>
                       </div>
@@ -1525,7 +1728,7 @@ export default function UserDashboardPortal({
                   </div>
 
                   <div className="pt-4 border-t border-slate-900/50 flex items-center justify-between mt-4">
-                    <span className="text-[9px] text-slate-500 font-mono">Orientação Única Diária de Osíris</span>
+                    <span className="text-[9px] text-slate-500 font-mono">{t("Orientação Única Diária de Osíris")}</span>
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   </div>
                 </div>
@@ -1536,9 +1739,9 @@ export default function UserDashboardPortal({
                     <div className="flex justify-between items-center border-b border-slate-900 pb-2">
                       <div className="flex items-center gap-2">
                         <Bell className="w-4 h-4 text-amber-500 animate-swing" />
-                        <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider block">Fila Push Offline (Hoje)</span>
+                        <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider block">{t("Fila Push Offline (Hoje)")}</span>
                       </div>
-                      <span className="text-[8px] font-mono text-slate-500">Últimas 3 Notificações</span>
+                      <span className="text-[8px] font-mono text-slate-500">{t("Últimas 3 Notificações")}</span>
                     </div>
 
                     {osirisLoading ? (
@@ -1556,10 +1759,10 @@ export default function UserDashboardPortal({
                             </span>
                             <div className="space-y-0.5 min-w-0">
                               <div className="flex justify-between items-baseline gap-2">
-                                <h5 className="text-[10px] font-extrabold text-slate-205 truncate">{notif.title}</h5>
+                                <h5 className="text-[10px] font-extrabold text-slate-205 truncate">{t(notif.title)}</h5>
                                 <span className="text-[8px] text-slate-500 font-mono shrink-0">{notif.time}</span>
                               </div>
-                              <p className="text-[10px] text-slate-400 leading-normal line-clamp-2">{notif.message}</p>
+                              <p className="text-[10px] text-slate-400 leading-normal line-clamp-2">{t(notif.message)}</p>
                             </div>
                           </div>
                         ))}
@@ -1567,7 +1770,7 @@ export default function UserDashboardPortal({
                     )}
                   </div>
 
-                  <p className="text-[8.5px] text-slate-500 font-sans mt-3">★ Mensagens despachadas pelas esferas celestes enquanto você estava em desconexão prática.</p>
+                  <p className="text-[8.5px] text-slate-500 font-sans mt-3">★ {t("Mensagens despachadas pelas esferas celestes enquanto você estava em desconexão prática.")}</p>
                 </div>
               </div>
 
@@ -2433,7 +2636,7 @@ export default function UserDashboardPortal({
               <SocialNetworkView 
                 currentUser={user} 
                 onUpdateCurrentUser={onUpdateCurrentUser || (() => {})} 
-                lang={lang}
+                lang={activeLang}
               />
             </div>
           )}
@@ -2530,14 +2733,14 @@ export default function UserDashboardPortal({
             const totalDreams = dreamsHistory.length;
             const latestDream = totalDreams > 0 ? dreamsHistory[0] : null;
 
-            const dreamTitle = latestDream?.interpretation?.title || (lang === 'de' ? "Kein Traum synchronisiert" : lang === 'en' ? "No dream synced" : lang === 'es' ? "Ningún sueño sintonizado" : "Nenhum sonho sintonizado");
+            const dreamTitle = latestDream?.interpretation?.title || t("Nenhum sonho sintonizado");
             const dreamSymbol = latestDream?.interpretation?.detectedAnimals?.[0]?.animal 
                                 || latestDream?.interpretation?.detectedColors?.[0]?.color 
-                                || (totalDreams > 0 ? "" + latestDream?.interpretation?.dreamEnergyType : (lang === 'de' ? "Keine Symbole" : lang === 'en' ? "No symbols" : lang === 'es' ? "Sin símbolos" : "Sem símbolos"));
-            const dreamEmotion = latestDream?.interpretation?.predominantEmotion?.emotion || (lang === 'de' ? "Neutral" : lang === 'en' ? "Neutral" : lang === 'es' ? "Neutro" : "Neutro");
+                                || (totalDreams > 0 ? "" + latestDream?.interpretation?.dreamEnergyType : t("Sem símbolos"));
+            const dreamEmotion = latestDream?.interpretation?.predominantEmotion?.emotion || t("Neutro");
             const dreamTendency = latestDream?.interpretation?.dreamEnergyType 
                                   ? `${latestDream?.interpretation?.dreamEnergyType} (${latestDream?.interpretation?.dreamEnergyIndex} Hz)`
-                                  : (lang === 'de' ? "Keine beobachtet" : lang === 'en' ? "None observed" : lang === 'es' ? "Ninguna observada" : "Nenhuma observada");
+                                  : t("Nenhuma observada");
 
             // Chart generation based on real historical dream entries
             const graphDreams = [...dreamsHistory].slice(0, 6).reverse();
@@ -2573,12 +2776,12 @@ export default function UserDashboardPortal({
                     <div>
                       <h3 className="text-xs font-bold font-mono text-slate-205 uppercase tracking-widest flex items-center gap-1.5">
                         <Moon className="w-4 h-4 text-pink-400 animate-pulse" />
-                        {lang === 'de' ? 'Metriken & Statistiken des Traumzentrums' : lang === 'en' ? 'Dream Center Metrics & Statistics' : lang === 'es' ? 'Métricas & Estadísticas del Centro de Sueños' : 'Métricas & Estatísticas do Centro de Sonhos'}
+                        {t("Métricas & Estatísticas do Centro de Sonhos")}
                       </h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{lang === 'de' ? 'Analytische Intelligenz basierend auf den im Traumtresor archivierten Aufzeichnungen.' : lang === 'en' ? 'Analytical intelligence based on records archived in the Dream Vault.' : lang === 'es' ? 'Visión analítica de inteligencia basada en los registros archivados en el Cofre de Sueños.' : 'Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.'}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{t("Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.")}</p>
                     </div>
                     <span className="px-2 py-0.5 bg-pink-500/10 border border-pink-500/20 text-[9px] font-mono font-bold text-pink-450 rounded-lg shrink-0">
-                      {lang === 'de' ? `Traumreport (${totalDreams} ${totalDreams === 1 ? 'Traum' : 'Träume'})` : lang === 'en' ? `Dream Report (${totalDreams} ${totalDreams === 1 ? 'Dream' : 'Dreams'})` : lang === 'es' ? `Reporte Onírico (${totalDreams} ${totalDreams === 1 ? 'Sueño' : 'Sueños'})` : `Relatório Onírico (${totalDreams} ${totalDreams === 1 ? 'Sonho' : 'Sonhos'})`}
+                      {t("Relatório Onírico") + ` (${totalDreams} ${totalDreams === 1 ? t("Sonho") : t("Sonhos")})`}
                     </span>
                   </div>
 
@@ -2600,7 +2803,7 @@ export default function UserDashboardPortal({
                           <span className="text-[11px] font-bold text-slate-200 mt-1 block truncate" title={dreamTitle}>
                             {dreamTitle}
                           </span>
-                          <span className="text-[8px] font-mono text-slate-600">{lang === 'de' ? `Synchronisiert am ${latestDream?.date}` : lang === 'en' ? `Synced on ${latestDream?.date}` : lang === 'es' ? `Sintonizado el ${latestDream?.date}` : `Sintonizado em ${latestDream?.date}`}</span>
+                          <span className="text-[8px] font-mono text-slate-600">{t("Sintonizado em {date}").replace("{date}", latestDream?.date || "")}</span>
                         </div>
 
                         <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex flex-col justify-between h-[90px]">
@@ -2632,7 +2835,7 @@ export default function UserDashboardPortal({
                       <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 text-left space-y-3 animate-in fade-in duration-500">
                         <div className="flex justify-between items-center border-b border-slate-900 pb-1.5 flex-wrap gap-2 leading-none">
                           <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">
-                            {lang === 'de' ? 'Traumenergetische Variation (Ihre letzten Synchronisierungen)' : lang === 'en' ? 'Oneiric Energy Variation (Your Recent Syncs)' : lang === 'es' ? 'Variación Energética Onírica (Sus Sintonizaciones Recientes)' : 'Variação Energética Onírica (Suas Sintonizações Recentes)'}
+                            {t("Variação Energética Onírica (Suas Sintonizações Recentes)")}
                           </span>
                           <div className="flex items-center gap-3 text-[8.5px] font-mono">
                             <div className="flex items-center gap-1">
@@ -3098,7 +3301,7 @@ export default function UserDashboardPortal({
                       className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-rose-600/15"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      {lang === 'de' ? 'APK-Datei herunterladen' : lang === 'en' ? 'Download APK File' : lang === 'es' ? 'Descargar Archivo APK' : 'Baixar Arquivo APK'}
+                      {t("Baixar Arquivo APK")}
                     </button>
                     <p className="text-[10px] text-slate-500 text-center leading-normal">
                       Compatível com Android 8.0 ou superior. Requer liberação de instalação manual.
@@ -3188,7 +3391,7 @@ export default function UserDashboardPortal({
                         <rect x="14" y="58" width="6" height="6" fill="currentColor" />
                       </svg>
                       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200">
-                        <span className="text-[9px] font-mono text-amber-400 font-bold uppercase tracking-wider text-center p-2">{lang === 'de' ? 'Mit deiner Kamera synchronisieren 🪐' : lang === 'en' ? 'Tune in with your camera 🪐' : lang === 'es' ? 'Sintoniza con tu cámara 🪐' : 'Sintonize com sua câmera 🪐'}</span>
+                        <span className="text-[9px] font-mono text-amber-400 font-bold uppercase tracking-wider text-center p-2">{t("Sintonize com sua câmera 🪐")}</span>
                       </div>
                     </div>
                     
@@ -3261,14 +3464,14 @@ export default function UserDashboardPortal({
             <X className="w-4 h-4" />
           </button>
 
-          <span className="text-[9px] font-mono uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md font-extrabold font-mono">Artigo de Saber</span>
-          <h1 className="text-lg md:text-xl font-bold text-slate-100 tracking-tight mt-3 mb-1">{selectedArticle.title}</h1>
-          <p className="text-[10px] text-slate-500 font-mono">Por {selectedArticle.author} · {selectedArticle.date}</p>
+          <span className="text-[9px] font-mono uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md font-extrabold font-mono">{t("Artigo de Saber")}</span>
+          <h1 className="text-lg md:text-xl font-bold text-slate-100 tracking-tight mt-3 mb-1">{t(selectedArticle.title)}</h1>
+          <p className="text-[10px] text-slate-500 font-mono">{t("Por")} {selectedArticle.author} · {selectedArticle.date}</p>
           
           <div className="my-4 border-b border-slate-850" />
           
-          <p className="text-xs text-slate-400 italic mb-4 leading-relaxed bg-slate-950/40 p-3 rounded-xl border border-slate-850">{selectedArticle.summary}</p>
-          <p className="text-xs md:text-sm text-slate-205 leading-relaxed selection:bg-amber-500/30 whitespace-pre-wrap">{selectedArticle.content}</p>
+          <p className="text-xs text-slate-400 italic mb-4 leading-relaxed bg-slate-950/40 p-3 rounded-xl border border-slate-850">{t(selectedArticle.summary)}</p>
+          <p className="text-xs md:text-sm text-slate-205 leading-relaxed selection:bg-amber-500/30 whitespace-pre-wrap">{t(selectedArticle.content)}</p>
 
           <div className="mt-6 flex justify-end">
             <button
@@ -3276,7 +3479,7 @@ export default function UserDashboardPortal({
               onClick={() => setSelectedArticle(null)}
               className="px-4 py-2 bg-emerald-500 text-slate-950 hover:bg-emerald-400 text-xs font-black uppercase rounded-xl transition cursor-pointer"
             >
-              Concluir Leitura
+              {t("Concluir Leitura")}
             </button>
           </div>
         </div>

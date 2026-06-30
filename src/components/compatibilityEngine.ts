@@ -808,12 +808,20 @@ export function computeDetailedCompatibility(
     partnership: generateBespokeCategory('partnership', name1, name2, planetSigns)
   };
 
+  const fallbackTexts = {
+    pt: { naoFornecida: "Não fornecida", naoFornecido: "Não fornecido" },
+    en: { naoFornecida: "Not provided", naoFornecido: "Not provided" },
+    es: { naoFornecida: "No proporcionada", naoFornecido: "No proporcionado" },
+    de: { naoFornecida: "Nicht angegeben", naoFornecido: "Nicht angegeben" },
+    fr: { naoFornecida: "Non fournie", naoFornecido: "Non fourni" }
+  }[lang] || { naoFornecida: "Não fornecida", naoFornecido: "Não fornecido" };
+
   return {
     partnerName: name2,
-    partnerBirthDate: birthDate2 || "Não fornecida",
-    partnerBirthTime: birthTime2 || "Não fornecida",
-    partnerBirthCity: birthCity2 || "Não fornecido",
-    partnerBirthCountry: birthCountry2 || "Não fornecido",
+    partnerBirthDate: birthDate2 || fallbackTexts.naoFornecida,
+    partnerBirthTime: birthTime2 || fallbackTexts.naoFornecida,
+    partnerBirthCity: birthCity2 || fallbackTexts.naoFornecido,
+    partnerBirthCountry: birthCountry2 || fallbackTexts.naoFornecido,
     category,
     
     lovePercent: amorScore,

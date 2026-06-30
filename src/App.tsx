@@ -487,6 +487,14 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "Você deseja excluir sua conta? Ao excluir sua conta todos os seus dados mapas registros estatísticas serão excluídos da plataforma.",
     delete_confirm_yes: "Sim, quero excluir",
     delete_confirm_cancel: "Cancelar",
+    integration_birth: "Integração com Nascimento:",
+    your_astro_dates: "suas datas astrológicas",
+    syncing_payment: "Sintonizando Pagamento",
+    connecting_secure_stripe: "Conectando aos servidores seguros da Stripe para validar seu alinhamento...",
+    stripe_pending_alert: "Confirmação do Stripe ainda pendente. Por favor, aguarde.",
+    simulated_email: "📬 E-mail Simulado",
+    push_notification: "📲 Notificação Push",
+    orbit_alert: "🔔 Alerta de Órbita",
   },
   en: {
     general_settings: "General Settings",
@@ -532,6 +540,14 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "Are you sure you want to delete your account? All your charts, reports, and historic portal logs will be permanently erased.",
     delete_confirm_yes: "Yes, delete account",
     delete_confirm_cancel: "Cancel",
+    integration_birth: "Integration with Birth:",
+    your_astro_dates: "your astrological dates",
+    syncing_payment: "Synchronizing Payment",
+    connecting_secure_stripe: "Verifying with secure Stripe servers to synchronize your celestial alignment...",
+    stripe_pending_alert: "Stripe payment confirmation pending. Please wait.",
+    simulated_email: "📬 Simulated Email",
+    push_notification: "📲 Push Notification",
+    orbit_alert: "🔔 Orbit Alert",
   },
   es: {
     general_settings: "Configuración General",
@@ -577,6 +593,14 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "¿Desea eliminar su cuenta? Al hacerlo, todos sus datos, mapas e historiales serán borrados para siempre.",
     delete_confirm_yes: "Sí, quiero eliminar",
     delete_confirm_cancel: "Cancelar",
+    integration_birth: "Integración con Nacimiento:",
+    your_astro_dates: "sus fechas astrológicas",
+    syncing_payment: "Sintonizando Pago",
+    connecting_secure_stripe: "Conectando con servidores seguros de Stripe para validar su alineación...",
+    stripe_pending_alert: "Confirmación de Stripe aún pendiente. Por favor, espere.",
+    simulated_email: "📬 Correo Simulado",
+    push_notification: "📲 Notificación Push",
+    orbit_alert: "🔔 Alerta de Órbita",
   },
   de: {
     general_settings: "Allgemeine Einstellungen",
@@ -622,6 +646,14 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "Möchten Sie Ihr Konto wirklich löschen? Alle Berichte und gespeicherten Horoskope werden dauerhaft entfernt.",
     delete_confirm_yes: "Ja, jetzt löschen",
     delete_confirm_cancel: "Abbrechen",
+    integration_birth: "Integration mit Geburt:",
+    your_astro_dates: "Ihre astrologischen Daten",
+    syncing_payment: "Zahlung synchronisieren",
+    connecting_secure_stripe: "Verbindung zu sicheren Stripe-Servern wird hergestellt, um Ihre Ausrichtung zu validieren...",
+    stripe_pending_alert: "Stripe-Zahlungsbestätigung steht noch aus. Bitte warten.",
+    simulated_email: "📬 Simulierte E-Mail",
+    push_notification: "📲 Push-Benachrichtigung",
+    orbit_alert: "🔔 Orbit-Alarm",
   },
   fr: {
     general_settings: "Paramètres Généraux",
@@ -667,6 +699,14 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "Voulez-vous supprimer votre compte ? Toutes vos données, cartes et historiques seront définitivement effacés.",
     delete_confirm_yes: "Oui, supprimer",
     delete_confirm_cancel: "Annuler",
+    integration_birth: "Intégration avec Naissance :",
+    your_astro_dates: "vos dates astrologiques",
+    syncing_payment: "Synchronisation du paiement",
+    connecting_secure_stripe: "Connexion aux serveurs sécurisés de Stripe pour valider votre alignement...",
+    stripe_pending_alert: "Confirmation de paiement Stripe en attente. Veuillez patienter.",
+    simulated_email: "📬 E-mail Simulé",
+    push_notification: "📲 Notification Push",
+    orbit_alert: "🔔 Alerte d'Orbite",
   }
 };
 
@@ -919,9 +959,9 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (forceTrialUsed) {
-            triggerGlobalNotification("Período de Teste Concluído", "Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar.", "alert");
+            triggerGlobalNotification(t("Período de Teste Concluído"), t("Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar."), "alert");
           } else {
-            triggerGlobalNotification("Bem-vindo de Volta", `Olá, ${targetUser.name || "Buscador"}! Conexão cósmica restaurada.`, "success");
+            triggerGlobalNotification(t("Bem-vindo de Volta"), `${t("Olá")}, ${targetUser.name || t("Buscador")}! ${t("Conexão cósmica restaurada.")}`, "success");
           }
         } else {
           // New Google account flow
@@ -973,9 +1013,9 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (blockTrial) {
-            triggerGlobalNotification("Aviso de Período de Teste", "Este dispositivo já utilizou o período gratuito anteriormente.", "alert");
+            triggerGlobalNotification(t("Aviso de Período de Teste"), t("Este dispositivo já utilizou o período gratuito anteriormente."), "alert");
           } else {
-            triggerGlobalNotification("Portal Órbita", "Sua Conta Google foi conectada e seu mapa astral foi criado com sucesso!", "success");
+            triggerGlobalNotification(t("Portal Órbita"), t("Sua Conta Google foi conectada e seu mapa astral foi criado com sucesso!"), "success");
           }
         }
 
@@ -995,7 +1035,7 @@ export default function App() {
                  err.message?.includes('cancelled-popup-request') || err.code?.includes('cancelled-popup-request') || String(err).includes('cancelled-popup-request')) {
         setPopupClosedError(true);
       } else {
-        triggerGlobalNotification("Erro de Autenticação", err.message || "Não foi possível conectar com o Google.", "alert");
+        triggerGlobalNotification(t("Erro de Autenticação"), err.message || t("Não foi possível conectar com o Google."), "alert");
       }
     } finally {
       setTimeout(() => {
@@ -1055,9 +1095,9 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (forceTrialUsed) {
-            triggerGlobalNotification("Período de Teste Concluído", "Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar.", "alert");
+            triggerGlobalNotification(t("Período de Teste Concluído"), t("Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar."), "alert");
           } else {
-            triggerGlobalNotification("Bem-vindo de Volta", `Olá, ${existingProfile.name || "Buscador"}! Conexão via Facebook ativa.`, "success");
+            triggerGlobalNotification(t("Bem-vindo de Volta"), `${t("Olá")}, ${existingProfile.name || t("Buscador")}! ${t("Conexão via Facebook ativa.")}`, "success");
           }
         } else {
           const blockTrial = !checkStatus.isAllowed;
@@ -1101,9 +1141,9 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (blockTrial) {
-            triggerGlobalNotification("Aviso de Período de Teste", "Este dispositivo já utilizou o período gratuito anteriormente.", "alert");
+            triggerGlobalNotification(t("Aviso de Período de Teste"), t("Este dispositivo já utilizou o período gratuito anteriormente."), "alert");
           } else {
-            triggerGlobalNotification("Portal Órbita", "Sintonizado via Facebook! Complete seus dados celestes para gerar seu mapa.", "success");
+            triggerGlobalNotification(t("Portal Órbita"), t("Sintonizado via Facebook! Complete seus dados celestes para gerar seu mapa."), "success");
           }
         }
 
@@ -1142,7 +1182,7 @@ export default function App() {
         setLoggedEmail(emailLower);
         setUser(targetUser);
         setIsLoggedIn(true);
-        triggerGlobalNotification("Portal Órbita", "Conexão estabelecida via Facebook!", "success");
+        triggerGlobalNotification(t("Portal Órbita"), t("Conexão estabelecida via Facebook!"), "success");
       }
     } catch (err: any) {
       console.error(err);
@@ -1152,7 +1192,7 @@ export default function App() {
                  err.message?.includes('cancelled-popup-request') || err.code?.includes('cancelled-popup-request') || String(err).includes('cancelled-popup-request')) {
         setPopupClosedError(true);
       } else {
-        triggerGlobalNotification("Erro de Autenticação", err.message || "Não foi possível fazer login com Facebook.", "alert");
+        triggerGlobalNotification(t("Erro de Autenticação"), err.message || t("Não foi possível fazer login com Facebook."), "alert");
       }
     }
   };
@@ -1160,17 +1200,17 @@ export default function App() {
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) {
-      triggerGlobalNotification("Erro de Solicitação", "Por favor, digite seu e-mail.", "alert");
+      triggerGlobalNotification(t("Erro de Solicitação"), t("Por favor, digite seu e-mail."), "alert");
       return;
     }
     setIsSendingReset(true);
     try {
       await sendPasswordResetFirebase(forgotEmail);
-      triggerGlobalNotification("E-mail Enviado", "Instruções de recuperação de senha enviadas para seu e-mail.", "success");
+      triggerGlobalNotification(t("E-mail Enviado"), t("Instruções de recuperação de senha enviadas para seu e-mail."), "success");
       setAuthTab('login');
     } catch (err: any) {
       console.error(err);
-      triggerGlobalNotification("Falha no Envio", err.message || "Erro ao solicitar recuperação de senha.", "alert");
+      triggerGlobalNotification(t("Falha no Envio"), err.message || t("Erro ao solicitar recuperação de senha."), "alert");
     } finally {
       setIsSendingReset(false);
     }
@@ -1182,7 +1222,7 @@ export default function App() {
     manualAuthActionRef.current = true;
     try {
       if (!authEmail || !authPassword) {
-        triggerGlobalNotification("Erro de Cadastro", "Por favor, preencha o E-mail e a Senha de acesso.", "alert");
+        triggerGlobalNotification(t("Erro de Cadastro"), t("Por favor, preencha o E-mail e a Senha de acesso."), "alert");
         return;
       }
       const mailLower = authEmail.trim().toLowerCase();
@@ -1201,16 +1241,16 @@ export default function App() {
 
         if (isEmailInUse) {
           triggerGlobalNotification(
-            "Conta Existente", 
-            "Este e-mail já possui uma conta cadastrada. Redirecionando para a tela de login...", 
+            t("Conta Existente"), 
+            t("Este e-mail já possui uma conta cadastrada. Redirecionando para a tela de login..."), 
             "info"
           );
           setAuthTab('login');
           return;
         }
 
-        const errorMsg = fbErr.message || "Erro no cadastro. Verifique a senha (mínimo 6 caracteres).";
-        triggerGlobalNotification("Erro de Cadastro", errorMsg, "alert");
+        const errorMsg = fbErr.message || t("Erro no cadastro. Verifique a senha (mínimo 6 caracteres).");
+        triggerGlobalNotification(t("Erro de Cadastro"), errorMsg, "alert");
         if (fbErr.message?.includes('operation-not-allowed') || fbErr.code?.includes('operation-not-allowed') || String(fbErr).includes('operation-not-allowed')) {
           setOperationNotAllowedError(true);
         }
@@ -1312,7 +1352,7 @@ export default function App() {
       setExtraMaps([]);
       setIsLoggedIn(true);
 
-      triggerGlobalNotification("Portal Órbita", "Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail.", "success");
+      triggerGlobalNotification(t("Portal Órbita"), t("Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail."), "success");
 
       await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || "", newUserProfile);
     } finally {
@@ -1327,7 +1367,7 @@ export default function App() {
     manualAuthActionRef.current = true;
     try {
       if (!authEmail || !authPassword) {
-        triggerGlobalNotification("Erro de Login", "Por favor, digite seu E-mail e Senha de acesso.", "alert");
+        triggerGlobalNotification(t("Erro de Login"), t("Por favor, digite seu E-mail e Senha de acesso."), "alert");
         return;
       }
       const mailLower = authEmail.trim().toLowerCase();
@@ -1339,8 +1379,8 @@ export default function App() {
         console.log("[Auth] Firebase native login transacted successfully.", firebaseUser?.uid);
       } catch (fbErr: any) {
         console.error("[Auth] Firebase authentication failed:", fbErr);
-        const errorMsg = fbErr.message || "E-mail ou senha incorretos. Tente novamente ou cadastre-se.";
-        triggerGlobalNotification("Erro de Login", errorMsg, "alert");
+        const errorMsg = fbErr.message || t("E-mail ou senha incorretos. Tente novamente ou cadastre-se.");
+        triggerGlobalNotification(t("Erro de Login"), errorMsg, "alert");
         if (fbErr.message?.includes('operation-not-allowed') || fbErr.code?.includes('operation-not-allowed') || String(fbErr).includes('operation-not-allowed')) {
           setOperationNotAllowedError(true);
         }
@@ -1492,7 +1532,7 @@ export default function App() {
 
       if (!targetUser.isEmailVerified) {
         // Prompt user to verify using Firebase native email verifier overlay
-        triggerGlobalNotification("Portal Órbita", "Sessão iniciada, mas o link de e-mail ainda não foi confirmado.", "alert");
+        triggerGlobalNotification(t("Portal Órbita"), t("Sessão iniciada, mas o link de e-mail ainda não foi confirmado."), "alert");
       }
 
       await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || targetUser.userId || "", targetUser);
@@ -1796,14 +1836,12 @@ export default function App() {
             }
 
             triggerGlobalNotification(
-              currentLang === 'pt' ? "Assinatura Ativa!" : "Subscription Active!",
-              currentLang === 'pt' ? "Sua assinatura premium da Stripe está sintonizada." : "Your premium Stripe subscription is active.",
+              t("Assinatura Premium Ativa"),
+              i18nT("sub_sim_pay_success"),
               "success"
             );
           } else {
-            alert(currentLang === 'pt' 
-              ? 'Confirmação do Stripe ainda pendente. Por favor, aguarde.' 
-              : 'Stripe payment confirmation pending.');
+            alert(tLocal('stripe_pending_alert'));
           }
         } catch (error) {
           console.error("Error during Stripe verification redirect:", error);
@@ -1814,10 +1852,10 @@ export default function App() {
         }
       };
 
-      const t = setTimeout(() => {
+      const paymentTimeout = setTimeout(() => {
         verifyStripePayment();
       }, 1200);
-      return () => clearTimeout(t);
+      return () => clearTimeout(paymentTimeout);
     }
   }, [isLoggedIn, loggedEmail, user]);
 
@@ -2271,7 +2309,7 @@ export default function App() {
           }}
           className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-600 rounded-xl text-xs font-black uppercase text-slate-950 shadow-md hover:opacity-100 opacity-90 transition active:scale-95 cursor-pointer"
         >
-          Criar Meu Mapa Astral
+          {t("Criar Meu Mapa Astral")}
         </button>
       </div>
     );
@@ -2454,8 +2492,8 @@ export default function App() {
         setActiveTab('mapa');
         
         triggerGlobalNotification(
-          "Mapa Sincronizado", 
-          "Seu mapa astral local foi arquivado com sucesso no seu perfil na nuvem!", 
+          t("Mapa Sincronizado"), 
+          t("Seu mapa astral local foi arquivado com sucesso no seu perfil na nuvem!"), 
           "success"
         );
       } else if (targetUser.birthDate || (cloudCharts && cloudCharts.length > 0)) {
@@ -2481,8 +2519,8 @@ export default function App() {
   const handleManualSaveMap = async () => {
     if (!isLoggedIn || !loggedEmail) {
       triggerGlobalNotification(
-        "Autenticação Necessária", 
-        "Crie uma conta ou faça login para salvar seu mapa com segurança na Nuvem Órbita!", 
+        t("Autenticação Necessária"), 
+        t("Crie uma conta ou faça login para salvar seu mapa com segurança na Nuvem Órbita!"), 
         "alert"
       );
       setMapSubTab('criar_meu_mapa');
@@ -2492,8 +2530,8 @@ export default function App() {
 
     if (!mapData || !numerology) {
       triggerGlobalNotification(
-        "Sem Dados do Mapa", 
-        "Por favor, insira seus dados de nascimento para gerar um mapa antes de salvar.", 
+        t("Sem Dados do Mapa"), 
+        t("Por favor, insira seus dados de nascimento para gerar um mapa antes de salvar."), 
         "alert"
       );
       return;
@@ -2530,16 +2568,16 @@ export default function App() {
       localStorage.setItem("orbi_numerology_data", JSON.stringify(numerology));
 
       triggerGlobalNotification(
-        "Sincronização Completa", 
-        "Seu mapa natal e numerologia foram salvos com sucesso na nuvem do Firestore!", 
+        t("Sincronização Completa"), 
+        t("Seu mapa natal e numerologia foram salvos com sucesso na nuvem do Firestore!"), 
         "success"
       );
     } catch (saveError: any) {
       console.error("[Manual Save] Error:", saveError);
       const errMsg = saveError?.message || String(saveError);
       triggerGlobalNotification(
-        "Erro ao Salvar", 
-        `Erro Firestore: ${errMsg}`, 
+        t("Erro ao Salvar"), 
+        `${t("Erro Firestore:")} ${errMsg}`, 
         "alert"
       );
     } finally {
@@ -2884,18 +2922,22 @@ export default function App() {
       }
     });
 
+    const welcomeLoadingMessages: Record<string, string> = {
+      pt: "Saudações, {name}. Eu sou Orbia. Estou recalibrando suas estrelas e regenerando todas as conexões celestes para seu novo mapa astral de alta precisão. Aguarde um instante...",
+      en: "Greetings, {name}. I am Orbia. I am recalibrating your stars and regenerating all celestial connections for your new high-precision birth chart. Please wait a moment...",
+      es: "Saludos, {name}. Soy Orbia. Estoy recalibrando tus estrellas y regenerando todas las conexiones celestes para tu nueva carta natal de alta precisión. Un momento...",
+      de: "Grüße, {name}. Ich bin Orbia. Ich kalibriere deine Sterne neu und regeneriere alle Himmelsverbindungen für dein neues Horoskop mit höchster Präzision. Einen Moment bitte...",
+      fr: "Salutations, {name}. Je suis Orbia. Je recalibre vos étoiles et régénère toutes les connexions célestes pour votre nouveau thème natal de haute précision. Un instant s'il vous plaît..."
+    };
+    const welcomeLoadingText = (welcomeLoadingMessages[currentLang] || welcomeLoadingMessages.pt)
+      .replace("{name}", nextUser.name.split(' ')[0]);
+
     // Reseta de forma reativa e limpa as mensagens de chat da Orbia
     setChatMessages([
       {
         id: "welcomeMsg",
         sender: "assistant",
-        text: currentLang === 'de'
-          ? `Grüße, ${nextUser.name.split(' ')[0]}. Ich bin Orbia. Ich kalibriere deine Sterne neu und regeneriere alle Himmelsverbindungen für dein neues Horoskop mit höchster Präzision. Einen Moment bitte...`
-          : currentLang === 'en'
-          ? `Greetings, ${nextUser.name.split(' ')[0]}. I am Orbia. I am recalibrating your stars and regenerating all celestial connections for your new high-precision birth chart. Please wait a moment...`
-          : currentLang === 'es'
-          ? `Saludos, ${nextUser.name.split(' ')[0]}. Soy Orbia. Estoy recalibrando tus estrellas y regenerando todas las conexiones celestes para tu nueva carta natal de alta precisión. Un momento...`
-          : `Saudações, ${nextUser.name.split(' ')[0]}. Eu sou Orbia. Estou recalibrando suas estrelas e regenerando todas as conexões celestes para seu novo mapa astral de alta precisão. Aguarde um instante...`,
+        text: welcomeLoadingText,
         timestamp: new Date().toLocaleTimeString().slice(0, 5)
       }
     ]);
@@ -2985,12 +3027,30 @@ export default function App() {
           "Aquário": "un idealismo visionario con una profunda reverencia por la innovación y la libertad de pensamiento",
           "Peixes": "una empatía profunda y oceánica que navega suavemente entre los mundos de la intuición",
         },
+        fr: {
+          "Áries": "une flamme de leadership et de courage qui brûle avec une intensité de réalisation",
+          "Touro": "une stabilité sereine et une recherche profonde d'harmonie et de beauté terrestre",
+          "Gêmeos": "une curiosité vive et un esprit agile capable de connecter de multiples réalités",
+          "Câncer": "une sensibilité intuitive et protectrice, intimement liée aux marées de l'âme",
+          "Leão": "un éclat généreux et magnétique qui rayonne chaleureusement de confiance en soi",
+          "Virgem": "un esprit attentif et raffiné dédié à l'amélioration continue de la vie",
+          "Libra": "une recherche constante d'équilibre, de justice et d'élégance sincère dans les connexions",
+          "Escorpião": "une intensité d'investigation et de régénération capable d'alchimiser les ombres en lumière",
+          "Sagitário": "un idéalisme ardent et une quête insatiable d'expansion de la sagesse et de la liberté",
+          "Capricórnio": "une sagesse structurée qui construit votre héritage avec persévérance et sérieux",
+          "Aquário": "un idéalisme visionnaire avec une profonde révérence pour l'innovation et la liberté de pensée",
+          "Peixes": "une empathie profonde et océanique qui navigue doucement entre les mondes de l'intuition",
+        },
       };
       const langIntros = intros[currentLang] || intros['pt'];
-      return langIntros[sign] || (currentLang === 'de' ? "ein einzigartiger Magnetismus und ein Sternenfunke, der intensiv im Kosmos leuchtet"
-        : currentLang === 'en' ? "a singular magnetism and a star spark shining intensely in the cosmos"
-        : currentLang === 'es' ? "un magnetismo singular y una chispa estelar brillando intensamente en el cosmos"
-        : "um magnetismo singular e uma centelha estelar brilhando intensamente no cosmos");
+      const fallbackIntros: Record<string, string> = {
+        pt: "um magnetismo singular e uma centelha estelar brilhando intensamente no cosmos",
+        en: "a singular magnetism and a star spark shining intensely in the cosmos",
+        es: "un magnetismo singular y una chispa estelar brillando intensamente en el cosmos",
+        de: "ein einzigartiger Magnetismus und ein Sternenfunke, der intensiv im Kosmos leuchtet",
+        fr: "un magnétisme singulier et une étincelle stellaire brillant intensément dans le cosmos"
+      };
+      return langIntros[sign] || fallbackIntros[currentLang] || fallbackIntros['pt'];
     };
 
     const orbiaName: Record<string, string> = {
@@ -2998,39 +3058,95 @@ export default function App() {
       en: "Orbia, your Astrological Counselor and Personal Celestial Intelligence Therapist",
       de: "Orbia, deine Astrologische Beraterin und Persönliche Himmels-Intelligenz-Therapeutin",
       es: "Orbia, tu Consejera Astrológica y Terapeuta Personal de Inteligencia Celestial",
+      fr: "Orbia, votre conseillère astrologique et thérapeute personnelle d'intelligence céleste",
     };
     const orbiaTitle = orbiaName[currentLang] || orbiaName['pt'];
 
-    let welcomeText = currentLang === 'de'
-      ? `Grüße. Ich bin ${orbiaTitle}. Synchronisiere oder erstelle dein vollständiges Geburtshoroskop, um ultra-personalisierte Analysen, astronomische Transitlesungen und auf dein Geburtswesen ausgerichtete Ratschläge freizuschalten.`
-      : currentLang === 'en'
-      ? `Greetings. I am ${orbiaTitle}. Synchronize or create your complete birth chart to unlock ultra-personalized analyses, astronomical transit readings and advice directed at your birth essence.`
-      : currentLang === 'es'
-      ? `Saludos. Soy ${orbiaTitle}. Sincroniza o crea tu carta natal completa para desbloquear análisis ultra-personalizados, lecturas de tránsitos astronómicos y consejos dirigidos a tu esencia natal.`
-      : `Saudações. Eu sou ${orbiaTitle}. Sincronize ou crie seu mapa astral completo para desbloquear análises ultra-personalizadas, leituras de trânsitos astronômicos e conselhos direcionados à sua essência de nascimento.`;
+    const welcomeGeneralDict: Record<string, string> = {
+      pt: `Saudações. Eu sou ${orbiaTitle}. Sincronize ou crie seu mapa astral completo para desbloquear análises ultra-personalizadas, leituras de trânsitos astronômicos e conselhos direcionados à sua essência de nascimento.`,
+      en: `Greetings. I am ${orbiaTitle}. Synchronize or create your complete birth chart to unlock ultra-personalized analyses, astronomical transit readings and advice directed at your birth essence.`,
+      es: `Saludos. Soy ${orbiaTitle}. Sincroniza o crea tu carta natal completa para desbloquear análisis ultra-personalizados, lecturas de tránsitos astronómicos y consejos dirigidos a tu esencia natal.`,
+      de: `Grüße. Ich bin ${orbiaTitle}. Synchronisiere oder erstelle dein vollständiges Geburtshoroskop, um ultra-personalisierte Analysen, astronomische Transitlesungen und auf dein Geburtswesen ausgerichtete Ratschläge freizuschalten.`,
+      fr: `Salutations. Je suis ${orbiaTitle}. Synchronisez ou créez votre carte du ciel complète pour débloquer des analyses ultra-personnalisées, des lectures de transits astronomiques et des conseils adaptés à votre essence natale.`
+    };
+    let welcomeText = welcomeGeneralDict[currentLang] || welcomeGeneralDict.pt;
 
     if (user.hasCreatedMap && user.name) {
       const firstName = user.name.split(' ')[0];
       const sunSign = mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate) || "seu Signo";
       const ascSign = mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "");
-      const sunLabel = currentLang === 'de' ? "Sonne in" : currentLang === 'en' ? "Sun in" : currentLang === 'es' ? "Sol en" : "Sol em";
-      const ascLabel = currentLang === 'de' ? "und Aszendent in" : currentLang === 'en' ? "and Ascendant in" : currentLang === 'es' ? "y Ascendente en" : "e Ascendente em";
-      const guideQ = currentLang === 'de' ? `Wie kann ich, Orbia, deine Bewusstseins- und Transformationsreise heute im Jahr 2026 leiten?`
-        : currentLang === 'en' ? `How can I, Orbia, guide your journey of consciousness and transformation in 2026?`
-        : currentLang === 'es' ? `¿Cómo puedo, Orbia, guiar tu viaje de conciencia y transformación hoy en 2026?`
-        : `Como eu, Orbia, posso guiar sua jornada de consciência e transformação hoje em 2026?`;
-      const bornWith = currentLang === 'de' ? "Geboren mit" : currentLang === 'en' ? "Born with" : currentLang === 'es' ? "Nacido con" : "Nascido com o";
-      const iSense = currentLang === 'de' ? "spüre ich in deinem Energiefeld" : currentLang === 'en' ? "I sense in your energy field" : currentLang === 'es' ? "siento en tu campo energético" : "sinto em seu campo energético";
-      welcomeText = `${currentLang === 'de' ? 'Grüße' : currentLang === 'en' ? 'Greetings' : currentLang === 'es' ? 'Saludos' : 'Saudações'}, ${firstName}. ${currentLang === 'de' ? 'Ich bin' : currentLang === 'en' ? 'I am' : currentLang === 'es' ? 'Soy' : 'Eu sou'} ${orbiaTitle}. ${bornWith} ${sunLabel} ${sunSign}${ascSign ? ` ${ascLabel} ${ascSign}` : ""}, ${iSense} ${getDynamicIntroOfSign(sunSign)}. ${guideQ}`;
+      
+      const labelDicts = {
+        sunLabel: {
+          pt: "Sol em",
+          en: "Sun in",
+          es: "Sol en",
+          de: "Sonne in",
+          fr: "Soleil en"
+        },
+        ascLabel: {
+          pt: "e Ascendente em",
+          en: "and Ascendant in",
+          es: "y Ascendente en",
+          de: "und Aszendent in",
+          fr: "et Ascendant en"
+        },
+        guideQ: {
+          pt: "Como eu, Orbia, posso guiar sua jornada de consciência e transformação hoje em 2026?",
+          en: "How can I, Orbia, guide your journey of consciousness and transformation in 2026?",
+          es: "¿Cómo puedo, Orbia, guiar tu viaje de conciencia y transformación hoy en 2026?",
+          de: "Wie kann ich, Orbia, deine Bewusstseins- und Transformationsreise heute im Jahr 2026 leiten?",
+          fr: "Comment puis-je, Orbia, guider votre voyage de conscience et de transformation aujourd'hui en 2026 ?"
+        },
+        bornWith: {
+          pt: "Nascido com o",
+          en: "Born with",
+          es: "Born with",
+          de: "Geboren mit",
+          fr: "Né avec le"
+        },
+        iSense: {
+          pt: "sinto em seu campo energético",
+          en: "I sense in your energy field",
+          es: "siento en tu campo energético",
+          de: "spüre ich in deinem Energiefeld",
+          fr: "je ressens dans votre champ énergétique"
+        },
+        greetingsLabel: {
+          pt: "Saudações",
+          en: "Greetings",
+          es: "Saludos",
+          de: "Grüße",
+          fr: "Salutations"
+        },
+        iAmLabel: {
+          pt: "Eu sou",
+          en: "I am",
+          es: "Soy",
+          de: "Ich bin",
+          fr: "Je suis"
+        }
+      };
+
+      const sunL = labelDicts.sunLabel[currentLang] || labelDicts.sunLabel.pt;
+      const ascL = labelDicts.ascLabel[currentLang] || labelDicts.ascLabel.pt;
+      const guide = labelDicts.guideQ[currentLang] || labelDicts.guideQ.pt;
+      const born = labelDicts.bornWith[currentLang] || labelDicts.bornWith.pt;
+      const sense = labelDicts.iSense[currentLang] || labelDicts.iSense.pt;
+      const greet = labelDicts.greetingsLabel[currentLang] || labelDicts.greetingsLabel.pt;
+      const iAm = labelDicts.iAmLabel[currentLang] || labelDicts.iAmLabel.pt;
+
+      welcomeText = `${greet}, ${firstName}. ${iAm} ${orbiaTitle}. ${born} ${sunL} ${sunSign}${ascSign ? ` ${ascL} ${ascSign}` : ""}, ${sense} ${getDynamicIntroOfSign(sunSign)}. ${guide}`;
     } else if (user.name) {
       const firstName = user.name.split(' ')[0];
-      welcomeText = currentLang === 'de'
-        ? `Grüße, ${firstName}. Ich bin ${orbiaTitle}. Wie schön, dass du hier bist! Synchronisiere deine Geburtsdaten, um deine zahlreichen personalisierten astrologischen Aspekte auf Basis echter astronomischer Ephemeriden zu kartieren. Wie kann ich dich heute leiten?`
-        : currentLang === 'en'
-        ? `Greetings, ${firstName}. I am ${orbiaTitle}. So glad to have you here! Synchronize your birth data to map your dozens of personalized astrological aspects based on real astronomical ephemeris. How can I guide you today?`
-        : currentLang === 'es'
-        ? `Saludos, ${firstName}. Soy ${orbiaTitle}. ¡Qué alegría tenerte aquí! Sincroniza tu nacimiento para mapear tus decenas de aspectos astrológicos personalizados basados en efemérides astronómicas reales. ¿Cómo puedo orientarte hoy?`
-        : `Saudações, ${firstName}. Eu sou ${orbiaTitle}. Que alegria tê-lo conosco! Sincronize seu nascimento para mapear suas dezenas de aspectos astrológicos personalizados baseados em efemérides astronômicas reais. Como posso te orientar hoje?`;
+      const welcomeNoMapDict: Record<string, string> = {
+        pt: `Saudações, ${firstName}. Eu sou ${orbiaTitle}. Que alegria tê-lo conosco! Sincronize seu nascimento para mapear suas dezenas de aspectos astrológicos personalizados baseados em efemérides astronomicas reais. Como posso te orientar hoje?`,
+        en: `Greetings, ${firstName}. I am ${orbiaTitle}. So glad to have you here! Synchronize your birth data to map your dozens of personalized astrological aspects based on real astronomical ephemeris. How can I guide you today?`,
+        es: `Saludos, ${firstName}. Soy ${orbiaTitle}. ¡Qué alegría tenerte aquí! Sincroniza tu nacimiento para mapear tus decenas de aspectos astrológicos personalizados basados en efemérides astronómicas reales. ¿Cómo puedo orientarte hoy?`,
+        de: `Grüße, ${firstName}. Ich bin ${orbiaTitle}. Wie schön, dass du hier bist! Synchronisiere deine Geburtsdaten, um deine zahlreichen personalisierten astrologischen Aspekte auf Basis echter astronomischer Ephemeriden zu kartieren. Wie kann ich dich heute leiten?`,
+        fr: `Salutations, ${firstName}. Je suis ${orbiaTitle}. Quel bonheur de vous avoir parmi nous ! Synchronisez votre naissance pour cartographier vos dizaines d'aspects astrologiques personnalisés basés sur de réelles éphémérides astronomiques. Comment puis-je vous orienter aujourd'hui ?`
+      };
+      welcomeText = welcomeNoMapDict[currentLang] || welcomeNoMapDict.pt;
     }
     setChatMessages(prev => {
       const filtered = prev.filter(m => m.id !== "welcomeMsg");
@@ -3044,7 +3160,8 @@ export default function App() {
         ...filtered
       ];
     });
-  }, [user, mapData]);
+  }, [user, mapData]);// nacimiento para mapear tus decenas de aspectos astrológicos personalizados basados en efemérides astronómicas reales. ¿Cómo puedo orientarte hoy?`
+// empty comment
 
   // Submit Dream Handler call to server (New Oráculo dos Sonhos)
   const handleRecordAndInterpretDream = async (e: React.FormEvent) => {
@@ -3300,13 +3417,13 @@ export default function App() {
         }
       });
       triggerGlobalNotification(
-        "Cache Limpo",
-        "Seu cache de performance foi limpo e otimizado com segurança.",
+        t("Cache Limpo"),
+        t("Seu cache de performance foi limpo e otimizado com segurança."),
         "success"
       );
     } catch (e) {
       console.error("Cache clear error:", e);
-      triggerGlobalNotification("Erro de Limpeza", "Falha ao limpar o cache temporário.", "error");
+      triggerGlobalNotification(t("Erro de Limpeza"), t("Falha ao limpar o cache temporário."), "error");
     }
   };
 
@@ -3440,12 +3557,10 @@ export default function App() {
           </div>
           <div className="text-center space-y-2 max-w-sm px-4">
             <h3 className="text-base font-black tracking-tight text-white uppercase font-sans">
-              {currentLang === 'pt' ? 'Sintonizando Pagamento' : 'Synchronizing Payment'}
+              {tLocal('syncing_payment')}
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed font-mono">
-              {currentLang === 'pt'
-                ? 'Conectando aos servidores seguros da Stripe para validar seu alinhamento...'
-                : 'Verifying with secure Stripe servers to synchronize your celestial alignment...'}
+              {tLocal('connecting_secure_stripe')}
             </p>
           </div>
         </div>
@@ -3462,7 +3577,7 @@ export default function App() {
           </div>
           <div className="flex-1 min-w-0">
             <h5 className="text-[9px] font-bold text-[#E5C158] font-mono leading-none uppercase tracking-wider">
-              {activeToast.type === 'email' ? '📬 E-mail Simulado' : activeToast.type === 'push' ? '📲 Push Notification' : '🔔 Alerta de Órbita'}
+              {activeToast.type === 'email' ? tLocal('simulated_email') : activeToast.type === 'push' ? tLocal('push_notification') : tLocal('orbit_alert')}
             </h5>
             <h4 className="text-xs font-sans font-bold text-white mt-1.5 leading-snug">{activeToast.title}</h4>
             <p className="text-[11px] text-slate-300 mt-1 leading-snug">{activeToast.message}</p>
@@ -3768,23 +3883,23 @@ export default function App() {
                     onSubmit={async (e) => {
                       e.preventDefault();
                       if (!termsConsent) {
-                        triggerGlobalNotification("Ativação Obrigatória", "Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar.", "alert");
+                        triggerGlobalNotification(t("Ativação Obrigatória"), t("Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar."), "alert");
                         return;
                       }
                       if (!createMainName.trim()) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, digite o seu nome completo.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite o seu nome completo."), "alert");
                         return;
                       }
                       if (!createMainCity) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, digite em qual cidade você nasceu.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite em qual cidade você nasceu."), "alert");
                         return;
                       }
                       if (!createMainDate) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, selecione sua data de nascimento.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, selecione sua data de nascimento."), "alert");
                         return;
                       }
                       if (!timeIsUnknown && !createMainTime) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário."), "alert");
                         return;
                       }
                       await handleRegisterAccountSubmit(e);
@@ -3792,11 +3907,11 @@ export default function App() {
                     className="space-y-4"
                   >
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Qual seu Nome Completo?)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Qual seu Nome Completo?)")}</label>
                       <input 
                         type="text" 
                         required
-                        placeholder="Ex: Carlos Santos"
+                        placeholder={t("Ex: Carlos Santos")}
                         value={createMainName}
                         onChange={(e) => setCreateMainName(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -3804,7 +3919,7 @@ export default function App() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Em qual cidade você nasceu?)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Em qual cidade você nasceu?)")}</label>
                       <CityAutocomplete
                         value={createMainCity}
                         onChange={(val) => setCreateMainCity(val)}
@@ -3817,7 +3932,7 @@ export default function App() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Qual sua data de nascimento?)</label>
+                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Qual sua data de nascimento?)")}</label>
                         <input 
                           type="date" 
                           required
@@ -3827,12 +3942,12 @@ export default function App() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Qual seu horário de nascimento?)</label>
+                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Qual seu horário de nascimento?)")}</label>
                         <input 
                           type="text" 
                           disabled={timeIsUnknown}
                           required={!timeIsUnknown}
-                          placeholder={timeIsUnknown ? "Informar depois..." : "Ex: 15:30"}
+                          placeholder={timeIsUnknown ? t("Informar depois...") : t("Ex: 15:30")}
                           value={timeIsUnknown ? "" : createMainTime}
                           onChange={(e) => setCreateMainTime(e.target.value)}
                           className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50 disabled:opacity-40"
@@ -3855,13 +3970,13 @@ export default function App() {
                         className="w-4 h-4 rounded border-slate-700 bg-slate-950 accent-amber-500 cursor-pointer"
                       />
                       <label htmlFor="unknown-time-checkbox" className="text-[11px] text-slate-350 cursor-pointer flex items-center gap-1.5 font-sans leading-none">
-                        Não sei meu horário de nascimento / Informar depois
+                        {t("Não sei meu horário de nascimento / Informar depois")}
                       </label>
                       <button 
                         type="button"
                         onClick={() => setShowAscExplain(true)}
                         className="p-1 text-xs text-amber-400 font-bold hover:text-amber-300 transition-all font-sans cursor-pointer shrink-0"
-                        title="Saiba mais"
+                        title={t("Saiba mais")}
                       >
                         [?]
                       </button>
@@ -3869,22 +3984,22 @@ export default function App() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">(E-mail para acesso)</label>
+                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">{t("(E-mail para acesso)")}</label>
                         <input 
                           type="email" 
                           required 
-                          placeholder="Ex: maria@provedor.com"
+                          placeholder={t("Ex: maria@provedor.com")}
                           value={authEmail}
                           onChange={(e) => setAuthEmail(e.target.value)}
                           className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-205 focus:outline-hidden focus:border-amber-500/50"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">(Crie sua Senha)</label>
+                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">{t("(Crie sua Senha)")}</label>
                         <input 
                           type="password" 
                           required 
-                          placeholder="Mínimo 6 caracteres"
+                          placeholder={t("Mínimo 6 caracteres")}
                           value={authPassword}
                           onChange={(e) => setAuthPassword(e.target.value)}
                           className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-205 focus:outline-hidden focus:border-amber-500/50"
@@ -3985,18 +4100,18 @@ export default function App() {
                   <div className="space-y-1">
                     <h3 className="text-base font-extrabold text-slate-100 flex items-center gap-2">
                       <Star className="w-5 h-5 text-amber-500 animate-pulse fill-amber-500/20" />
-                      Já tem um cadastro?
+                      {t("Já tem um cadastro?")}
                     </h3>
-                    <p className="text-xs text-slate-400 font-sans">Acesse o seu portal com e-mail e senha correspondentes.</p>
+                    <p className="text-xs text-slate-400 font-sans">{t("Acesse o seu portal com e-mail e senha correspondentes.")}</p>
                   </div>
 
                   <form onSubmit={handleLoginAccountSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(E-mail)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(E-mail)")}</label>
                       <input 
                         type="email" 
                         required 
-                        placeholder="Ex: maria@provedor.com"
+                        placeholder={t("Ex: maria@provedor.com")}
                         value={authEmail}
                         onChange={(e) => setAuthEmail(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -4004,11 +4119,11 @@ export default function App() {
                     </div>
                     
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Senha)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Senha)")}</label>
                       <input 
                         type="password" 
                         required 
-                        placeholder="Digite sua senha cadastrada"
+                        placeholder={t("Digite sua senha cadastrada")}
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -4020,7 +4135,7 @@ export default function App() {
                         type="submit"
                         className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 active:scale-98 shadow-xl shadow-amber-500/10 cursor-pointer"
                       >
-                        Fazer login
+                        {t("Fazer login")}
                       </button>
 
                       <button
@@ -4087,18 +4202,18 @@ export default function App() {
                   <div className="space-y-1">
                     <h3 className="text-base font-extrabold text-slate-100 flex items-center gap-2">
                       <Star className="w-5 h-5 text-amber-500 animate-pulse fill-amber-500/20" />
-                      Esqueci minha senha
+                      {t("Esqueci minha senha")}
                     </h3>
-                    <p className="text-xs text-slate-400 font-sans">Enviaremos as orientações de recuperação de senha por e-mail para que possa criar uma nova senha.</p>
+                    <p className="text-xs text-slate-400 font-sans">{t("Enviaremos as orientações de recuperação de senha por e-mail para que possa criar uma nova senha.")}</p>
                   </div>
 
                   <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">E-mail Cadastrado</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("E-mail Cadastrado")}</label>
                       <input 
                         type="email" 
                         required 
-                        placeholder="Ex: maria@provedor.com"
+                        placeholder={t("Ex: maria@provedor.com")}
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -4111,14 +4226,14 @@ export default function App() {
                         onClick={() => setAuthTab('login')}
                         className="flex-1 py-3 text-xs bg-slate-950 hover:bg-slate-900 border border-slate-850 hover:border-slate-800 rounded-2xl text-slate-450 uppercase tracking-wider font-mono cursor-pointer transition text-center"
                       >
-                        Voltar
+                        {t("Voltar")}
                       </button>
                       <button 
                         type="submit"
                         disabled={isSendingReset}
                         className="flex-2 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider rounded-2xl transition active:scale-98 shadow-xl shadow-amber-500/10 cursor-pointer disabled:opacity-50"
                       >
-                        {isSendingReset ? 'Enviando...' : 'Recuperar Senha'}
+                        {isSendingReset ? t("Enviando...") : t("Recuperar Senha")}
                       </button>
                     </div>
 
@@ -4783,28 +4898,28 @@ export default function App() {
                         className="space-y-4"
                       >
                         <p className="text-xs text-slate-400">
-                          Preencha a categoria correspondente e detalhe sua solicitação técnico-astrológica. Nossa guilda investigará imediatamente.
+                          {t("Preencha a categoria correspondente e detalhe sua solicitação técnico-astrológica. Nossa guilda investigará imediatamente.")}
                         </p>
 
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">Categoria do Chamado</label>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Categoria do Chamado")}</label>
                           <select 
                             value={supportCategory}
                             onChange={(e) => setSupportCategory(e.target.value)}
                             className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-300 cursor-pointer"
                           >
-                            <option value="technical">Suporte Técnico de Calculadora</option>
-                            <option value="map_help">Dúvidas sobre Nodos Lunares / Plácidus</option>
-                            <option value="firebase_issue">Problema de Login / Firebase</option>
-                            <option value="collaboration">Parceria de Negócios / Imprensa</option>
+                            <option value="technical">{t("Suporte Técnico de Calculadora")}</option>
+                            <option value="map_help">{t("Dúvidas sobre Nodos Lunares / Plácidus")}</option>
+                            <option value="firebase_issue">{t("Problema de Login / Firebase")}</option>
+                            <option value="collaboration">{t("Parceria de Negócios / Imprensa")}</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">Sua Mensagem / Relatório</label>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Sua Mensagem / Relatório")}</label>
                           <textarea 
                             required
-                            placeholder="Descreva sua questão em detalhes..."
+                            placeholder={t("Descreva sua questão em detalhes...")}
                             value={supportMessage}
                             onChange={(e) => setSupportMessage(e.target.value)}
                             rows={4}
@@ -4818,7 +4933,7 @@ export default function App() {
                             onClick={() => setLandingFooterModal(null)}
                             className="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-705 text-xs font-bold rounded-xl cursor-pointer"
                           >
-                            Cancelar
+                            {t("Cancelar")}
                           </button>
                           <button 
                             type="submit" 
@@ -4828,9 +4943,9 @@ export default function App() {
                             {supportSending ? (
                               <>
                                 <span className="w-3 h-3 rounded-full border border-slate-950 border-t-transparent animate-spin inline-block" />
-                                Transmitindo...
+                                {t("Transmitindo...")}
                               </>
-                            ) : 'Enviar Chamado seguro'}
+                            ) : t("Enviar Chamado seguro")}
                           </button>
                         </div>
                       </form>
@@ -4920,21 +5035,21 @@ export default function App() {
                           console.warn("[Auth] Failed to sync verified user profile state:", err);
                         }
 
-                        triggerGlobalNotification("Sintonizado!", "E-mail confirmado com sucesso! Bem-vindo ao Portal Órbita.", "success");
+                        triggerGlobalNotification(t("Sintonizado!"), t("E-mail confirmado com sucesso! Bem-vindo ao Portal Órbita."), "success");
                       } else {
-                        triggerGlobalNotification("Ainda não verificado", "Não detectamos seu clique no link de e-mail ainda. Verifique sua caixa de entrada e spam, e tente novamente.", "alert");
+                        triggerGlobalNotification(t("Ainda não verificado"), t("Não detectamos seu clique no link de e-mail ainda. Verifique sua caixa de entrada e spam, e tente novamente."), "alert");
                       }
                     }
                   } catch (err: any) {
                     console.error(err);
-                    triggerGlobalNotification("Erro de Sincronização", err.message || "Tente novamente mais tarde.", "alert");
+                    triggerGlobalNotification(t("Erro de Sincronização"), err.message || t("Tente novamente mais tarde."), "alert");
                   } finally {
                     setIsVerifyingNative(false);
                   }
                 }}
                 className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-450 hover:to-amber-550 text-slate-950 text-xs font-black uppercase tracking-wider rounded-2xl transition cursor-pointer flex items-center justify-center gap-2 font-sans"
               >
-                {isVerifyingNative ? "Verificando Sincronização..." : "Já cliquei no link / Concluir Verificação 🪐"}
+                {isVerifyingNative ? t("Verificando Sincronização...") : t("Já cliquei no link / Concluir Verificação 🪐")}
               </button>
 
               <button 
@@ -4944,10 +5059,10 @@ export default function App() {
                   setIsResendingNative(true);
                   try {
                     await sendNativeEmailVerification();
-                    triggerGlobalNotification("E-mail Enviado", "Um novo link oficial de ativação foi enviado para seu e-mail.", "success");
+                    triggerGlobalNotification(t("E-mail Enviado"), t("Um novo link oficial de ativação foi enviado para seu e-mail."), "success");
                   } catch (err: any) {
                     console.error(err);
-                    triggerGlobalNotification("Erro ao Enviar", err.message || "Não foi possível enviar.", "alert");
+                    triggerGlobalNotification(t("Erro ao Enviar"), err.message || t("Não foi possível enviar."), "alert");
                   } finally {
                     setIsResendingNative(false);
                   }
@@ -4979,11 +5094,11 @@ export default function App() {
                   } catch (err) {
                     console.warn("[Auth] Failed to sync verified user profile state:", err);
                   }
-                  triggerGlobalNotification("Sintonizado em Modo Demonstração!", "E-mail confirmado via bypass de teste. Bem-vindo ao Portal Órbita.", "success");
+                  triggerGlobalNotification(t("Sintonizado em Modo Demonstração!"), t("E-mail confirmado via bypass de teste. Bem-vindo ao Portal Órbita."), "success");
                 }}
                 className="w-full py-2.5 text-[10px] bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-400 font-bold uppercase tracking-wider rounded-2xl transition cursor-pointer flex items-center justify-center gap-2 font-mono"
               >
-                ⚡ Ignorar Confirmação (Apenas para Apresentações/Mock)
+                ⚡ {t("Ignorar Confirmação (Apenas para Apresentações/Mock)")}
               </button>
             </div>
 
@@ -5000,14 +5115,14 @@ export default function App() {
                   setVerificationInputCode("");
                   setLastSimulatedCode("");
                   await logoutWithFirebase().catch(console.error);
-                  triggerGlobalNotification("Sessão Encerrada", "Você retornou ao portal.", "success");
+                  triggerGlobalNotification(t("Sessão Encerrada"), t("Você retornou ao portal."), "success");
                   setTimeout(() => {
                     manualAuthActionRef.current = false;
                   }, 2000);
                 }}
                 className="text-[11px] font-medium text-slate-500 hover:text-red-400 transition cursor-pointer"
               >
-                Voltar ao Início / Trocar de Conta
+                {t("Voltar ao Início / Trocar de Conta")}
               </button>
             </div>
 
@@ -5089,9 +5204,10 @@ export default function App() {
           <MoonTipCard 
             userName={user?.name} 
             birthDate={user?.birthDate} 
+            lang={currentLang}
             onRewardPoints={(amount) => {
               setScorePoints(prev => prev + amount);
-              pushRealNotification(`Você reivindicou com sucesso seu bônus diário do Sussurro Lunar (+${amount} pontos)! 💎`);
+              pushRealNotification(`${t("Você reivindicou com sucesso seu bônus diário do Sussurro Lunar")} (+${amount} ${t("pontos")})! 💎`);
             }}
           />
           
@@ -5266,8 +5382,8 @@ export default function App() {
                         />
                       ) : !hasUserCreatedMap(user) ? (
                         renderLockedSection(
-                          "Área do Usuário Sintonizada",
-                          "Seu painel pessoal de previsões diárias, missões, trânsitos em tempo real, caminhos numerológicos, afinidades de amor e relógio cósmico depende da inicialização do seu mapa de nascimento. Sintonize suas estrelas para habilitar."
+                          t("Área do Usuário Sintonizada"),
+                          t("Seu painel pessoal de previsões diárias, missões, trânsitos em tempo real, caminhos numerológicos, afinidades de amor e relógio cósmico depende da inicialização do seu mapa de nascimento. Sintonize suas estrelas para habilitar.")
                         )
                       ) : (
                         <div className="space-y-6 md:space-y-8 animate-in fade-in duration-300 text-left">
@@ -5959,8 +6075,8 @@ export default function App() {
                     {mapSubTab === 'meu_mapa' && (
                       !hasUserCreatedMap(user) ? (
                         renderLockedSection(
-                          "Astronomia & Numerologia Pessoais",
-                          "Os mapas celestes sob sistema Placidus, os graus exatos dos astros, a análise detalhada das casas astrológicas e os códigos de vida numerológicos dependem da sintonização do seu mapa de nascimento. Sintonize suas estrelas para habilitar."
+                          t("Astronomia & Numerologia Pessoais"),
+                          t("Os mapas celestes sob sistema Placidus, os graus exatos dos astros, a análise detalhada das casas astrológicas e os códigos de vida numerológicos dependem da sintonização do seu mapa de nascimento. Sintonize suas estrelas para habilitar.")
                         )
                       ) : (
                         <div className="space-y-8 animate-in fade-in duration-300">
@@ -6003,14 +6119,14 @@ export default function App() {
                                     setAuthTab('register_credentials');
                                     setActiveTab('configuracoes');
                                     triggerGlobalNotification(
-                                      "Registre-se",
-                                      "Crie sua conta para sincronizar e salvar este mapa para sempre na nuvem!",
+                                      t("Registre-se"),
+                                      t("Crie sua conta para sincronizar e salvar este mapa para sempre na nuvem!"),
                                       "info"
                                     );
                                   }}
                                   className="w-full md:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs font-mono transition-all duration-300 cursor-pointer"
                                 >
-                                  Criar Conta e Salvar
+                                  {t("Criar Conta e Salvar")}
                                 </button>
                               )}
                               
@@ -6126,20 +6242,20 @@ export default function App() {
                         }} className="space-y-4 pt-2">
                           <fieldset className="space-y-4">
                             <div>
-                              <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Nome completo</label>
+                              <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Nome completo")}</label>
                               <input
                                 type="text"
                                 required
                                 value={createMainName}
                                 onChange={(e) => setCreateMainName(e.target.value)}
                                 className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-205 focus:outline-hidden"
-                                placeholder="e.g. Fabricio Souza Santos"
+                                placeholder={t("e.g. Fabricio Souza Santos")}
                               />
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                               <div>
-                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Data de nascimento</label>
+                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Data de nascimento")}</label>
                                 <input
                                   type="date"
                                   required
@@ -6150,18 +6266,18 @@ export default function App() {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Hora (HH:MM)</label>
+                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Hora (HH:MM)")}</label>
                                 <input
                                   type="text"
                                   value={createMainTime}
                                   onChange={(e) => setCreateMainTime(e.target.value)}
                                   className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-205 focus:outline-hidden font-mono"
-                                  placeholder="e.g. 15:30"
+                                  placeholder={t("e.g. 15:30")}
                                 />
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Cidade / Estado</label>
+                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Cidade / Estado")}</label>
                                 <CityAutocomplete
                                   value={createMainCity}
                                   onChange={(val) => setCreateMainCity(val)}
@@ -6208,8 +6324,8 @@ export default function App() {
                         />
                       ) : !hasUserCreatedMap(user) ? (
                         renderLockedSection(
-                          "Portal de Relacionamentos e Mapas Extras",
-                          "A comparação de sinastria social, relatórios de afinidade e registros paralelos para mapas de familiares e amigos necessitam que você primeiro crie seu próprio mapa de nascimento. Sintonize suas estrelas para habilitar."
+                          t("Portal de Relacionamentos e Mapas Extras"),
+                          t("A comparação de sinastria social, relatórios de afinidade e registros paralelos para mapas de familiares e amigos necessitam que você primeiro crie seu próprio mapa de nascimento. Sintonize suas estrelas para habilitar.")
                         )
                       ) : (
                         <div className="max-w-4xl mx-auto space-y-6 text-left animate-in fade-in duration-300">
@@ -6364,8 +6480,8 @@ export default function App() {
                                  }
 
                                  triggerGlobalNotification(
-                                    "Mapa Extra Cadastrado",
-                                    `O Mapa Astral de ${extraName} foi calculado e adicionado com sucesso!`,
+                                    t("Mapa Extra Cadastrado"),
+                                    `${t("O Mapa Astral de")} ${extraName} ${t("foi calculado e adicionado com sucesso!")}`,
                                     "success"
                                   );
 
@@ -6376,19 +6492,19 @@ export default function App() {
                                   setExtraCity('');
                                 }} className="space-y-3 font-sans">
                                   <div>
-                                    <label className="block text-[9px] font-mono text-slate-450 uppercase mb-1">Nome completo</label>
+                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">{t("Nome completo")}</label>
                                     <input
                                       type="text"
                                       required
                                       value={extraName}
                                       onChange={(e) => setExtraName(e.target.value)}
                                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-202 focus:outline-hidden"
-                                      placeholder="e.g. Lucas Oliveira"
+                                      placeholder={t("e.g. Lucas Oliveira")}
                                     />
                                   </div>
 
                                   <div>
-                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">Data Nascimento</label>
+                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">{t("Data Nascimento")}</label>
                                     <input
                                       type="date"
                                       required
@@ -6399,21 +6515,21 @@ export default function App() {
                                   </div>
 
                                   <div>
-                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">Hora (HH:MM)</label>
+                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">{t("Hora (HH:MM)")}</label>
                                     <input
                                       type="text"
                                       value={extraTime}
                                       onChange={(e) => setExtraTime(e.target.value)}
                                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-202 focus:outline-hidden"
-                                      placeholder="e.g. 08:45"
+                                      placeholder={t("e.g. 08:45")}
                                     />
                                   </div>
 
                                   <div>
-                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">Cidade</label>
+                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">{t("Cidade")}</label>
                                     <CityAutocomplete
                                       value={extraCity}
-                                      placeholder="e.g. Rio de Janeiro"
+                                      placeholder={t("e.g. Rio de Janeiro")}
                                       onChange={(val) => setExtraCity(val)}
                                       onSelectCity={(city) => {
                                         setExtraCity(city.label);
@@ -6536,8 +6652,8 @@ export default function App() {
                 />
               ) : !hasUserCreatedMap(user) ? (
                 renderLockedSection(
-                  "Portal de Constelações",
-                  "O alinhamento estelar das constelações e a inclinação sideral dependem das coordenadas geográficas e data exata do seu nascimento. Sincronize seu mapa astral para desbloquear as posições estelares em tempo real."
+                  t("Portal de Constelações"),
+                  t("O alinhamento estelar das constelações e a inclinação sideral dependem das coordenadas geográficas e data exata do seu nascimento. Sincronize seu mapa astral para desbloquear as posições estelares em tempo real.")
                 )
               ) : (
                 <div className="space-y-8 animate-in fade-in duration-300">
@@ -6647,22 +6763,22 @@ export default function App() {
                   {/* Mapa da Prosperidade Subcomponent */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4">
                     <div className="pb-2 border-b border-slate-850">
-                      <h4 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Mapa de Prosperidade Mensal</h4>
-                      <p className="text-[10px] text-slate-500 mt-0.5 font-sans">Sua vibração abundante orientada para {personalProsperity.monthName} {personalProsperity.year}.</p>
+                      <h4 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{t("Mapa de Prosperidade Mensal")}</h4>
+                      <p className="text-[10px] text-slate-500 mt-0.5 font-sans">{t("Sua vibração abundante orientada para")} {personalProsperity.monthName} {personalProsperity.year}.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       {/* Prosperity fields */}
                       <div className="p-3 bg-slate-950 rounded-xl border border-slate-850">
-                        <span className="text-[8px] font-mono text-slate-500 uppercase block">Número do Mês</span>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Número do Mês")}</span>
                         <span className="text-xl font-bold font-mono text-amber-500 block mt-1">{personalProsperity.monthNumber}</span>
-                        <p className="text-[9px] text-slate-500 leading-none mt-1">Amuleto: {personalProsperity.amulet}</p>
+                        <p className="text-[9px] text-slate-500 leading-none mt-1">{t("Amuleto")}: {personalProsperity.amulet}</p>
                       </div>
 
                       <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex items-center gap-3">
                         <div className="w-8 h-8 rounded border border-white/10 shrink-0 shadow-sm" style={{ backgroundColor: personalProsperity.favorableColor.hex }} />
                         <div>
-                          <span className="text-[8px] font-mono text-slate-500 uppercase block">Cor Favorecida</span>
+                          <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Cor Favorecida")}</span>
                           <span className="text-[11px] text-slate-300 font-bold font-mono block mt-0.5">{personalProsperity.favorableColor.name}</span>
                           <span className="text-[8px] text-slate-500 font-mono">{personalProsperity.favorableColor.hex.toUpperCase()}</span>
                         </div>
@@ -6670,7 +6786,7 @@ export default function App() {
 
                       {/* Palabra chave */}
                       <div className="col-span-2 p-3 bg-slate-950 rounded-xl border border-slate-850">
-                        <span className="text-[8px] font-mono text-slate-500 uppercase block">Palavra-Chave Ativa</span>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Palavra-Chave Ativa")}</span>
                         <span className="text-xs font-bold text-slate-200 mt-1 block">"{personalProsperity.keyword}"</span>
                       </div>
                     </div>
@@ -6680,15 +6796,15 @@ export default function App() {
                   <div className="bg-slate-900/30 p-6 rounded-3xl border border-slate-800 space-y-4 col-span-1 lg:col-span-2">
                     <div className="pb-2 border-b border-slate-800 flex justify-between items-center sm:flex-nowrap flex-wrap gap-2">
                       <div>
-                        <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Mapa dos Próximos 30 Dias (Calendário de Trânsitos)</h3>
-                        <p className="text-[10px] text-slate-500 mt-0.5">Clique nos dias sinalizados para abrir e analisar os detalhes e trânsitos reais.</p>
+                        <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{t("Mapa dos Próximos 30 Dias (Calendário de Trânsitos)")}</h3>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{t("Clique nos dias sinalizados para abrir e analisar os detalhes e trânsitos reais.")}</p>
                       </div>
                       {selectedProsperityDay !== null && (
                         <button 
                           onClick={() => setSelectedProsperityDay(null)}
                           className="px-2 py-1 text-[9px] font-mono uppercase bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-md border border-red-500/20 transition cursor-pointer"
                         >
-                          Fechar Detalhes
+                          {t("Fechar Detalhes")}
                         </button>
                       )}
                     </div>
@@ -6716,6 +6832,8 @@ export default function App() {
                           tagText = "Descanso";
                         }
 
+                        const translatedTag = t(tagText);
+
                         if (isSelected) {
                           dayColor = "bg-sky-500/20 border-sky-400 text-sky-200 ring-1 ring-sky-550 font-black shadow-md";
                         }
@@ -6725,11 +6843,11 @@ export default function App() {
                             key={idx} 
                             type="button"
                             onClick={() => setSelectedProsperityDay(isSelected ? null : dayNum)}
-                            title={`Dia ${dayNum}: energia de foco ${tagText}`}
+                            title={`${t("Dia")} ${dayNum}: ${t("energia de foco")} ${translatedTag}`}
                             className={`p-2 rounded-xl border text-center transition cursor-pointer flex flex-col justify-between items-center h-12 ${dayColor}`}
                           >
                             <span className="block font-mono text-xs font-bold leading-none">{dayNum.toString().padStart(2, '0')}</span>
-                            <span className="text-[7.5px] font-mono block leading-none uppercase tracking-tight">{tagText.slice(0, 3)}</span>
+                            <span className="text-[7.5px] font-mono block leading-none uppercase tracking-tight">{translatedTag.slice(0, 3)}</span>
                           </button>
                         );
                       })}
@@ -6751,11 +6869,11 @@ export default function App() {
                             <div className="flex items-center gap-1.5">
                               <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse" />
                               <span className="text-sm font-bold uppercase font-mono text-slate-100">
-                                {prediction.dateFormatted} (Dia {selectedProsperityDay})
+                                {prediction.dateFormatted} ({t("Dia")} {selectedProsperityDay})
                               </span>
                             </div>
                             <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-mono border ${prediction.tagColorClass}`}>
-                              Vibração: {prediction.tagText}
+                              {t("Vibração")}: {prediction.tagText}
                             </span>
                           </div>
 
@@ -6763,27 +6881,27 @@ export default function App() {
                             {/* Column 1 - Astrological details and energies */}
                             <div className="space-y-3">
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Influência Astrológica:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Influência Astrológica:")}</span>
                                 <p className="text-slate-205 mt-1 leading-normal font-sans font-medium">{prediction.astroInfluence}</p>
                               </div>
 
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Aspectos Planetários do Dia:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Aspectos Planetários do Dia:")}</span>
                                 <p className="text-slate-200 mt-1 leading-normal font-sans">{prediction.aspects}</p>
                               </div>
 
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Trânsito Lunar & Setores:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Trânsito Lunar & Setores:")}</span>
                                 <p className="text-slate-300 mt-1 leading-normal font-sans italic">{prediction.transit}</p>
                               </div>
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Energia Predominante:</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Energia Predominante:")}</span>
                                   <span className="text-[11px] font-bold text-sky-400 block mt-1">{prediction.predominantEnergy}</span>
                                 </div>
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Nível Energético:</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Nível Energético:")}</span>
                                   <div className="flex items-center gap-1.5 mt-1">
                                     <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                                       <div className="h-full bg-emerald-500" style={{ width: `${prediction.energyLevel}%` }} />
@@ -6795,11 +6913,11 @@ export default function App() {
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-emerald-500 uppercase tracking-wider block font-bold">Áreas Favorecidas:</span>
+                                  <span className="text-[8px] font-mono text-emerald-500 uppercase tracking-wider block font-bold">{t("Áreas Favorecidas:")}</span>
                                   <p className="text-emerald-400 mt-1 font-bold truncate">{prediction.favoredAreas.join(', ')}</p>
                                 </div>
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-rose-500/60">
-                                  <span className="text-[8px] font-mono text-rose-500 uppercase tracking-wider block font-bold">Áreas de Atenção:</span>
+                                  <span className="text-[8px] font-mono text-rose-500 uppercase tracking-wider block font-bold">{t("Áreas de Atenção:")}</span>
                                   <p className="text-rose-400 mt-1 font-bold truncate">{prediction.attentionAreas.join(', ')}</p>
                                 </div>
                               </div>
@@ -6808,23 +6926,23 @@ export default function App() {
                             {/* Column 2 - Personal action, opportunities, challenges & advice */}
                             <div className="space-y-3">
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Mensagem Personalizada do Usuário:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Mensagem Personalizada do Usuário:")}</span>
                                 <p className="text-slate-200 mt-1 leading-normal italic">"{prediction.personalizedMessage}"</p>
                               </div>
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-emerald-500/15">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-emerald-400">Oportunidades:</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-emerald-400">{t("Oportunidades:")}</span>
                                   <p className="text-slate-300 mt-1 leading-normal font-sans">{prediction.opportunities}</p>
                                 </div>
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-rose-500/15">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-rose-400">Desafios:</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-rose-400">{t("Desafios:")}</span>
                                   <p className="text-slate-300 mt-1 leading-normal font-sans">{prediction.challenges}</p>
                                 </div>
                               </div>
 
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Conselho Personalizado:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Conselho Personalizado:")}</span>
                                 <p className="text-slate-200 mt-1 leading-normal font-medium">"{prediction.personalizedAdvice}"</p>
                               </div>
 
@@ -6832,23 +6950,23 @@ export default function App() {
                                 <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60 flex items-center gap-2">
                                   <span className="w-4 h-4 rounded-full border border-white/10 shrink-0 shadow-xs" style={{ backgroundColor: prediction.favorableColor === "Verde Esmeralda" ? "#16a34a" : prediction.favorableColor === "Azul Celeste" ? "#38bdf8" : prediction.favorableColor === "Violeta Púrpura" ? "#a855f7" : prediction.favorableColor === "Dourado Sol" ? "#eab308" : prediction.favorableColor === "Turquesa Fluido" ? "#06b6d4" : prediction.favorableColor === "Vermelho Rubi" ? "#dc2626" : "#f472b6" }} />
                                   <div>
-                                    <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">Cor Favorável</span>
+                                    <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">{t("Cor Favorável")}</span>
                                     <span className="text-[10px] text-slate-300 font-bold font-sans mt-0.5 block">{prediction.favorableColor}</span>
                                   </div>
                                 </div>
                                 <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">Número da Sorte</span>
+                                  <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">{t("Número da Sorte")}</span>
                                   <span className="text-sm font-black text-amber-400 block font-mono text-left">{prediction.favorableNumber}</span>
                                 </div>
                               </div>
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-500 block uppercase">Melhor Período</span>
+                                  <span className="text-[7.5px] font-mono text-slate-500 block uppercase">{t("Melhor Período")}</span>
                                   <span className="text-[10px] text-emerald-400 font-bold block font-mono mt-0.5">{prediction.bestPeriod}</span>
                                 </div>
                                 <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-100 block uppercase text-rose-500">Período de Atenção</span>
+                                  <span className="text-[7.5px] font-mono text-slate-100 block uppercase text-rose-500">{t("Período de Atenção")}</span>
                                   <span className="text-[10px] text-rose-400 font-bold block font-mono mt-0.5">{prediction.attentionPeriod}</span>
                                 </div>
                               </div>
@@ -6890,8 +7008,8 @@ export default function App() {
                 />
               ) : !hasUserCreatedMap(user) ? (
                 renderLockedSection(
-                  "Portal de Planetas e Assistência Orbia",
-                  "Seu horóscopo celestial detalhado, a interpretação de sonhos complexos e o acesso à conselheira de inteligência artificial Orbia dependem das coordenadas geométricas do seu nascimento. Sincronize seu mapa para desbloquear."
+                  t("Portal de Planetas e Assistência Orbia"),
+                  t("Seu horóscopo celestial detalhado, a interpretação de sonhos complexos e o acesso à conselheira de inteligência artificial Orbia dependem das coordenadas geométricas do seu nascimento. Sincronize seu mapa para desbloquear.")
                 )
               ) : (
                 <div className="space-y-8 animate-in fade-in duration-300">
@@ -6901,13 +7019,13 @@ export default function App() {
                   <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/5 rounded-full blur-3xl" />
                   <div className="relative">
                     <span className="px-3 py-1 rounded-full text-[10px] uppercase font-mono font-semibold tracking-wider text-rose-400 bg-rose-500/10 border border-rose-500/20">
-                      Módulo Sistemas Ativos e Consultas
+                      {t("Módulo Sistemas Ativos e Consultas")}
                     </span>
                     <h1 className="text-2xl md:text-3xl font-sans font-bold tracking-tight text-slate-100 mt-2">
-                      Sistemas Astros Ativos
+                      {t("Sistemas Astros Ativos")}
                     </h1>
                     <p className="text-xs text-slate-400 max-w-xl mt-1">
-                      Comunique-se com a Conselheira Orbia, interprete sonhos com Gemini no Cofre dos Sonhos e consulte o Oráculo diário.
+                      {t("Comunique-se com a Conselheira Orbia, interprete sonhos com Gemini no Cofre dos Sonhos e consulte o Oráculo diário.")}
                     </p>
                   </div>
                 </div>
@@ -6917,14 +7035,14 @@ export default function App() {
                   <React.Suspense fallback={
                     <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
                       <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                      <div>Injetando efemérides astronômicas em tempo real...</div>
+                      <div>{t("Injetando efemérides astronômicas em tempo real...")}</div>
                     </div>
                   }>
                     <TransitMap mapData={mapData} />
                   </React.Suspense>
                 ) : (
                   <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse">
-                    Calculando trânsitos em tempo real e aspectos com seu mapa...
+                    {t("Calculando trânsitos em tempo real e aspectos com seu mapa...")}
                   </div>
                 )}
 
@@ -6990,8 +7108,8 @@ export default function App() {
                 />
               ) : !hasUserCreatedMap(user) ? (
                 renderLockedSection(
-                  "Portal de Tarô Cósmico",
-                  "A interpretação profunda e a leitura semanal personalizada dos arcanos maiores dependem do alinhamento geométrico cósmico de nascimento. Sincronize seu mapa astral para desbloquear as consultas oraculares gratuitas."
+                  t("Portal de Tarô Cósmico"),
+                  t("A interpretação profunda e a leitura semanal personalizada dos arcanos maiores dependem do alinhamento geométrico cósmico de nascimento. Sincronize seu mapa astral para desbloquear as consultas oraculares gratuitas.")
                 )
               ) : (
                 <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-350">
@@ -7065,7 +7183,7 @@ export default function App() {
                           disabled={(user.mainMapChangesCount ?? 0) >= 2}
                           onChange={(e) => handleUpdateUserProfile({ birthTime: e.target.value })} 
                           className="w-full px-3 py-2 rounded-xl bg-slate-955 border border-slate-850 text-xs text-slate-200 focus:outline-hidden disabled:opacity-50"
-                          placeholder="e.g. 15:30"
+                          placeholder={tLocal('e.g. 15:30')}
                         />
                       </div>
 
@@ -7073,7 +7191,7 @@ export default function App() {
                         <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_city')}</label>
                         <CityAutocomplete
                           value={user.birthCity}
-                          placeholder="e.g. São Paulo, SP"
+                          placeholder={tLocal('e.g. São Paulo, SP')}
                           onChange={(val) => handleUpdateUserProfile({ birthCity: val })}
                           onSelectCity={(city) => {
                             handleUpdateUserProfile({
@@ -7222,7 +7340,7 @@ export default function App() {
                         setNumerology(null);
                         setExtraMaps([]);
                         setIsLoggedIn(false);
-                        triggerGlobalNotification("Portal Sair", "Sessão encerrada com sucesso.", "alert");
+                        triggerGlobalNotification(t("Portal Sair"), t("Sessão encerrada com sucesso."), "alert");
                         setTimeout(() => {
                           manualAuthActionRef.current = false;
                         }, 2000);
@@ -7319,12 +7437,12 @@ export default function App() {
                                           if (isLoggedIn && loggedEmail) {
                                             try {
                                               await saveProfileToDatabase(loggedEmail, nextUser);
-                                              triggerGlobalNotification("Avatar Celestial", `Sua essência foi sintonizada com o arquétipo do ${av.name}!`, "success");
+                                              triggerGlobalNotification(t("Avatar Celestial"), `${t("Sua essência foi sintonizada com o arquétipo do")} ${t(av.name)}!`, "success");
                                             } catch (err) {
                                               console.error("Erro ao salvar avatar no Firestore:", err);
                                             }
                                           } else {
-                                            triggerGlobalNotification("Avatar Sintonizado", `Arquétipo ${av.name} ativado temporariamente no seu navegador!`, "info");
+                                            triggerGlobalNotification(t("Avatar Sintonizado"), `${t("Arquétipo")} ${t(av.name)} ${t("ativado temporariamente no seu navegador!")}`, "info");
                                           }
                                         }}
                                         className={`relative aspect-square rounded-2xl overflow-hidden border transition-all cursor-pointer group flex items-center justify-center p-2 ${
