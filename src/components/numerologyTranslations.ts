@@ -992,7 +992,7 @@ export const uiTranslationsMultilang: Record<Language, Record<string, string>> =
     "ampliando sua clareza de mente.": "aktiviert und Ihre geistige Klarheit erweitert.",
     "Sua vibração principal": "Ihre Hauptschwingung",
     "flui idealmente em canais harmônicos que encontram estabilidade nas pulsações geomagnéticas de": "fließt idealerweise in harmonischen Kanälen, die Stabilität in den geomagnetischen Pulsationen von",
-    "Hz. Sintonizar-se com frequências solfeggio correlatadas ampliará consideravelmente sua resiliência mental e foco nas próximas 48 hours.": "Hz finden. Die Abstimmung auf korrelierte Solfeggio-Frequenzen wird Ihre mentale Widerstandskraft und Ihren Fokus in den nächsten 48 Stunden erheblich stärken.",
+    "Hz. Sintonizar-se com frequências solfeggio correlatadas ampliará consideravelmente sua resiliência mental e foco nas próximas 48 horas.": "Hz finden. Die Abstimmung auf korrelierte Solfeggio-Frequenzen wird Ihre mentale Widerstandskraft und Ihren Fokus in den nächsten 48 Stunden erheblich stärken.",
     "Talentos & Vocação Cósmica": "Talente & Kosmische Berufung",
     "Desafios & Sombra Pragmática": "Herausforderungen & Praktischer Schatten",
     "No Amor e Afinidades": "In Liebe und Affinitäten",

@@ -1,4 +1,4 @@
-import { calculateLifePathNumber } from './prosperityEngine';
+import { calculateLifePathNumber } from '../prosperityEngine';
 import i18next from 'i18next';
 
 export interface DailyPrediction {
@@ -418,10 +418,11 @@ export function generateDailyPrediction(
   userSunSign: string,
   userName: string,
   selectedDayIndex: number,
-  currentDate: Date
+  currentDate: Date,
+  langParam?: string
 ): DailyPrediction {
   const targetDate = new Date(currentDate.getTime() + selectedDayIndex * 24 * 60 * 60 * 1000);
-  const lang = getActiveLanguage();
+  const lang = (langParam || getActiveLanguage()) as 'pt' | 'en' | 'es' | 'de' | 'fr';
   
   // Deterministic seed generation based on name, birth date, selected index and month/year
   const birthNum = calculateLifePathNumber(userBirthDate);

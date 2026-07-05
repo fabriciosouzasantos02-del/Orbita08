@@ -16,7 +16,6 @@ import {
 import { OracleDreamEntry } from '../types';
 import { jsPDF } from 'jspdf';
 import { useTranslation } from 'react-i18next';
-import { useIdioma } from '../context/IdiomaContext';
 
 interface OraculoDosSonhosCardProps {
   newDreamDesc: string;
@@ -321,9 +320,7 @@ export default function OraculoDosSonhosCard({
   preferredLanguage = "pt"
 }: OraculoDosSonhosCardProps) {
   const { i18n } = useTranslation();
-  const { idioma } = useIdioma();
-  const activeLang = idioma || preferredLanguage || 'pt';
-  const langKey = activeLang.toLowerCase().split('-')[0];
+  const langKey = (i18n.language || preferredLanguage || 'pt').toLowerCase().split('-')[0];
   const ui = ORACLE_UI[langKey] || ORACLE_UI['pt'];
   // Search state inside dreams list sidebar
   const [dreamSearch, setDreamSearch] = useState('');
@@ -338,7 +335,7 @@ export default function OraculoDosSonhosCard({
         format: "a4"
       });
 
-      const language = dream.language || activeLang || "pt";
+      const language = dream.language || preferredLanguage || "pt";
 
       // Margins
       const marginX = 20;

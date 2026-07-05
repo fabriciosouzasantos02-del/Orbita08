@@ -809,12 +809,9 @@ export function computeDetailedCompatibility(
   };
 
   const fallbackTexts = {
-    pt: { naoFornecida: "Não fornecida", naoFornecido: "Não fornecido" },
-    en: { naoFornecida: "Not provided", naoFornecido: "Not provided" },
-    es: { naoFornecida: "No proporcionada", naoFornecido: "No proporcionado" },
-    de: { naoFornecida: "Nicht angegeben", naoFornecido: "Nicht angegeben" },
-    fr: { naoFornecida: "Non fournie", naoFornecido: "Non fourni" }
-  }[lang] || { naoFornecida: "Não fornecida", naoFornecido: "Não fornecido" };
+    naoFornecida: i18next.t("Não fornecida", { lng: lang }),
+    naoFornecido: i18next.t("Não fornecido", { lng: lang })
+  };
 
   return {
     partnerName: name2,

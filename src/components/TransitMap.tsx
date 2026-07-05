@@ -4,7 +4,7 @@ import { AstrologyMap, AstroAstroPosition } from '../types';
 import { Orbit, Play, Pause, RotateCcw, Info, Zap, Calendar, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 
 interface TransitMapProps {
   mapData: AstrologyMap;
@@ -133,7 +133,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     // Aspects
     "Conjunção": "Conjunción", "Oposição": "Oposición", "Trígono": "Trígono", "Quadratura": "Cuadratura", "Sextil": "Sextil",
     "Fusão de propósitos celestes e intensidade focalizada.": "Fusión de propósitos celestes e intensidad enfocada.",
-    "Polarização ou reflexão crítica exigindo diplomacia ativa.": "Polarización o reflexión crítica que exige diplomacia activa.",
+    "Polarização ou reflexão crítica exigindo diplomacia activa.": "Polarización o reflexión crítica que exige diplomacia activa.",
     "Fluxo espontâneo que remove entraves com sorte natural.": "Flujo espontáneo que elimina obstáculos con suerte natural.",
     "Força transformadora impulsionada sob pressões e atritos.": "Fuerza transformadora impulsada bajo presiones y fricciones.",
     "Oportunidades de colaboração que premiam ações conscientes.": "Oportunidades de colaboración que premian acciones conscientes.",
@@ -277,11 +277,7 @@ export default function TransitMap({ mapData }: TransitMapProps) {
         return localDict[text];
       }
     }
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, (i18n.language as Language) || 'pt');
-    }
-    return res;
+    return i18nT(text);
   };
 
   const svgRef = useRef<SVGSVGElement | null>(null);

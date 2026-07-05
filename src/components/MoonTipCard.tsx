@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { Moon, Sparkles, ChevronDown, ChevronUp, X, CheckCircle } from 'lucide-react';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 
@@ -86,44 +86,34 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
     if (localTranslations[activeLang]?.[text]) {
       return localTranslations[activeLang][text];
     }
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeLang);
-    }
-    return res;
+    return i18nT(text);
   };
 
-  const [data, setData] = useState<MoonTipData | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const activeLang = lang || 'pt';
-    const cached = sessionStorage.getItem(`astrological_moon_tip_session_${activeLang}`);
+  const [data, setData] = useState<MoonTipData | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(true);
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [claimed, setClaimed] = useState<boolean>(false);
+
+  useEffect(() => {
+    const email = localStorage.getItem("orbi_logged_email") || "";
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // 1. Check if we already have a calculated tip for this browser session and language
+    const cached = sessionStorage.getItem(`astrological_moon_tip_session_${lang}`);
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         if (parsed && parsed.tip) {
-          return parsed;
+          setData(parsed);
+          return;
         }
       } catch (e) {
         console.error("Error parsing cached moon tip:", e);
       }
     }
-    return null;
-  });
-  const [loading, setLoading] = useState<boolean>(false);
-  const [isOpen, setIsOpen] = useState<boolean>(true);
-  const [isMinimized, setIsMinimized] = useState<boolean>(false);
-  const [claimed, setClaimed] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return sessionStorage.getItem('astrological_moon_tip_reward_claimed') === 'true';
-  });
 
-  useEffect(() => {
-    if (data) return;
-
-    const email = localStorage.getItem("orbi_logged_email") || "";
-    const todayStr = new Date().toISOString().split('T')[0];
-
-    // Fetch fresh tip from the endpoint for a new login session
+    // 2. Fetch fresh tip from the endpoint for a new login session
     const fetchTip = async () => {
       setLoading(true);
       try {
@@ -158,7 +148,15 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
     };
 
     fetchTip();
-  }, [userName, birthDate, lang, data]);
+  }, [userName, birthDate, lang]);
+
+  // Check if reward was claimed already in this session
+  useEffect(() => {
+    const isClaimed = sessionStorage.getItem('astrological_moon_tip_reward_claimed');
+    if (isClaimed === 'true') {
+      setClaimed(true);
+    }
+  }, []);
 
   const handleClaimReward = () => {
     if (claimed) return;

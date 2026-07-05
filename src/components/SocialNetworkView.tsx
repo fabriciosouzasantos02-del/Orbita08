@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from "react-i18next";
-import { translateUiText, Language } from '../lib/translations';
-import { useIdioma } from '../context/IdiomaContext';
+import { Language } from '../lib/translations';
 import { 
   Heart, Users, Sparkles, UserPlus, UserMinus, Search, 
   MapPin, Award, Check, TrendingUp, RefreshCw, MessageSquare, 
@@ -71,6 +70,7 @@ interface SocialNetworkViewProps {
   lang?: Language;
 }
 
+/*
 const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, string>> = {
   en: {
     // cities
@@ -151,70 +151,7 @@ const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, st
     "Ver Todas as Pessoas": "View All People",
     "Perfil Astrológico Social": "Social Astrological Profile",
     "Membro Premium": "Premium Member",
-    "Escreva algo curto sobre você...": "Write something short about you...",
-
-    // Newly added keys
-    "Deixando de seguir...": "Unfollowing...",
-    "Removendo curtida...": "Removing like...",
-    "Registrando curtida...": "Registering like...",
-    "Comunidade e Conexões Celestes": "Celestial Community and Connections",
-    "Encontrar Novas Conexões": "Find New Connections",
-    "Entre em sintonia e explore perfis de buscadores no portal Cósmica Órbita.": "Get in tune and explore seeker profiles on the Cosmic Orbit portal.",
-    "Nota do Portal:": "Portal Note:",
-    "Este ambiente destina-se à descoberta de afinidade e sinastria astrológica. O envio de chats e troca de mensagens diretas entre usuários é": "This environment is intended for discovering astrological affinity and synastry. Sending chats and exchanging direct messages between users is",
-    "indisponível": "unavailable",
-    "para assegurar total privacidade e proteção de tráfego áurico.": "to ensure total privacy and protection of auric traffic.",
-    "Digite o nome da pessoa": "Type the person's name",
-    "Buscar": "Search",
-    "Meu Cartão de Identidade Social": "My Social Identity Card",
-    "Editar Perfil": "Edit Profile",
-    "Resultados da busca": "Search results",
-    "Ver Mapa Astral": "View Birth Chart",
-    "Posições natais públicas": "Public natal positions",
-    "Sinastria Astral": "Astral Synastry",
-    "Compatibilidade detalhada": "Detailed compatibility",
-    "Mapa Primordial de": "Primordial Map of",
-    "Signo Solar": "Sun Sign",
-    "Essência interior, ego e propósito": "Inner essence, ego, and purpose",
-    "Signo Lunar": "Moon Sign",
-    "Lado subonírico, emoções alimentadas": "Sub-dream side, nurtured emotions",
-    "Ascendente": "Ascendant",
-    "Foco de projection física social externa": "External social physical projection focus",
-    "Foco de projeção física social externa": "External social physical projection focus",
-    "Distribuição de Planetas Públicos": "Distribution of Public Planets",
-    "Sintonia de Compatibilidade Astral": "Astral Compatibility Harmony",
-    "Média de Ressonância Estelar": "Stellar Resonance Average",
-    "Calculado unindo e comparando as frequências fundamentais do seu Sol ao astros de": "Calculated by joining and comparing the fundamental frequencies of your Sun to the planets of",
-    "Compatibilidade Amorosa": "Romantic Compatibility",
-    "Compatibilidade Emocional": "Emotional Compatibility",
-    "Compatibilidade Mental": "Mental Compatibility",
-    "Compatibilidade Energética": "Energetic Compatibility",
-    "Conselhos para Interagirem": "Advice for Interacting",
-    "Lembre-se de que a Astrologia serve como guia para compreender as nuances sutis das pessoas. Utilize as redes sociais de forma sintonizada para elevar os valores de amizade e cooperação mútua.": "Remember that Astrology serves as a guide to understand people's subtle nuances. Use social networks in a tuned way to elevate the values of friendship and mutual cooperation.",
-    "Editar Dados do Perfil Social": "Edit Social Profile Data",
-    "Adicione suas mídias sociais e bio para os outros visualizadores.": "Add your social media and bio for other viewers.",
-    "Bio Curta": "Short Bio",
-    "Instagram (@usuario)": "Instagram (@username)",
-    "Facebook (usuário ou link)": "Facebook (username or link)",
-    "Cancelar": "Cancel",
-    "Salvar Perfil": "Save Profile",
-    "Lista de Amigos": "Friend List",
-    "Nenhum usuário registrado nesta categoria.": "No users registered in this category.",
-    "Fechar": "Close",
-    "Bio:": "Bio:",
-    "Facebook": "Facebook",
-    "@seu_perfil": "@your_profile",
-    "link_do_facebook": "facebook_link",
-    "Não informado": "Not informed",
-    "Não disponível": "Not available",
-    "Sem descrição": "No description",
-    "Sem localização": "No location",
-    "Perfil indisponível": "Profile unavailable",
-    "Conexão de almas raras. Os astros indicam que vocês emanam na mesma frequência áurica vibracional. Suas metas, ritmos e conversas íntimas fluem livremente sem conflitos ocultos.": "Rare soul connection. The stars indicate that you emanate on the same vibrational auric frequency. Your goals, rhythms, and intimate conversations flow freely without hidden conflicts.",
-    "Harmonia de longo prazo. Vocês compartilham forte entendimento emocional e afinidades de ação palpáveis. O respeito mútuo abre excelentes canais de amizade produtiva e crescimento.": "Long-term harmony. You share strong emotional understanding and tangible action affinities. Mutual respect opens excellent channels for productive friendship and growth.",
-    "Relacionamento dinâmico com pequenos ajustes construtivos. Existe atração genuína, mas requer paciência para aceitar as diferenças nativas sob trânsitos celestes mutáveis.": "Dynamic relationship with small constructive adjustments. There is genuine attraction, but it requires patience to accept native differences under changing celestial transits.",
-    "Sinergia de aprendizado cármico. Suas diferenças dão espaço para superação mútua e resgate de virtudes adormecidas.": "Karmic learning synergy. Your differences give room for mutual overcoming and the rescue of dormant virtues.",
-    "Curtir Perfil": "Like Profile"
+    "Escreva algo curto sobre você...": "Write something short about you..."
   },
   es: {
     "São Paulo, SP": "São Paulo, SP",
@@ -291,69 +228,7 @@ const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, st
     "Ver Todas as Pessoas": "Ver Todas las Personas",
     "Perfil Astrológico Social": "Perfil Astrológico Social",
     "Membro Premium": "Miembro Premium",
-    "Escreva algo curto sobre você...": "Escribe algo corto sobre ti...",
-
-    // Newly added keys
-    "Deixando de seguir...": "Dejando de seguir...",
-    "Removendo curtida...": "Eliminando me gusta...",
-    "Registrando curtida...": "Registrando me gusta...",
-    "Comunidade e Conexões Celestes": "Comunidad y Conexiones Celestiales",
-    "Encontrar Novas Conexões": "Encontrar Nuevas Conexiones",
-    "Entre em sintonia e explore perfis de buscadores no portal Cósmica Órbita.": "Sintoniza y explora perfiles de buscadores en el portal Cósmica Órbita.",
-    "Nota do Portal:": "Nota del Portal:",
-    "Este ambiente destina-se à descoberta de afinidade e sinastria astrológica. O envio de chats e troca de mensagens diretas entre usuários é": "Este entorno está destinado al descubrimiento de afinidad y sinastría astrológica. El envío de chats y el intercambio de mensajes directos entre usuarios está",
-    "indisponível": "no disponible",
-    "para assegurar total privacidade e proteção de tráfego áurico.": "para garantizar total privacidad y protección del tráfico áurico.",
-    "Digite o nome da pessoa": "Escribe el nombre de la persona",
-    "Buscar": "Buscar",
-    "Meu Cartão de Identidade Social": "Mi Tarjeta de Identidad Social",
-    "Editar Perfil": "Editar Perfil",
-    "Resultados da busca": "Resultados de la búsqueda",
-    "Ver Mapa Astral": "Ver Carta Astral",
-    "Posições natais públicas": "Posiciones natales públicas",
-    "Sinastria Astral": "Sinastría Astral",
-    "Compatibilidade detalhada": "Compatibilidad detallada",
-    "Mapa Primordial de": "Mapa Primordial de",
-    "Signo Solar": "Signo Solar",
-    "Essência interior, ego e propósito": "Esencia interior, ego y propósito",
-    "Signo Lunar": "Signo Lunar",
-    "Lado subonírico, emoções alimentadas": "Lado subonírico, emociones alimentadas",
-    "Ascendente": "Ascendente",
-    "Foco de projeção física social externa": "Enfoque de proyección física social externa",
-    "Distribuição de Planetas Públicos": "Distribución de Planetas Públicos",
-    "Sintonia de Compatibilidade Astral": "Sintonía de Compatibilidad Astral",
-    "Média de Ressonância Estelar": "Promedio de Resonancia Estelar",
-    "Calculado unindo e comparando as frequências fundamentais do seu Sol ao astros de": "Calculado uniendo y comparando las frecuencias fundamentales de tu Sol con los planetas de",
-    "Compatibilidade Amorosa": "Compatibilidad Amorosa",
-    "Compatibilidade Emocional": "Compatibilidad Emocional",
-    "Compatibilidade Mental": "Compatibilidad Mental",
-    "Compatibilidade Energética": "Compatibilidad Energética",
-    "Conselhos para Interagirem": "Consejos para Interactuar",
-    "Lembre-se de que a Astrologia serve como guia para compreender as nuances sutis das pessoas. Utilize as redes sociais de forma sintonizada para elevar os valores de amizade e cooperação mútua.": "Recuerda que la Astrología sirve como guía para comprender los sutiles matices de las personas. Utiliza las redes sociales de manera sintonizada para elevar los valores de amistad y cooperación mutua.",
-    "Editar Dados do Perfil Social": "Editar Datos del Perfil Social",
-    "Adicione suas mídias sociais e bio para os outros visualizadores.": "Agrega tus redes sociales y biografía para otros espectadores.",
-    "Bio Curta": "Biografía Corta",
-    "Instagram (@usuario)": "Instagram (@usuario)",
-    "Facebook (usuário ou link)": "Facebook (usuario o enlace)",
-    "Cancelar": "Cancelar",
-    "Salvar Perfil": "Guardar Perfil",
-    "Lista de Amigos": "Lista de Amigos",
-    "Nenhum usuário registrado nesta categoria.": "Ningún usuario registrado en esta categoría.",
-    "Fechar": "Cerrar",
-    "Bio:": "Bio:",
-    "Facebook": "Facebook",
-    "@seu_perfil": "@tu_perfil",
-    "link_do_facebook": "enlace_de_facebook",
-    "Não informado": "No informado",
-    "Não disponível": "No disponible",
-    "Sem descrição": "Sin descripción",
-    "Sem localização": "Sin ubicación",
-    "Perfil indisponível": "Perfil no disponible",
-    "Conexão de almas raras. Os astros indicam que vocês emanam na mesma frequência áurica vibracional. Suas metas, ritmos e conversas íntimas fluem livremente sem conflitos ocultos.": "Conexión de almas raras. Los astros indican que emanan en la misma frecuencia áurica vibracional. Sus metas, ritmos y conversaciones íntimas fluyen libremente sin conflictos ocultos.",
-    "Harmonia de longo prazo. Vocês compartilham forte entendimento emocional e afinidades de ação palpáveis. O respeito mútuo abre excelentes canais de amizade produtiva e crescimento.": "Armonía a largo plazo. Comparten un fuerte entendimiento emocional y afinidades de acción palpables. El respeto mutuo abre excelentes canales de amistad productiva y crecimiento.",
-    "Relacionamento dinâmico com pequenos ajustes construtivos. Existe atração genuína, mas requer paciência para aceitar as diferenças nativas sob trânsitos celestes mutáveis.": "Relación dinámica con pequeños ajustes constructivos. Existe una atracción genuina, pero requiere paciencia para aceptar las diferencias nativas bajo tránsitos celestes cambiantes.",
-    "Sinergia de aprendizado cármico. Suas diferenças dão espaço para superação mútua e resgate de virtudes adormecidas.": "Sinergia de aprendizaje kármico. Sus diferencias dan espacio para la superación mutua y el rescate de virtudes dormidas.",
-    "Curtir Perfil": "Dar me gusta"
+    "Escreva algo curto sobre você...": "Escribe algo corto sobre ti..."
   },
   fr: {
     "São Paulo, SP": "São Paulo, SP",
@@ -420,7 +295,7 @@ const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, st
     "Ressonância Energética & Áurica": "Energetic & Auric Resonance",
     "Sinergia Profissional & Conquistas": "Professional Synergy & Achievements",
     "Pontos Fortes da Conexão:": "Points Fortes de la Connexion :",
-    "Convergência sublime de pensamentos voltados ao progresso tecnológico e social. Ideais compartilhados livres de possessividade ou ciúmes históricos sufocantes.": "Sublime convergence de pensées tournées vers le progrès technologique et social. Idéaux partagés libres de possessivité ou de jalousie historique étouffante.",
+    "Convergência sublime de pensamentos voltados ao progresso tecnológico e social. Ideais compartilhados livres de possessividade ou ciúmes historiques sufocantes.": "Sublime convergence de pensées tournées vers le progrès technologique et social. Idéaux partagés libres de possessivité ou de jalousie historique étouffante.",
     "Pontos de Atenção (Cuidado):": "Points d'Attention (Attention) :",
     "O excesso de intelectualização pode às vezes minar a intimidade física calorosa e a escuta visceral de afetos espontâneos no cotidiano.": "L'intellectualisation excessive peut parfois saper l'intimité physique chaleureuse et l'écoute viscérale d'affections spontanées au quotidien.",
     "Concluir Análise": "Terminer l'Analyse",
@@ -430,70 +305,7 @@ const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, st
     "Ver Todas as Pessoas": "Voir Tout le Monde",
     "Perfil Astrológico Social": "Profil Astrologique Social",
     "Membro Premium": "Membre Premium",
-    "Escreva algo curto sobre você...": "Écrivez quelque chose de court sur vous...",
-
-    // Newly added keys
-    "Deixando de seguir...": "Désabonnement...",
-    "Removendo curtida...": "Suppression du j'aime...",
-    "Registrando curtida...": "Enregistrement du j'aime...",
-    "Comunidade e Conexões Celestes": "Communauté et Connexions Célestes",
-    "Encontrar Novas Conexões": "Trouver de Nouvelles Connexions",
-    "Entre em sintonia e explore perfis de buscadores no portal Cósmica Órbita.": "Entrez en phase et explorez les profils de chercheurs sur le portail Cósmica Órbita.",
-    "Nota do Portal:": "Note du Portail :",
-    "Este ambiente destina-se à descoberta de afinidade e sinastria astrológica. O envio de chats e troca de mensagens diretas entre usuários é": "Cet environnement est destiné à la découverte d'affinités et de synastries astrologiques. L'envoi de chats et l'échange de messages directs entre utilisateurs est",
-    "indisponível": "indisponible",
-    "para assegurar total privacidade e proteção de tráfego áurico.": "pour assurer une confidentialité totale et la protection du trafic aurique.",
-    "Digite o nome da pessoa": "Entrez le nom de la personne",
-    "Buscar": "Rechercher",
-    "Meu Cartão de Identidade Social": "Ma Carte d'Identité Sociale",
-    "Editar Perfil": "Modifier le Profil",
-    "Resultados da busca": "Résultats de recherche",
-    "Ver Mapa Astral": "Voir le Thème Astral",
-    "Posições natais públicas": "Positions natales publiques",
-    "Sinastria Astral": "Synastrie Astrale",
-    "Compatibilidade detalhada": "Compatibilité détaillée",
-    "Mapa Primordial de": "Carte Primordiale de",
-    "Signo Solar": "Signe Solaire",
-    "Essência interior, ego e propósito": "Essence intérieure, ego et but",
-    "Signo Lunar": "Signe Lunaire",
-    "Lado subonírico, emoções alimentadas": "Côté sub-rêve, émotions nourries",
-    "Ascendente": "Ascendant",
-    "Foco de projeção física social externa": "Focus de projection physique sociale externe",
-    "Distribuição de Planetas Públicos": "Distribution des Planètes Publiques",
-    "Sintonia de Compatibilidade Astral": "Harmonie de Compatibilité Astrale",
-    "Média de Ressonância Estelar": "Moyenne de Résonance Stellaire",
-    "Calculado unindo e comparando as frequências fundamentais do seu Sol ao astros de": "Calculé en joignant et en comparant les fréquences fondamentales de votre Soleil aux planètes de",
-    "Compatibilidade Amorosa": "Compatibilité Amoureuse",
-    "Compatibilidade Emocional": "Compatibilité Émotionnelle",
-    "Compatibilidade Mental": "Compatibilité Mentale",
-    "Compatibilidade Energética": "Compatibilité Énergétique",
-    "Conselhos para Interagirem": "Conseils pour Interagir",
-    "Lembre-se de que a Astrologia serve como guia para compreender as nuances sutis das pessoas. Utilize as redes sociais de forma sintonizada para elevar os valores de amizade e cooperação mútua.": "Rappelez-vous que l'Astrologie sert de guide pour comprendre les subtiles nuances des gens. Utilisez les réseaux sociaux de manière harmonisée pour élever les valeurs d'amitié et de coopération mutuelle.",
-    "Editar Dados do Perfil Social": "Modifier les Données du Profil Social",
-    "Adicione suas mídias sociais e bio para os outros visualizadores.": "Ajoutez vos réseaux sociaux et votre biographie pour les autres utilisateurs.",
-    "Bio Curta": "Biographie Courte",
-    "Instagram (@usuario)": "Instagram (@nom d'utilisateur)",
-    "Facebook (usuário ou link)": "Facebook (nom d'utilisateur ou lien)",
-    "Cancelar": "Annuler",
-    "Salvar Perfil": "Enregistrer le Profil",
-    "Lista de Amigos": "Liste d'Amis",
-    "Nenhum usuário registrado nesta categoria.": "Aucun utilisateur enregistré dans cette catégorie.",
-    "Fechar": "Fermer",
-    "Bio:": "Bio :",
-    "Facebook": "Facebook",
-    "@seu_perfil": "@votre_profil",
-    "link_do_facebook": "lien_facebook",
-    "Não informado": "Non informé",
-    "Não disponível": "Non disponible",
-    "Sem descrição": "Sans description",
-    "Sem localização": "Sans localisation",
-    "Perfil indisponível": "Profil indisponible",
-    "Conexão de almas raras. Os astros indicam que vocês emanam na mesma frequência áurica vibracional. Suas metas, ritmos e conversas íntimas fluem livremente sem conflitos ocultos.": "Connexion d'âmes rares. Les astres indiquent que vous émanez sur la même fréquence aurique vibratoire. Vos objectifs, rythmes et conversations intimes coulent librement sans conflits cachés.",
-    "Harmonia de longo prazo. Vocês compartilham forte entendimento emocional e afinidades de ação palpáveis. O respeito mútuo abre excelentes canais de amizade produtiva e crescimento.": "Harmonie à long terme. Vous partagez une forte compréhension émotionnelle et des affinités d'action tangibles. Le respect mutuel ouvre d'excellents canaux d'amitié productive et de croissance.",
-    "Relacionamento dinâmico com pequenos ajustes construtivos. Existe atração genuína, mas requer paciência para aceitar as diferenças nativas sob trânsitos celestes mutáveis.": "Relation dynamique avec de petits ajustements constructifs. Il existe une attraction réelle, mais elle nécessite de la patience pour accepter les différences natives sous des transits célestes changeants.",
-    "Sinergia de ao aprendizado cármico. Suas diferenças dão espaço para superação mútua e resgate de virtudes adormecidas.": "Synergie d'apprentissage karmique. Vos différences laissent place à un dépassement mutuel et au sauvetage de vertus endormies.",
-    "Sinergia de aprendizado cármico. Suas diferenças dão espaço para superação mútua e resgate de virtudes adormecidas.": "Synergie d'apprentissage karmique. Vos différences laissent place à un dépassement mutuel et au sauvetage de vertus endormies.",
-    "Curtir Perfil": "Aimer le profil"
+    "Escreva algo curto sobre você...": "Écrivez quelque chose de court sur vous..."
   },
   de: {
     "São Paulo, SP": "São Paulo, SP",
@@ -512,12 +324,11 @@ const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, st
     "Vivendo guiadora pelo otimismo e expansão espiritual de Júpiter. Trilhas, fotografia e cafés especiais.": "Geführt von Optimismus und Jupiters spiritueller Expansion. Wandern, Fotografie und Kaffeespezialitäten.",
     "Empreendedor social, astrônomo amador e desenvolvedor. Amigo acima de tudo, idealista ao extremo.": "Sozialunternehmer, Amateurastronom und Entwickler. Vor allem ein Freund, idealistisch bis zum Äußersten.",
     "Fogo cardeal motivada a criar projetos inovadores. Amo praias quentes, shows ao vivo e meditação áurica.": "Kardinales Feuer, motiviert, innovative Projekte zu schaffen. Ich liebe warme Strände, Live-Shows und Aurameditation.",
-    "Apaixonado por teatro, vinhos e conversas profundas sobre destiny. Busco conexões que façam brilhar o Sol.": "Leidenschaftlich für Theater, Wein und tiefgründige Gespräche über das Schicksal. Ich suche nach Verbindungen, die die Sonne scheinen lassen.",
     "Apaixonado por teatro, vinhos e conversas profundas sobre destino. Busco conexões que façam brilhar o Sol.": "Leidenschaftlich für Theater, Wein und tiefgründige Gespräche über das Schicksal. Ich suche nach Verbindungen, die die Sonne scheinen lassen.",
     "Amante da gastronomia, conforto material do lar e boas discussões de negócios sustentáveis.": "Liebhaber von Gastronomie, materiellem Komfort zu Hause und guten Diskussionen über nachhaltiges Geschäft.",
     "Arquiteto na busca da proporção áurea material e social. Conciliador nas horas vagas e fã de vinis.": "Architekt auf der Suche nach dem materiellen und sozialen Goldenen Schnitt. Schlichter in der Freizeit und Fan von Vinyl-Schallplatten.",
     
-    "Sinergia de Ar tríplice extraordinária. O diálogo flui sem amarras teológicas, compartilhando uma visão humanitária idêntica.": "Außergewöhnliche dreifache Luft-Synergie. Der Dialog fließt frei von theologischen Zwängen und teilt eine identische heroische Vision.",
+    "Sinergia de Ar tríplice extraordinária. O diálogo flui sem amarras teológicas, compartilhando uma visão humanitária idêntica.": "Außergewöhnliche dreifache Luft-Synergie. Der Dialog fließt frei von theologischen Zwängen und teilt eine identische humanitäre Vision.",
     "Conexão intelectual efervescente. Estimulação mútua fantástica e ausência completa de cobranças materiais limitantes.": "Lebhafte intellektuelle Verbindung. Fantastische gegenseitige Stimulation und völlige Abwesenheit einschränkender materieller Forderungen.",
     "Aventura idealista e filosófica sem fronteiras. Júpiter expande o desejo de independência mútua de Aquário de forma magnífica.": "Idealistisches und philosophisches Abenteuer ohne Grenzen. Jupiter erweitert das Bedürfnis von Wassermann nach gegenseitiger Unabhängigkeit auf großartige Weise.",
     "Dinamismo e iniciativa entusiasmados. O fogo de Áries fornece a faísca e a força realizadora que as grandes utopias de Aquário necessitam.": "Enthusiastische Dynamik und Initiative. Das Feuer des Widders liefert den Funken und die schöpferische Kraft, die die großen Utopien von Wassermann benötigen.",
@@ -561,7 +372,7 @@ const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, st
     "Ressonância Energética & Áurica": "Energetische und aurische Resonanz",
     "Sinergia Profissional & Conquistas": "Berufliche Synergie & Erfolge",
     "Pontos Fortes da Conexão:": "Stärken der Verbindung:",
-    "Convergência sublime de pensamentos voltados ao progresso tecnológico e social. Ideais compartilhados livres de possessividade ou ciúmes históricos sufocantes.": "Erhabene Konvergenz von Gedanken, die auf technologischen und sozialen Fortschritt ausgerichtet sind. Gemeinsame Ideale frei von Besitzdenken oder erstickender historischer Eifersucht.",
+    "Convergência sublime de pensamentos voltados ao progresso tecnológico e social. Ideais compartilhados livres de possessividade ou ciúmes historischen sufocantes.": "Erhabene Konvergenz von Gedanken, die auf technologischen und sozialen Fortschritt ausgerichtet sind. Gemeinsame Ideale frei von Besitzdenken oder erstickender historischer Eifersucht.",
     "Pontos de Atenção (Cuidado):": "Achtungspunkte (Vorsicht):",
     "O excesso de intelectualização pode às vezes minar a intimidade física calorosa e a escuta visceral de afetos espontâneos no cotidiano.": "Übermäßige Intellektualisierung kann manchmal die herzliche körperliche Intimität und das viszerale Zuhören spontaner Zuneigung im täglichen Leben untergraben.",
     "Concluir Análise": "Analyse abschließen",
@@ -571,71 +382,10 @@ const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, st
     "Ver Todas as Pessoas": "Alle Personen anzeigen",
     "Perfil Astrológico Social": "Soziales astrologisches Profil",
     "Membro Premium": "Premium-Mitglied",
-    "Escreva algo curto sobre você...": "Schreibe etwas Kurzes über dich...",
-
-    // Newly added keys
-    "Deixando de seguir...": "Entfolgen...",
-    "Removendo curtida...": "Gefällt mir entfernen...",
-    "Registrando curtida...": "Gefällt mir registrieren...",
-    "Comunidade e Conexões Celestes": "Himmlische Gemeinschaft und Verbindungen",
-    "Encontrar Novas Conexões": "Neue Verbindungen finden",
-    "Entre em sintonia e explore perfis de buscadores no portal Cósmica Órbita.": "Stimmen Sie sich ein und erkunden Sie die Profile von Suchenden im Portal Cósmica Órbita.",
-    "Nota do Portal:": "Portal-Hinweis:",
-    "Este ambiente destina-se à descoberta de afinidade e sinastria astrológica. O envio de chats e troca de mensagens diretas entre usuários é": "Diese Umgebung ist für die Entdeckung astrologischer Affinitäten und Synastrien gedacht. Das Senden von Chats und der Austausch von Direktnachrichten zwischen Benutzern ist",
-    "indisponível": "nicht verfügbar",
-    "para assegurar total privacidade e proteção de tráfego áurico.": "um absolute Privatsphäre und Schutz des aurischen Verkehrs zu gewährleisten.",
-    "Digite o nome da pessoa": "Geben Sie den Namen der Person ein",
-    "Buscar": "Suchen",
-    "Meu Cartão de Identidade Social": "Meine soziale Identitätskarte",
-    "Editar Perfil": "Profil bearbeiten",
-    "Resultados da busca": "Suchergebnisse",
-    "Ver Mapa Astral": "Geburtshoroskop anzeigen",
-    "Posições natais públicas": "Öffentliche Geburtspositionen",
-    "Sinastria Astral": "Astrale Synastrie",
-    "Compatibilidade detalhada": "Detaillierte Kompatibilität",
-    "Mapa Primordial de": "Urkarte von",
-    "Signo Solar": "Sternzeichen",
-    "Essência interior, ego e propósito": "Innere Essenz, Ego und Zweck",
-    "Signo Lunar": "Mondzeichen",
-    "Lado subonírico, emoções alimentadas": "Untertraumseite, genährte Emotionen",
-    "Ascendente": "Aszendent",
-    "Foco de projeção física social externa": "Fokus auf externe soziale physische Projektion",
-    "Distribuição de Planetas Públicos": "Verteilung der öffentlichen Planeten",
-    "Sintonia de Compatibilidade Astral": "Astrale Kompatibilitätsharmonie",
-    "Média de Ressonância Estelar": "Durchschnittliche Sternresonanz",
-    "Calculado unindo e comparando as frequências fundamentais do seu Sol ao astros de": "Berechnet durch Zusammenführung und Vergleich der Grundfrequenzen Ihrer Sonne mit den Planeten von",
-    "Compatibilidade Amorosa": "Liebeskompatibilität",
-    "Compatibilidade Emocional": "Emotionale Kompatibilität",
-    "Compatibilidade Mental": "Mentale Kompatibilität",
-    "Compatibilidade Energética": "Energetische Kompatibilität",
-    "Conselhos para Interagirem": "Ratschläge für die Interaktion",
-    "Lembre-se de que a Astrologia serve como guia para compreender as nuances sutis das pessoas. Utilize as redes sociais de forma sintonizada para elevar os valores de amizade e cooperação mútua.": "Denken Sie daran, dass die Astrologie als Leitfaden dient, um die feinen Nuancen der Menschen zu verstehen. Nutzen Sie soziale Netzwerke in einer abgestimmten Weise, um die Werte von Freundschaft und gegenseitiger Zusammenarbeit zu stärken.",
-    "Editar Dados do Perfil Social": "Daten des sozialen Profils bearbeiten",
-    "Adicione suas mídias sociais e bio para os outros visualizadores.": "Fügen Sie Ihre sozialen Medien und Ihre Biografie für andere Betrachter hinzu.",
-    "Bio Curta": "Kurze Biografie",
-    "Instagram (@usuario)": "Instagram (@Benutzername)",
-    "Facebook (usuário ou link)": "Facebook (Benutzername oder Link)",
-    "Cancelar": "Abbrechen",
-    "Salvar Perfil": "Profil speichern",
-    "Lista de Amigos": "Freundesliste",
-    "Nenhum usuário registrado nesta categoria.": "Keine Benutzer in dieser Kategorie registriert.",
-    "Fechar": "Schließen",
-    "Bio:": "Bio:",
-    "Facebook": "Facebook",
-    "@seu_perfil": "@dein_profil",
-    "link_do_facebook": "facebook_link",
-    "Não informado": "Nicht angegeben",
-    "Não disponível": "Nicht verfügbar",
-    "Sem descrição": "Keine Beschreibung",
-    "Sem localização": "Kein Standort",
-    "Perfil indisponível": "Profil nicht verfügbar",
-    "Conexão de almas raras. Os astros indicam que vocês emanam na mesma frequência áurica vibracional. Suas metas, ritmos e conversas íntimas fluem livremente sem conflitos ocultos.": "Seltene Seelenverbindung. Die Sterne zeigen an, dass Sie auf derselben Schwingungsaura-Frequenz schwingen. Ihre Ziele, Rhythmen und intimen Gespräche fließen frei und ohne verborgene Konflikte.",
-    "Harmonia de longo prazo. Vocês compartilham forte entendimento emocional e afinidades de ação palpáveis. O respeito mútuo abre excelentes canais de amizade produtiva e crescimento.": "Langfristige Harmonie. Sie teilen ein starkes emotionales Verständnis und spürbare Handlungsaffinitäten. Gegenseitiger Respekt öffnet hervorragende Kanäle für produktive Freundschaft und Wachstum.",
-    "Relacionamento dinâmico com pequenos ajustes construtivos. Existe atração genuína, mas requer paciência para aceitar as diferenças nativas sob trânsitos celestes mutáveis.": "Dynamische Beziehung mit kleinen konstruktiven Anpassungen. Es besteht eine echte Anziehungskraft, erfordert jedoch Geduld, um gebürtige Unterschiede unter wechselnden Himmelsübergängen zu akzeptieren.",
-    "Sinergia de aprendizado cármico. Suas diferenças dão espaço para superação mútua e resgate de virtudes adormecidas.": "Karmische Lernsynergie. Ihre Unterschiede bieten Raum für gegenseitige Überwindung und die Rettung schlummernder Tugenden.",
-    "Curtir Perfil": "Profil liken"
+    "Escreva algo curto sobre você...": "Schreibe etwas Kurzes über dich..."
   }
 };
+*/
 
 const SEED_USERS = [
   {
@@ -706,27 +456,7 @@ const SEED_USERS = [
 ];
 
 export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, lang }: SocialNetworkViewProps) {
-  const { t: tI18nRaw, i18n } = useTranslation();
-  const { idioma } = useIdioma();
-  const activeLang = idioma || lang || 'pt';
-
-  useEffect(() => {
-    const langs: ('en' | 'es' | 'de' | 'fr')[] = ['en', 'es', 'de', 'fr'];
-    langs.forEach(l => {
-      if (i18n && i18n.addResourceBundle) {
-        i18n.addResourceBundle(l, 'translation', localSocialTranslations[l], true, true);
-      }
-    });
-  }, [i18n]);
-
-  const tI18n = (text: string) => {
-    if (!text) return "";
-    const res = tI18nRaw(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeLang);
-    }
-    return res;
-  };
+  const { t: tI18n } = useTranslation();
   const currentEmail = (currentUser.email || "viajante@starportal.com").toLowerCase().trim();
   
   // State variables
@@ -1032,7 +762,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
             type: 'friend',
             senderEmail: currentEmail,
             senderName: currentUser.name,
-            message: "aceitou sua amizade. Vocês agora são amigos estelares!",
+            message: tI18n("aceitou sua amizade. Vocês agora são amigos estelares!"),
             createdAt: new Date().toISOString(),
             read: false
           });
@@ -1044,7 +774,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
           type: 'follow',
           senderEmail: currentEmail,
           senderName: currentUser.name,
-          message: "começou a seguir você.",
+          message: tI18n("começou a seguir você."),
           createdAt: new Date().toISOString(),
           read: false
         });
@@ -1096,7 +826,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
           type: 'like',
           senderEmail: currentEmail,
           senderName: currentUser.name,
-          message: "curtiu seu perfil.",
+          message: tI18n("curtiu seu perfil."),
           createdAt: new Date().toISOString(),
           read: false
         });
@@ -1460,7 +1190,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                       className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/25 hover:bg-blue-500/20 text-blue-400 font-sans font-bold text-[10px] flex items-center gap-1.5 transition"
                     >
                       <Facebook className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Facebook</span>
+                      <span>{tI18n("Facebook")}</span>
                     </a>
                   )}
                 </div>
@@ -1766,7 +1496,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                   value={editInstagram}
                   onChange={(e) => setEditInstagram(e.target.value)}
                   className="w-full p-3 bg-slate-950 border border-slate-850 rounded-xl text-slate-200 font-mono"
-                  placeholder="@seu_perfil"
+                  placeholder={tI18n("@seu_perfil")}
                 />
               </div>
 
@@ -1777,7 +1507,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                   value={editFacebook}
                   onChange={(e) => setEditFacebook(e.target.value)}
                   className="w-full p-3 bg-slate-950 border border-slate-850 rounded-xl text-slate-200 font-mono"
-                  placeholder="link_do_facebook"
+                  placeholder={tI18n("link_do_facebook")}
                 />
               </div>
             </div>

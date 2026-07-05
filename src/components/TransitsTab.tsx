@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import { Zap, Calendar, Shuffle, CloudSun, AlertTriangle, Eye } from "lucide-react";
 import { motion } from "motion/react";
-import { Language, translations } from "../translations";
+import { Language } from "../translations";
 import { NatalChartData } from "../types";
 import { useTranslation } from "react-i18next";
-import { translateUiText } from "../lib/translations";
 import { useIdioma } from "../context/IdiomaContext";
 
 interface TransitsTabProps {
@@ -15,8 +14,7 @@ interface TransitsTabProps {
 export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
   const { idioma } = useIdioma();
   const activeLang = idioma || lang || 'pt';
-  const t = translations[activeLang];
-  const { t: tI18nRaw } = useTranslation();
+  const { t } = useTranslation();
 
   const localTranslations: Record<string, Record<string, string>> = {
     en: {
@@ -80,16 +78,12 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
   const tI18n = (text: string) => {
     if (!text) return "";
     
-    const targetLang = activeLang || 'pt';
+    const targetLang = activeLang;
     if (targetLang !== 'pt' && localTranslations[targetLang] && localTranslations[targetLang][text]) {
       return localTranslations[targetLang][text];
     }
 
-    const res = tI18nRaw(text);
-    if (res === text || !res) {
-      return translateUiText(text, targetLang);
-    }
-    return res;
+    return t(text);
   };
 
   // Mock list of current transits of this day (moving planets)
@@ -109,7 +103,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
       { planet: "Saturno", sign: "Peixes", status: "Direct", influence: "Structuring of limits and deep spiritual responsibilities." }
     ],
     es: [
-      { planet: "Mercúrio", sign: "Câncer", status: "Directo", influence: "Comunicación enfocada en la acogida y la escucha íntima." },
+      { planet: "Mercúrio", sign: "Câncer", status: "Directo", influence: "Comunicación enfocada en la acogida y la escuche íntima." },
       { planet: "Vênus", sign: "Escorpião", status: "Directo", influence: "Periodo de afectos pasionales, profundos y magnetismo elevado." },
       { planet: "Marte", sign: "Leão", status: "Directo", influence: "Acciones valientes, nobles y generosidad competitiva acentuada." },
       { planet: "Júpiter", sign: "Gêmeos", status: "Retrógrado", influence: "Reevaluación interna de ideas y estudios acumulados.", isRetrograde: true },
