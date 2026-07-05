@@ -221,12 +221,16 @@ import { TRANSLATIONS_WORLD } from './tarot';
 
 interface TarotSystemProps {
   userName?: string;
+  birthDate?: string;
+  birthTime?: string;
+  latitude?: number;
+  longitude?: number;
   lang?: Language;
 }
 
 type TarotMode = 'inteligente' | 'amor' | 'tradicional' | 'semanal';
 
-export default function TarotSystem({ userName, lang }: TarotSystemProps) {
+export default function TarotSystem({ userName, birthDate, birthTime, latitude, longitude, lang }: TarotSystemProps) {
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
@@ -688,6 +692,10 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
           cards: tempDrawnCards,
           question: finalQuestion,
           userName: userName,
+          birthDate,
+          birthTime,
+          latitude,
+          longitude,
           lang
         }),
       });

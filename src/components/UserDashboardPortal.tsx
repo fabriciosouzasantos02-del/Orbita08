@@ -87,6 +87,7 @@ interface UserDashboardPortalProps {
   setAreaSubTab?: any;
   onUpdateCurrentUser?: (updated: any) => void;
   lang?: Language;
+  mapData?: any;
 }
 
 const localPortalTranslations: Record<string, Record<string, string>> = {
@@ -1289,7 +1290,8 @@ export default function UserDashboardPortal({
   areaSubTab: propAreaSubTab,
   setAreaSubTab: propSetAreaSubTab,
   onUpdateCurrentUser,
-  lang
+  lang,
+  mapData
 }: UserDashboardPortalProps) {
   const { idioma } = useIdioma();
   const activeLang = idioma || lang || 'pt';
@@ -1322,11 +1324,12 @@ export default function UserDashboardPortal({
 
   const selectedDayPrediction = generateDailyPrediction(
     user?.hasCreatedMap ? user.birthDate : "1997-02-11",
-    getZodiacSign(user?.birthDate),
+    mapData?.astros?.find((a: any) => a.name === "Sol")?.sign || getZodiacSign(user?.birthDate),
     user?.hasCreatedMap ? user?.name : "",
     selectedCalendarDay - 1,
     new Date(),
-    idioma
+    idioma,
+    mapData
   );
 
   // Navigation tabs inside User Portal - synced securely with parent Context

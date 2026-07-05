@@ -332,12 +332,12 @@ function getZodiacSignForMissions(dateString: string): string {
   return "Peixes";
 }
 
-function generateDailyRadar(user: any, activeLang?: Language): DailyRadar {
+function generateDailyRadar(user: any, activeLang?: Language, dateParam?: Date): DailyRadar {
   const currentL = activeLang || 'pt';
   const name = user?.name ? user.name.split(" ")[0] : "Viajante";
   const birthDate = user?.birthDate || "2000-01-01";
   
-  const today = new Date();
+  const today = dateParam || new Date();
   const day = today.getDate();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
@@ -407,7 +407,7 @@ function generateDailyRadar(user: any, activeLang?: Language): DailyRadar {
   };
 }
 
-function generateDailyMissions(user: any, activeLang?: Language): DailyMission[] {
+function generateDailyMissions(user: any, activeLang?: Language, dateParam?: Date): DailyMission[] {
   const currentL = activeLang || 'pt';
   const name = user?.name ? user.name.split(" ")[0] : "Viajante";
   const birthDate = user?.birthDate || "2000-01-01";
@@ -419,7 +419,7 @@ function generateDailyMissions(user: any, activeLang?: Language): DailyMission[]
 
   const zodiac = tM(zodiacPT);
 
-  const today = new Date();
+  const today = dateParam || new Date();
   const day = today.getDate();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
@@ -925,6 +925,27 @@ export default function App() {
   const [highContrast, setHighContrast] = useState<boolean>(() => {
     return localStorage.getItem("orbi_high_contrast") === "true";
   });
+
+  // System calendar timer state to trigger auto invalidation of all dynamic contents
+  const [systemDate, setSystemDate] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      // Check if day/hour/minute/year/month has changed since last systemDate
+      if (
+        now.getDate() !== systemDate.getDate() ||
+        now.getMonth() !== systemDate.getMonth() ||
+        now.getFullYear() !== systemDate.getFullYear() ||
+        now.getHours() !== systemDate.getHours()
+      ) {
+        console.log("[Live Engine] Time tick update detected. Recalculating calendar dependent resources...");
+        setSystemDate(now);
+      }
+    }, 10000); // Check every 10 seconds for real-time responsiveness
+
+    return () => clearInterval(interval);
+  }, [systemDate]);
 
   useEffect(() => {
     if (highContrast) {
@@ -2154,8 +2175,8 @@ export default function App() {
 
   // Daily Radar (gamified and fully computed in real-time)
   const dailyRadar = React.useMemo(() => {
-    return generateDailyRadar(user, currentLang);
-  }, [user, currentLang]);
+    return generateDailyRadar(user, currentLang, systemDate);
+  }, [user, currentLang, systemDate]);
 
   const [dailyMissions, setDailyMissions] = useState<DailyMission[]>(() => {
     try {
@@ -2170,7 +2191,7 @@ export default function App() {
   // Sync / Load Daily Missions with cached fallback or live Firestore retrieval
   useEffect(() => {
     let active = true;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = systemDate.toISOString().split('T')[0];
     const email = user?.email || loggedEmail;
     const cacheKey = `orbi_missions_${email || "default"}_${todayStr}`;
     
@@ -2203,7 +2224,7 @@ export default function App() {
 
       // 3. Fallback to generating new ones if not found anywhere else
       if (!savedLocal) {
-        const generated = generateDailyMissions(user, currentLang);
+        const generated = generateDailyMissions(user, currentLang, systemDate);
         if (active) {
           setDailyMissions(generated);
           localStorage.setItem(cacheKey, JSON.stringify(generated));
@@ -2219,13 +2240,13 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [user?.email, isLoggedIn, loggedEmail]);
+  }, [user?.email, isLoggedIn, loggedEmail, systemDate, currentLang]);
 
   // Keep Firestore dailyMissions list updated on change only (with comparison to reduce unnecessary setDoc triggers)
   const prevMissionsRef = useRef("");
   useEffect(() => {
     if (dailyMissions && dailyMissions.length > 0) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = systemDate.toISOString().split('T')[0];
       const email = user?.email || loggedEmail;
       const cacheKey = `orbi_missions_${email || "default"}_${todayStr}`;
       const serialized = JSON.stringify(dailyMissions);
@@ -2234,14 +2255,14 @@ export default function App() {
       if (prevMissionsRef.current !== serialized) {
         prevMissionsRef.current = serialized;
         localStorage.setItem(cacheKey, serialized);
-
+        
         // Re-route dynamically to Cloud Firestore if logged in
         if (isLoggedIn && email) {
           saveMissionToDatabase(email, todayStr, dailyMissions).catch(console.warn);
         }
       }
     }
-  }, [dailyMissions, isLoggedIn, loggedEmail, user?.email]);
+  }, [dailyMissions, isLoggedIn, loggedEmail, user?.email, systemDate]);
 
   // Translate existing dailyMissions immediately when language changes
   useEffect(() => {
@@ -2313,7 +2334,7 @@ export default function App() {
   // Load weekly missions completed state from localStorage
   useEffect(() => {
     try {
-      const today = new Date();
+      const today = systemDate;
       const startOfYear = new Date(today.getFullYear(), 0, 1);
       const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
       const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
@@ -2325,16 +2346,21 @@ export default function App() {
           ...m,
           isCompleted: completedIds.includes(m.id)
         })));
+      } else {
+        setWeeklyMissions(prev => prev.map(m => ({
+          ...m,
+          isCompleted: false
+        })));
       }
     } catch (e) {
       console.error("Failed to load weekly progress", e);
     }
-  }, []);
+  }, [systemDate]);
 
   // Save weekly missions completed state to localStorage
   useEffect(() => {
     try {
-      const today = new Date();
+      const today = systemDate;
       const startOfYear = new Date(today.getFullYear(), 0, 1);
       const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
       const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
@@ -2344,7 +2370,7 @@ export default function App() {
     } catch (e) {
       console.error("Failed to save weekly progress", e);
     }
-  }, [weeklyMissions]);
+  }, [weeklyMissions, systemDate]);
 
   // Automatically regenerate Astrology Map if active language changes
   useEffect(() => {
@@ -3564,20 +3590,20 @@ export default function App() {
     }
   };
 
-  const biorhythmToday = calculateBiorhythm(user.birthDate, new Date().toISOString().split('T')[0]);
+  const biorhythmToday = calculateBiorhythm(user.birthDate, systemDate.toISOString().split('T')[0]);
 
   const personalProsperity = generatePersonalizedProsperityMap(
     user?.hasCreatedMap ? user.birthDate : "1997-02-11",
     mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
     user?.hasCreatedMap ? user.name : "Viajante",
-    new Date(),
+    systemDate,
     currentLang
   );
 
   // Automated Real-Time Biorhythm Sync Hook
   useEffect(() => {
     if (user.birthDate && user.hasCreatedMap) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = systemDate.toISOString().split('T')[0];
       const email = user.email || loggedEmail;
       if (isLoggedIn && email && biorhythmToday) {
         saveBiorhythmToDatabase(email, todayStr, {
@@ -3590,13 +3616,13 @@ export default function App() {
         }).catch(console.warn);
       }
     }
-  }, [biorhythmToday, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail]);
+  }, [biorhythmToday, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail, systemDate]);
 
   // Automated Real-Time Prosperity Map Sync Hook
   useEffect(() => {
     if (user.birthDate && user.hasCreatedMap && personalProsperity) {
       const email = user.email || loggedEmail;
-      const currentMonthStr = `prosperity_${new Date().getFullYear()}_${new Date().getMonth() + 1}`;
+      const currentMonthStr = `prosperity_${systemDate.getFullYear()}_${systemDate.getMonth() + 1}`;
       if (isLoggedIn && email) {
         saveProsperityMapToDatabase(email, currentMonthStr, {
           favoredColor: personalProsperity.favorableColor?.name || "",
@@ -3605,11 +3631,11 @@ export default function App() {
           keyword: personalProsperity.keyword,
           symbol: personalProsperity.amulet,
           recommendations: personalProsperity.strategicAdvice,
-          monthNumber: new Date().getMonth() + 1
+          monthNumber: systemDate.getMonth() + 1
         }).catch(console.warn);
       }
     }
-  }, [personalProsperity, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail]);
+  }, [personalProsperity, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail, systemDate]);
 
   // Automated Real-Time Numerology Matrix Sync Hook
   useEffect(() => {
@@ -5299,15 +5325,17 @@ export default function App() {
           )}
           
           {/* Floating Moon Tip Dashboard Card */}
-          <MoonTipCard 
-            userName={user?.name} 
-            birthDate={user?.birthDate} 
-            lang={(i18n.language || 'pt').toLowerCase().split('-')[0]}
-            onRewardPoints={(amount) => {
-              setScorePoints(prev => prev + amount);
-              pushRealNotification(`${t("Você reivindicou com sucesso seu bônus diário do Sussurro Lunar")} (+${amount} ${t("pontos")})! 💎`);
-            }}
-          />
+          <div key={`moontip_${user?.name}_${currentLang}_${systemDate.toDateString()}`}>
+            <MoonTipCard 
+              userName={user?.name} 
+              birthDate={user?.birthDate} 
+              lang={currentLang}
+              onRewardPoints={(amount) => {
+                setScorePoints(prev => prev + amount);
+                pushRealNotification(`${t("Você reivindicou com sucesso seu bônus diário do Sussurro Lunar")} (+${amount} ${t("pontos")})! 💎`);
+              }}
+            />
+          </div>
           
           {/* Top User Status Header */}
           <header className="w-full bg-slate-900/60 border-b border-slate-850 px-4 py-4 sticky top-0 z-40 backdrop-blur-md">
@@ -5620,7 +5648,7 @@ export default function App() {
                         </div>
 
                         {/* Interactive Área do Usuário Sub Navigation and Dashboard Portal */}
-                        <div key={`user_dashboard_portal_${user.name}_${user.birthDate}_${user.birthTime || ''}`}>
+                        <div key={`user_dashboard_portal_${user.name}_${user.birthDate}_${user.birthTime || ''}_${systemDate.toDateString()}`}>
                           <UserDashboardPortal
                             user={user}
                             scorePoints={scorePoints}
@@ -5632,6 +5660,7 @@ export default function App() {
                             setAreaSubTab={setAreaSubTab}
                             onUpdateCurrentUser={setUser}
                             lang={currentLang}
+                            mapData={mapData}
                           />
                         </div>
 
@@ -6843,7 +6872,7 @@ export default function App() {
                 </div>
 
                 {/* THE NEW ADVANCED BIORHYTHM SYSTEM FOR FABRICIO */}
-                <div key={`biorhythm_${user?.name}_${user?.birthDate}`}>
+                <div key={`biorhythm_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
                   <BiorhythmView 
                     userName={user?.name} 
                     birthDate={user?.birthDate} 
@@ -6852,7 +6881,7 @@ export default function App() {
                 </div>
 
                 {/* NEW COMPREHENSIVE LUNAR CYCLE MODULE */}
-                <div key={`lunar_cycle_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}`}>
+                <div key={`lunar_cycle_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
                   <LunarCycle 
                     userName={user?.name} 
                     userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Aquário")} 
@@ -6961,8 +6990,9 @@ export default function App() {
                         mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
                         user?.name || "Viajante",
                         selectedProsperityDay - 1,
-                        new Date(),
-                        currentLang
+                        systemDate,
+                        currentLang,
+                        mapData
                       );
                       
                       return (
@@ -7082,7 +7112,7 @@ export default function App() {
                 </div>
 
                 {/* NODOS LUNARES - SUA EVOLUÇÃO PESSOAL */}
-                <div key={`lunar_nodes_planetas_${user?.name}_${user?.birthDate}`}>
+                <div key={`lunar_nodes_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
                   <LunarNodes userName={user?.name} mapData={mapData} lang={currentLang} />
                 </div>
 
@@ -7149,12 +7179,19 @@ export default function App() {
                 )}
 
                 {/* Monthly Celestial Transits History Panel */}
-                <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}`}>
-                  <TransitHistory userName={user?.name} birthDate={user?.birthDate} lang={currentLang} />
+                <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
+                  <TransitHistory
+                    userName={user?.name}
+                    birthDate={user?.birthDate}
+                    birthTime={user?.birthTime}
+                    latitude={user?.latitude}
+                    longitude={user?.longitude}
+                    lang={currentLang}
+                  />
                 </div>
 
                 {/* Orbia AI Chat and Oracle Component */}
-                <div key={`orbia_oracle_chat_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}`}>
+                <div key={`orbia_oracle_chat_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
                   <OrbiaAIAndOracle
                     chatMessages={chatMessages}
                     currentChatInput={currentChatInput}
@@ -7216,7 +7253,14 @@ export default function App() {
               ) : (
                 <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-350">
                   <div key={`tarot_system_${user.name}_${user.birthDate}`}>
-                    <TarotSystem userName={user.name} lang={currentLang} />
+                    <TarotSystem
+                      userName={user.name}
+                      birthDate={user.birthDate}
+                      birthTime={user.birthTime}
+                      latitude={user.latitude}
+                      longitude={user.longitude}
+                      lang={currentLang}
+                    />
                   </div>
                 </div>
               )
