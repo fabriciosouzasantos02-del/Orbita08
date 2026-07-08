@@ -117,6 +117,24 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   }
 }
 
+export function sanitizeFirestoreData(data: any): any {
+  if (data === undefined) return null;
+  if (data === null) return null;
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeFirestoreData(item));
+  }
+  if (typeof data === 'object') {
+    const cleaned: any = {};
+    for (const key of Object.keys(data)) {
+      if (data[key] !== undefined) {
+        cleaned[key] = sanitizeFirestoreData(data[key]);
+      }
+    }
+    return cleaned;
+  }
+  return data;
+}
+
 // Lazy-loaded or optionally fallback firebase configuration
 import firebaseAppletConfig from "../../firebase-applet-config.json";
 
@@ -223,6 +241,13 @@ export interface UserProfileData {
   trialUsed?: boolean;
   trialStartDate?: string;
   trialEndDate?: string;
+  plan?: string;
+  subscriptionStatus?: string;
+  trialStart?: string;
+  trialEnds?: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionUpdatedAt?: string;
   deviceFingerprint?: string;
   deviceId?: string;
   lastLoginAt?: string;
@@ -323,7 +348,7 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
         authUid: auth?.currentUser?.uid,
         authEmail: auth?.currentUser?.email
       });
-      await setDoc(userRef, enrichedProfile, { merge: true });
+      await setDoc(userRef, sanitizeFirestoreData(enrichedProfile), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc SUCCESS for path: ${path}`);
     } catch (e: any) {
       console.error(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc FAILED for path: ${path}`, {
@@ -795,6 +820,90 @@ export function subscribeToExtraMaps(email: string, onUpdate: (maps: ExtraMapIte
   });
 }
 
+// Real-Time Listener for User Natal Charts
+export function subscribeToNatalCharts(email: string, onUpdate: (charts: any[]) => void, onError?: (err: Error) => void) {
+  const mailKey = email.toLowerCase().trim();
+  const db = getFirestoreDB();
+  if (!db || !mailKey) {
+    return () => {};
+  }
+
+  const docKey = getUserDocKey(email);
+  const path = `users/${docKey}/natalCharts`;
+  const collectionRef = collection(db, "users", docKey, "natalCharts");
+
+  return onSnapshot(collectionRef, (snapshot) => {
+    const results: any[] = [];
+    snapshot.forEach((snap) => {
+      results.push(snap.data());
+    });
+    onUpdate(results);
+  }, (error) => {
+    console.error("[SnapSync] Erro no snapshot de natalCharts:", error);
+    try {
+      handleFirestoreError(error, OperationType.GET, path);
+    } catch (transformed) {
+      if (onError && transformed instanceof Error) onError(transformed);
+    }
+  });
+}
+
+// Real-Time Listener for User Transits
+export function subscribeToTransits(email: string, onUpdate: (transits: any[]) => void, onError?: (err: Error) => void) {
+  const mailKey = email.toLowerCase().trim();
+  const db = getFirestoreDB();
+  if (!db || !mailKey) {
+    return () => {};
+  }
+
+  const docKey = getUserDocKey(email);
+  const path = `users/${docKey}/transits`;
+  const collectionRef = collection(db, "users", docKey, "transits");
+
+  return onSnapshot(collectionRef, (snapshot) => {
+    const results: any[] = [];
+    snapshot.forEach((snap) => {
+      results.push(snap.data());
+    });
+    onUpdate(results);
+  }, (error) => {
+    console.error("[SnapSync] Erro no snapshot de transits:", error);
+    try {
+      handleFirestoreError(error, OperationType.GET, path);
+    } catch (transformed) {
+      if (onError && transformed instanceof Error) onError(transformed);
+    }
+  });
+}
+
+// Real-Time Listener for User Numerology
+export function subscribeToNumerology(email: string, onUpdate: (numerology: any[]) => void, onError?: (err: Error) => void) {
+  const mailKey = email.toLowerCase().trim();
+  const db = getFirestoreDB();
+  if (!db || !mailKey) {
+    return () => {};
+  }
+
+  const docKey = getUserDocKey(email);
+  const path = `users/${docKey}/numerology`;
+  const collectionRef = collection(db, "users", docKey, "numerology");
+
+  return onSnapshot(collectionRef, (snapshot) => {
+    const results: any[] = [];
+    snapshot.forEach((snap) => {
+      results.push(snap.data());
+    });
+    onUpdate(results);
+  }, (error) => {
+    console.error("[SnapSync] Erro no snapshot de numerology:", error);
+    try {
+      handleFirestoreError(error, OperationType.GET, path);
+    } catch (transformed) {
+      if (onError && transformed instanceof Error) onError(transformed);
+    }
+  });
+}
+
 // 3. Dreams Sync & Real-Time Subscriber
 export async function saveDreamToDatabase(email: string, dream: DreamLogItem) {
   const mailKey = email.toLowerCase().trim();
@@ -938,12 +1047,12 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
         authUid: auth?.currentUser?.uid,
         authEmail: auth?.currentUser?.email
       });
-      await setDoc(docRef, {
+      await setDoc(docRef, sanitizeFirestoreData({
         id: chartId,
         userId: docKey,
         ...chartData,
         updatedAt: new Date().toISOString()
-      }, { merge: true });
+      }), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc SUCCESS for path: ${path}`);
     } catch (e: any) {
       console.error(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc FAILED for path: ${path}`, {

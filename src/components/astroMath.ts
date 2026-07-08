@@ -881,3 +881,76 @@ export function performAstroCalculation(
     }
   };
 }
+
+// Help parse user birth date and target date into centuries
+function getCenturiesForDate(dateStr: string, timeStr: string = "12:00"): { T: number, earthCoords: { x: number; y: number; z: number } } {
+  const parts = dateStr.split("-");
+  let year = 1990;
+  let month = 1;
+  let day = 1;
+  if (parts.length === 3) {
+    year = parseInt(parts[0], 10) || 1990;
+    month = parseInt(parts[1], 10) || 1;
+    day = parseInt(parts[2], 10) || 1;
+  }
+  
+  let hour = 12;
+  let minute = 0;
+  if (timeStr && timeStr.includes(":")) {
+    const [h, m] = timeStr.split(":").map(v => parseInt(v, 10));
+    hour = isNaN(h) ? 12 : h;
+    minute = isNaN(m) ? 0 : m;
+  }
+  
+  const JD = getJulianDate(year, month, day, hour, minute);
+  const T = (JD - 2451545.0) / 36525.0;
+  const earthCoords = getHeliocentricCoordinates("Earth", T);
+  return { T, earthCoords };
+}
+
+/**
+ * Calculates high-precision geocentric planetary phase-based biorhythm cycles
+ * for a user based on their birthDate/time compared to a targetDate.
+ */
+export function calculateAstronomicalBiorhythms(
+  birthDate: string,
+  birthTime: string = "12:00",
+  targetDate: string
+): Record<string, number> {
+  const { T: T_birth, earthCoords: earth_birth } = getCenturiesForDate(birthDate, birthTime);
+  const { T: T_target, earthCoords: earth_target } = getCenturiesForDate(targetDate, "12:00");
+
+  // Birth Placements
+  const nSun = calculateGeocentricLongitude("Sol", T_birth, earth_birth);
+  const nMoon = calculateMoonLongitude(T_birth);
+  const nMercury = calculateGeocentricLongitude("Mercury", T_birth, earth_birth);
+  const nVenus = calculateGeocentricLongitude("Venus", T_birth, earth_birth);
+  const nMars = calculateGeocentricLongitude("Mars", T_birth, earth_birth);
+  const nJupiter = calculateGeocentricLongitude("Jupiter", T_birth, earth_birth);
+  const nNeptune = calculateGeocentricLongitude("Neptune", T_birth, earth_birth);
+
+  // Target Placements
+  const tSun = calculateGeocentricLongitude("Sol", T_target, earth_target);
+  const tMoon = calculateMoonLongitude(T_target);
+  const tMercury = calculateGeocentricLongitude("Mercury", T_target, earth_target);
+  const tVenus = calculateGeocentricLongitude("Venus", T_target, earth_target);
+  const tMars = calculateGeocentricLongitude("Mars", T_target, earth_target);
+  const tJupiter = calculateGeocentricLongitude("Jupiter", T_target, earth_target);
+
+  // High Precision Celestial Biorhythm Phase Mapping (transiting relative to natal)
+  const getPhaseSin = (trans: number, natal: number) => {
+    const diff = (trans - natal + 360) % 360;
+    return Math.round(Math.sin(diff * Math.PI / 180) * 100);
+  };
+
+  return {
+    fisico: getPhaseSin(tMars, nMars),
+    emocional: getPhaseSin(tMoon, nMoon),
+    intelectual: getPhaseSin(tMercury, nMercury),
+    espiritual: getPhaseSin(tJupiter, nJupiter),
+    perceptivo: getPhaseSin(tSun, nSun),
+    intuitivo: getPhaseSin(tMoon, nNeptune),
+    estetico: getPhaseSin(tVenus, nVenus)
+  };
+}
+

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
+import { calculateAstronomicalBiorhythms } from './astroMath';
 
 interface BiorhythmViewProps {
   userName?: string;
@@ -63,6 +64,21 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
   const [showTheory, setShowTheory] = useState<boolean>(false);
   const [expandedCycle, setExpandedCycle] = useState<string | null>('emocional'); // Default expand Emotional as requested
 
+  const [synthesis, setSynthesis] = useState<string>('');
+  const [loadingSynthesis, setLoadingSynthesis] = useState<boolean>(false);
+
+  const getLifePathNumber = (dateStr: string): number => {
+    if (!dateStr) return 8;
+    const digits = dateStr.replace(/\D/g, '');
+    let sum = digits.split('').reduce((acc, d) => acc + parseInt(d, 10), 0);
+    while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+      sum = sum.toString().split('').reduce((acc, d) => acc + parseInt(d, 10), 0);
+    }
+    return sum;
+  };
+
+  const cvNumber = useMemo(() => getLifePathNumber(birthDate), [birthDate]);
+
   // Format first name
   const displayFirstName = userName ? userName.split(' ')[0] : '';
 
@@ -95,36 +111,62 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     return days;
   }, [targetDateObj]);
 
-  // Helper to compute specific cycle percentage (-100 to 100) for a given days elapsed
-  const getBiorhythmVal = (days: number, period: number) => {
-    // Formula: sin(2 * pi * t / period) * 100
-    const val = Math.sin((2 * Math.PI * days) / period) * 100;
-    return Math.round(val);
-  };
-
-  // Compute trending (is it going up?)
-  const getIsTrendingUp = (days: number, period: number) => {
-    const valToday = getBiorhythmVal(days, period);
-    const valTomorrow = getBiorhythmVal(days + 1, period);
-    return valTomorrow > valToday;
-  };
-
   // Compile calculations for today (targetDateObj)
-  const todayDaysElapsed = useMemo(() => {
-    return calculateDaysElapsed(birthDateObj, targetDateObj);
-  }, [birthDateObj, targetDateObj]);
-
   const todayMetrics = useMemo(() => {
+    const targetDateStr = targetDateObj.toISOString().split('T')[0];
+    const tomorrowDateObj = new Date(targetDateObj.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrowDateStr = tomorrowDateObj.toISOString().split('T')[0];
+    const bDate = birthDate || "1997-02-11";
+
+    const todayAstro = calculateAstronomicalBiorhythms(bDate, "12:00", targetDateStr);
+    const tomorrowAstro = calculateAstronomicalBiorhythms(bDate, "12:00", tomorrowDateStr);
+
     const res: Record<string, { value: number; isUp: boolean; isCritical: boolean }> = {};
-    Object.entries(CYCLES).forEach(([key, details]) => {
-      const value = getBiorhythmVal(todayDaysElapsed, details.period);
-      const isUp = getIsTrendingUp(todayDaysElapsed, details.period);
-      // Critical state is when cycle crosses zero line (+-10% boundary) or is near extreme peaks
+    Object.keys(CYCLES).forEach((key) => {
+      const value = todayAstro[key] !== undefined ? todayAstro[key] : 0;
+      const tomorrowValue = tomorrowAstro[key] !== undefined ? tomorrowAstro[key] : 0;
+      const isUp = tomorrowValue > value;
       const isCritical = Math.abs(value) <= 12;
       res[key] = { value, isUp, isCritical };
     });
     return res;
-  }, [todayDaysElapsed]);
+  }, [birthDate, targetDateObj]);
+
+
+  React.useEffect(() => {
+    if (!birthDate) return;
+    
+    const fetchSynthesis = async () => {
+      setLoadingSynthesis(true);
+      try {
+        const res = await fetch("/api/astrology/vibrational-synthesis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: userName,
+            birthDate,
+            biorhythm: {
+              physical: todayMetrics.fisico?.value,
+              emotional: todayMetrics.emocional?.value,
+              intellectual: todayMetrics.intelectual?.value
+            },
+            caminhoDeVida: cvNumber,
+            lang: activeL
+          })
+        });
+        const data = await res.json();
+        if (data && data.synthesis) {
+          setSynthesis(data.synthesis);
+        }
+      } catch (err) {
+        console.error("Error fetching vibrational synthesis:", err);
+      } finally {
+        setLoadingSynthesis(false);
+      }
+    };
+    
+    fetchSynthesis();
+  }, [birthDate, todayMetrics.fisico?.value, todayMetrics.emocional?.value, todayMetrics.intelectual?.value, userName, activeL, cvNumber]);
 
   // Get weekday name in target language
   const getWeekdayName = (date: Date) => {
@@ -182,16 +224,23 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
   // Compile path data for each of the 7 cycles over the 15-day window
   const cyclePaths = useMemo(() => {
     const paths: Record<string, string> = {};
-    Object.entries(CYCLES).forEach(([key, details]) => {
+    const bDate = birthDate || "1997-02-11";
+    
+    // Calculate astronomical biorhythms for each of the 15 days in the range
+    const daysAstro = rawDaysRange.map(d => {
+      const dateStr = d.toISOString().split('T')[0];
+      return calculateAstronomicalBiorhythms(bDate, "12:00", dateStr);
+    });
+
+    Object.keys(CYCLES).forEach((key) => {
       const points = rawDaysRange.map((d, idx) => {
-        const daysElapsed = calculateDaysElapsed(birthDateObj, d);
-        const val = getBiorhythmVal(daysElapsed, details.period);
+        const val = daysAstro[idx][key] !== undefined ? daysAstro[idx][key] : 0;
         return `${mapX(idx)},${mapY(val)}`;
       });
       paths[key] = `M ${points.join(' L ')}`;
     });
     return paths;
-  }, [rawDaysRange, birthDateObj]);
+  }, [rawDaysRange, birthDate]);
 
   // Friendly date list for chart bottom axis
   const chartDates = useMemo(() => {
@@ -397,15 +446,39 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
 
           </div>
 
-          {/* Sintonização dynamic advice alert */}
-          <div className="p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 text-xs text-slate-300 leading-relaxed space-y-1.5">
-            <div className="flex gap-2 items-center text-[11px] font-mono font-bold text-indigo-305">
-              <span>★</span>
-              <span>{t("SINTONIA SINDICAL ATIVA AMARA")}</span>
+          {/* Unified Daily Vibrational Synthesis (AI Powered) */}
+          <div className="p-5 bg-gradient-to-r from-slate-950 via-indigo-950/20 to-slate-950 rounded-2xl border border-indigo-500/20 text-xs text-slate-300 leading-relaxed space-y-3 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/[0.03] rounded-full blur-xl pointer-events-none" />
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2 items-center text-[11px] font-mono font-bold text-indigo-350">
+                <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+                <span>
+                  {activeL === 'de' ? "TÄGLICHE SCHWINGUNGSSYNTHESE" : 
+                   activeL === 'en' ? "DAILY VIBRATIONAL SYNTHESIS" : 
+                   activeL === 'es' ? "SÍNTESIS VIBRACIONAL DIARIA" : 
+                   activeL === 'fr' ? "SYNTHÈSE VIBRATOIRE QUOTIDIENNE" : 
+                   "SÍNTESE VIBRACIONAL DIÁRIA"}
+                </span>
+              </div>
+              <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-[8px] font-mono font-extrabold text-indigo-400 rounded uppercase tracking-wider">
+                AI Oracle
+              </span>
             </div>
-            <p>
-              <strong>{t("Sabedoria e confiança!")}</strong> {t("No momento, há uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.")}
-            </p>
+            {loadingSynthesis ? (
+              <div className="space-y-2 animate-pulse py-2">
+                <div className="h-3 bg-slate-800 rounded w-full"></div>
+                <div className="h-3 bg-slate-800 rounded w-5/6"></div>
+                <div className="h-3 bg-slate-800 rounded w-4/5"></div>
+              </div>
+            ) : synthesis ? (
+              <p className="font-sans text-[11.5px] leading-relaxed text-slate-200">
+                {synthesis}
+              </p>
+            ) : (
+              <p className="font-sans text-[11.5px] leading-relaxed text-slate-200">
+                <strong>{t("Sabedoria e confiança!")}</strong> {t("No momento, há uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.")}
+              </p>
+            )}
           </div>
 
         </div>

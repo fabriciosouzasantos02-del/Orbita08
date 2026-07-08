@@ -19,6 +19,50 @@ import { translations, Language } from './translations';
 
 dotenv.config();
 
+function loadKeysConfig() {
+  try {
+    const filePath = path.join(process.cwd(), 'keys_config.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      if (data.STRIPE_WEBHOOK_SECRET) {
+        process.env.STRIPE_WEBHOOK_SECRET = data.STRIPE_WEBHOOK_SECRET;
+        console.log("[Keys Config] Loaded STRIPE_WEBHOOK_SECRET from keys_config.json");
+      }
+      if (data.FIREBASE_SERVICE_ACCOUNT) {
+        process.env.FIREBASE_SERVICE_ACCOUNT = data.FIREBASE_SERVICE_ACCOUNT;
+        console.log("[Keys Config] Loaded FIREBASE_SERVICE_ACCOUNT from keys_config.json");
+      }
+    }
+    
+    // Also check standard .env file if process.env values aren't set
+    const envPath = path.join(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const lines = envContent.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+          const parts = trimmed.split('=');
+          const k = parts[0].trim();
+          let v = parts.slice(1).join('=').trim();
+          if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+            v = v.substring(1, v.length - 1);
+          }
+          if (k === 'STRIPE_WEBHOOK_SECRET' && !process.env.STRIPE_WEBHOOK_SECRET) {
+            process.env.STRIPE_WEBHOOK_SECRET = v;
+          }
+          if (k === 'FIREBASE_SERVICE_ACCOUNT' && !process.env.FIREBASE_SERVICE_ACCOUNT) {
+            process.env.FIREBASE_SERVICE_ACCOUNT = v;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[Keys Config] Error loading keys:", err);
+  }
+}
+loadKeysConfig();
+
 let stripeInstance: Stripe | null = null;
 function getStripeClient(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -287,19 +331,121 @@ function cleanAndParseJSON(text: string): any {
     cleaned = cleaned.replace(/\s*```$/, "");
   }
   cleaned = cleaned.trim();
-  
-  // Find the first '{' or '[' and its matching closing brace/bracket
+
+  // 1. Try direct parse first
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    // Continue to repair
+  }
+
+  // Helper to repair common JSON issues (unescaped newlines, trailing commas)
+  const repairJSONString = (str: string): string => {
+    let repaired = "";
+    let inStr = false;
+    const len = str.length;
+    for (let i = 0; i < len; i++) {
+      const char = str[i];
+      if (inStr) {
+        if (char === '\\') {
+          repaired += char;
+          if (i + 1 < len) {
+            repaired += str[i + 1];
+            i++;
+          }
+        } else if (char === '"') {
+          inStr = false;
+          repaired += char;
+        } else if (char === '\n') {
+          repaired += '\\n';
+        } else if (char === '\r') {
+          repaired += '\\r';
+        } else if (char === '\t') {
+          repaired += '\\t';
+        } else {
+          repaired += char;
+        }
+      } else {
+        if (char === '"') {
+          inStr = true;
+          repaired += char;
+        } else if (char === ',') {
+          // Lookahead: skip trailing commas
+          let skipComma = false;
+          let lookAheadIndex = i + 1;
+          while (lookAheadIndex < len) {
+            const nextChar = str[lookAheadIndex];
+            if (nextChar === ' ' || nextChar === '\n' || nextChar === '\r' || nextChar === '\t') {
+              lookAheadIndex++;
+              continue;
+            }
+            if (nextChar === '}' || nextChar === ']') {
+              skipComma = true;
+            }
+            break;
+          }
+          if (!skipComma) {
+            repaired += char;
+          }
+        } else {
+          repaired += char;
+        }
+      }
+    }
+    return repaired;
+  };
+
+  // 2. Try parsing after repairing control characters and trailing commas
+  try {
+    const rep = repairJSONString(cleaned);
+    return JSON.parse(rep);
+  } catch (e) {
+    // Continue to next fallback
+  }
+
+  // 3. Try simple extraction of outer braces/brackets
   const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const candidate = cleaned.substring(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch (e) {
+      try {
+        return JSON.parse(repairJSONString(candidate));
+      } catch (e) {
+        // Continue to complex extraction
+      }
+    }
+  }
+
   const firstBracket = cleaned.indexOf('[');
-  
+  const lastBracket = cleaned.lastIndexOf(']');
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    const candidate = cleaned.substring(firstBracket, lastBracket + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch (e) {
+      try {
+        return JSON.parse(repairJSONString(candidate));
+      } catch (e) {
+        // Continue to complex extraction
+      }
+    }
+  }
+
+  // 4. Run character-by-character brace matching as a last resort
   let jsonStart = -1;
   let isObject = true;
   
-  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
-    jsonStart = firstBrace;
+  const firstB = cleaned.indexOf('{');
+  const firstBr = cleaned.indexOf('[');
+  
+  if (firstB !== -1 && (firstBr === -1 || firstB < firstBr)) {
+    jsonStart = firstB;
     isObject = true;
-  } else if (firstBracket !== -1) {
-    jsonStart = firstBracket;
+  } else if (firstBr !== -1) {
+    jsonStart = firstBr;
     isObject = false;
   }
   
@@ -340,88 +486,23 @@ function cleanAndParseJSON(text: string): any {
     }
     
     if (jsonEnd !== -1) {
-      cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
-    } else {
-      // Fallback if bracket matching didn't finish
-      const lastBrace = cleaned.lastIndexOf('}');
-      const lastBracket = cleaned.lastIndexOf(']');
-      if (isObject && lastBrace !== -1) {
-        cleaned = cleaned.substring(jsonStart, lastBrace + 1);
-      } else if (!isObject && lastBracket !== -1) {
-        cleaned = cleaned.substring(jsonStart, lastBracket + 1);
-      }
-    }
-  }
-  
-  // Now, let's repair the JSON string before parsing
-  // 1. Unescaped control characters inside strings (like newlines, tabs)
-  // 2. Trailing commas before close-braces or close-brackets
-  let repaired = "";
-  let inStr = false;
-  const len = cleaned.length;
-  for (let i = 0; i < len; i++) {
-    const char = cleaned[i];
-    if (inStr) {
-      if (char === '\\') {
-        // Safe escape bypass to avoid double-escaping
-        repaired += char;
-        if (i + 1 < len) {
-          repaired += cleaned[i + 1];
-          i++;
+      const candidate = cleaned.substring(jsonStart, jsonEnd + 1);
+      try {
+        return JSON.parse(candidate);
+      } catch (e) {
+        try {
+          return JSON.parse(repairJSONString(candidate));
+        } catch (e) {
+          // Continue
         }
-      } else if (char === '"') {
-        inStr = false;
-        repaired += char;
-      } else if (char === '\n') {
-        repaired += '\\n';
-      } else if (char === '\r') {
-        repaired += '\\r';
-      } else if (char === '\t') {
-        repaired += '\\t';
-      } else {
-        repaired += char;
-      }
-    } else {
-      if (char === '"') {
-        inStr = true;
-        repaired += char;
-      } else if (char === ',') {
-        // Lookahead: if the next non-whitespace characters are } or ], we skip this comma!
-        let skipComma = false;
-        let lookAheadIndex = i + 1;
-        while (lookAheadIndex < len) {
-          const nextChar = cleaned[lookAheadIndex];
-          if (nextChar === ' ' || nextChar === '\n' || nextChar === '\r' || nextChar === '\t') {
-            lookAheadIndex++;
-            continue;
-          }
-          if (nextChar === '}' || nextChar === ']') {
-            skipComma = true;
-          }
-          break;
-        }
-        if (!skipComma) {
-          repaired += char;
-        }
-      } else {
-        repaired += char;
       }
     }
   }
 
-  try {
-    return JSON.parse(repaired);
-  } catch (err) {
-    try {
-      return JSON.parse(cleaned);
-    } catch {
-      console.error("[cleanAndParseJSON] Erro ao analisar o JSON limpo:", err);
-      console.error("[cleanAndParseJSON] Conteúdo original:", text);
-      console.error("[cleanAndParseJSON] Conteúdo limpo tentado:", cleaned);
-      console.error("[cleanAndParseJSON] Conteúdo reparado tentado:", repaired);
-      throw err;
-    }
-  }
+  // As a final diagnostic fallback, log details
+  console.error("[cleanAndParseJSON] Falha crítica de parsing do JSON. Conteúdo original:", text);
+  console.error("[cleanAndParseJSON] Conteúdo limpo tentado:", cleaned);
+  throw new Error("Não foi possível analisar o JSON retornado pela API Gemini.");
 }
 
 // Mock database in-memory for simple user sessions / history
@@ -1980,6 +2061,123 @@ Responda com um conselho meditativo e reflexivo escrito 100% em ${targetLangName
   }
 });
 
+// API: Unified Daily Vibrational Synthesis (Biorhythms + Numerology + Transits)
+app.post("/api/astrology/vibrational-synthesis", async (req, res) => {
+  try {
+    const { name, birthDate, biorhythm, caminhoDeVida, activeTransits, lang } = req.body || {};
+    const activeLang = (lang || 'pt').toLowerCase().split('-')[0];
+    
+    const userName = name || "Buscador";
+    const firstName = userName.split(' ')[0];
+    const cv = caminhoDeVida || 8;
+    
+    const physical = biorhythm?.physical !== undefined ? biorhythm.physical : 50;
+    const emotional = biorhythm?.emotional !== undefined ? biorhythm.emotional : 50;
+    const intellectual = biorhythm?.intellectual !== undefined ? biorhythm.intellectual : 50;
+    
+    const fallbackTransitsDict: Record<string, any> = {
+      pt: [
+        { title: "Sol em conjunção à Casa 1", description: "Foco no eu, renovação de imagem e vitalidade física ampliada." },
+        { title: "Trígono de Lua e Vênus", description: "Harmonia nos afetos, facilidade em expressar sentimentos e cura de mágoas passadas." }
+      ],
+      en: [
+        { title: "Sun conjunction House 1", description: "Focus on self, image renewal, and amplified physical vitality." },
+        { title: "Moon trine Venus", description: "Harmony in affection, ease in expressing feelings, and healing of past wounds." }
+      ],
+      es: [
+        { title: "Sol en conjunción a la Casa 1", description: "Enfoque en el yo, renovación de imagen y vitalidad física ampliada." },
+        { title: "Trígono de Luna y Venus", description: "Armonía en los afectos, facilidad para expresar sentimientos y sanación de heridas pasadas." }
+      ],
+      de: [
+        { title: "Sonne in Konjunktion mit Haus 1", description: "Fokus auf das Selbst, Erneuerung des Images und gesteigerte körperliche Vitalität." },
+        { title: "Mond im Trigon zur Venus", description: "Harmonie in der Zuneigung, Leichtigkeit beim Ausdrücken von Gefühlen und Heilung vergangener Wunden." }
+      ],
+      fr: [
+        { title: "Soleil en conjonction avec la Maison 1", description: "Mise au point sur soi, renouvellement de l'image et vitalité physique amplifiée." },
+        { title: "Lune trigone Vénus", description: "Harmonie dans l'affection, facilité à exprimer ses sentiments et guérison des blessures passées." }
+      ]
+    };
+
+    let transitsList = activeTransits;
+    if (!transitsList || transitsList.length === 0) {
+      transitsList = fallbackTransitsDict[activeLang] || fallbackTransitsDict.pt;
+    }
+
+    const transitText = transitsList.map((t: any) => `- ${t.eventName || t.title || t.name}: ${t.description}`).join('\n');
+      
+    const cacheKey = `vibrational_synthesis:${userName}:${birthDate || ''}:${physical}:${emotional}:${intellectual}:${cv}:${activeLang}`;
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+    
+    const fallbacks: Record<string, string> = {
+      pt: `Hoje, ${firstName}, com seu Biorritmo Físico em ${physical}% e seu Emocional em ${emotional}%, a poderosa energia do seu Caminho de Vida ${cv} se sintoniza com as influências planetárias ativas de hoje. Essa combinação convida você a agir com sabedoria, canalizando seus picos de discernimento intelectual (${intellectual}%) para harmonizar seus relacionamentos e clarear suas escolhas práticas.`,
+      en: `Today, ${firstName}, with your Physical Biorhythm at ${physical}% and Emotional at ${emotional}%, the strong energy of your Life Path ${cv} aligns with today's active planetary transits. This combination invites you to act with wisdom, channeling your intellectual clarity (${intellectual}%) to harmonize relationships and clear your practical path.`,
+      es: `Hoy, ${firstName}, con tu Biorritmo Físico al ${physical}% y tu Emocional al ${emotional}%, la poderosa energía de tu Camino de Vida ${cv} se sintoniza con las influencias planetarias activas de hoy. Esta combinación te invita a actuar con sabiduría, canalizando tu claridad intelectual (${intellectual}%) para armonizar tus relaciones y despejar tu camino práctico.`,
+      de: `Heute, ${firstName}, mit Ihrem physischen Biorhythmus bei ${physical}% und dem emotionalen bei ${emotional}%, richtet sich die starke Energie Ihres Lebenswegs ${cv} nach den heutigen aktiven planetarischen Transiten. Diese Kombination lädt Sie ein, mit Weisheit zu handeln und Ihre intellektuelle Klarheit (${intellectual}%) zu nutzen, um Beziehungen zu harmonisieren und Ihren praktischen Weg zu klären.`,
+      fr: `Aujourd'hui, ${firstName}, avec votre biorythme physique à ${physical}% et émotionnel à ${emotional}%, la puissante énergie de votre Chemin de Vie ${cv} s'aligne avec les transits planétaires actifs d'aujourd'hui. Cette combinaison vous invite à agir avec sagesse, en canalisant votre clarté intellectuelle (${intellectual}%) pour harmoniser vos relations et éclaircir votre chemin pratique.`
+    };
+    
+    const fallbackText = fallbacks[activeLang] || fallbacks.pt;
+    
+    if (!aiClient) {
+      const result = { synthesis: fallbackText };
+      setCachedResponse(cacheKey, result);
+      return res.json(result);
+    }
+    
+    const prompt = `
+Generate a short, inspiring, and beautiful "Daily Vibrational Synthesis" (Síntese Vibracional Diária) for ${userName}.
+Language requested: ${activeLang} (must respond strictly in this language).
+
+Personal Parameters of the day:
+- User Name: ${userName} (First name: ${firstName})
+- Life Path Number (Caminho de Vida): ${cv}
+- Physical Biorhythm: ${physical}%
+- Emotional Biorhythm: ${emotional}%
+- Intellectual Biorhythm: ${intellectual}%
+- Today's planetary transits:
+${transitText}
+
+Guidelines:
+1. Synthesize these metrics together into a single cohesive, highly personalized, short report (around 2 to 4 sentences).
+2. It must be elegant, professional, mystical, and filled with deep insight.
+3. Combine how the biorhythms interact with the Life Path number and transits. For example, if physical biorhythm is low but intellectual is high, and Camino de Vida is 7, suggest prioritizing inner study or mental work today.
+4. Do NOT use markdown headings or bullets. Just return a clean paragraph of flowing, beautiful text.
+5. Do NOT output any system headers or container details. Speak in the voice of a wise guide.
+6. Translate all terms into the target language (${activeLang}).
+    `;
+    
+    let synthesis = "";
+    try {
+      if (aiClient) {
+        const response = await aiClient.models.generateContent({
+          model: CHAT_MODEL,
+          contents: prompt,
+          config: {
+            systemInstruction: "You are an expert in biodynamic feedback, professional astrology, and Pythagorean numerology. Your task is to provide a single-paragraph unified cosmic report synthesizing the user's biorhythms, life path number, and current planetary transits. Keep it short (max 120 words), inspiring, fluid, and translated beautifully to the target language.",
+            temperature: 0.8
+          }
+        });
+        synthesis = response.text ? response.text.trim() : fallbackText;
+      } else {
+        synthesis = fallbackText;
+      }
+    } catch (apiErr: any) {
+      console.warn("Vibrational synthesis Gemini API call failed (quota limit or error), falling back to local synthesis:", apiErr?.message || apiErr);
+      synthesis = fallbackText;
+    }
+    
+    const result = { synthesis };
+    setCachedResponse(cacheKey, result);
+    return res.json(result);
+  } catch (err) {
+    console.error("Vibrational synthesis error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // API: Celestial transits history & events of the current month (June 2026)
 app.post("/api/astrology/transits-month", async (req, res) => {
   const { birthDate, name, lang } = req.body || {};
@@ -2881,6 +3079,7 @@ Importante: O retorno DEVE ser um objeto JSON estrito com a seguinte estrutura d
   "moonPhase": "${pickedPhase}",
   "tip": "Uma dica direta, inspiradora e poética de 2-3 frases chamando o usuário pelo nome, orientando o que fazer psicologicamente ou espiritualmente hoje em face deste trânsito lunar e de seu signo solar escrito 100% em ${targetLangName}."
 }
+REQUISITO CRÍTICO DE SINTAXE: Não utilize aspas duplas (") dentro de nenhuma string JSON (ex: no valor de "tip"). Se precisar destacar termos ou incluir citações, use aspas simples ('). O JSON resultante deve ser 100% livre de aspas duplas internas para evitar falhas de parsing.
 Não coloque blocos markdown ou preâmbulos, retorne APENAS o JSON literal limpo em ${targetLangName}.`;
 
     const response = await generateContentWithFallback({
@@ -5417,7 +5616,7 @@ function getBackendDb() {
   return firebaseBackendDb;
 }
 
-async function activatePremiumForUser(email: string, planId: string, subscriptionId?: string, subscriptionEndDate?: string) {
+async function activatePremiumForUser(email: string, planId: string, subscriptionId?: string, subscriptionEndDate?: string, stripeCustomerId?: string) {
   const db = getBackendDb();
   if (!db) {
     console.error("[Billing] Database not initialized for premium activation");
@@ -5440,7 +5639,14 @@ async function activatePremiumForUser(email: string, planId: string, subscriptio
       subscriptionId: subscriptionId || "",
       subscriptionEndDate: endDate,
       isSubscribed: true,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      
+      // New required subscription fields
+      plan: planId,
+      subscriptionStatus: "active",
+      stripeCustomerId: stripeCustomerId || "",
+      stripeSubscriptionId: subscriptionId || "",
+      subscriptionUpdatedAt: new Date().toISOString()
     };
     
     if (!snap.empty) {
@@ -5523,72 +5729,359 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
   await logStripeWebhook(eventId, eventType, event);
 
   try {
+    const db = getBackendDb();
+    if (!db) {
+      console.error("[Webhook Error] Firestore db not available");
+      return res.status(500).send("Database not available");
+    }
+
     switch (eventType) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const email = session.metadata?.email || session.customer_details?.email || session.customer_email;
-        const planId = session.metadata?.planId || "premium";
+        let email = session.metadata?.email || (session.customer_details && session.customer_details.email) || session.customer_email;
+        const uid = session.metadata?.uid;
+        const planId = session.metadata?.planId || "monthly";
         const subscriptionId = session.subscription || "";
+        const stripeCustomerId = typeof session.customer === 'string' ? session.customer : "";
         
-        let subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        if (subscriptionId && getStripeClient()) {
+        if (!email && stripeCustomerId) {
           try {
             const stripe = getStripeClient();
-            const sub = await stripe!.subscriptions.retrieve(subscriptionId);
-            subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
-          } catch {}
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook completed] Error fetching customer email:", e);
+          }
+        }
+
+        let subscriptionEndDate = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString();
+        let trialStart = "";
+        let trialEnds = "";
+        let status = "active";
+
+        if (subscriptionId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const sub = await stripe.subscriptions.retrieve(subscriptionId);
+              subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
+              status = (sub.status === "trialing" || sub.status === "active") ? "active" : sub.status;
+              if (sub.trial_start) trialStart = new Date(sub.trial_start * 1000).toISOString();
+              if (sub.trial_end) trialEnds = new Date(sub.trial_end * 1000).toISOString();
+            }
+          } catch (subErr) {
+            console.error("Error retrieving subscription detail:", subErr);
+          }
+        }
+
+        const updateData = {
+          isPremium: status === "active",
+          isSubscribed: status === "active",
+          planId: planId,
+          subscriptionId: subscriptionId,
+          subscriptionEndDate,
+          plan: planId,
+          subscriptionStatus: status,
+          stripeCustomerId,
+          stripeSubscriptionId: subscriptionId,
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          trialStart,
+          trialEnds
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Real-time premium sync success for uid users/${uid}`);
         }
 
         if (email) {
-          await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate);
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Real-time email sync success for users/${d.id}`);
+            }
+          }
           await logBillingEvent(email, "ACTIVATION", planId, { session_id: session.id, subscriptionId });
         }
         break;
       }
-      case 'invoice.payment_succeeded': {
-        const _invoice = event.data.object;
-        const subscriptionId = _invoice.subscription;
-        const email = _invoice.customer_email || _invoice.customer_details?.email;
-        const planId = _invoice.lines?.data?.[0]?.metadata?.planId || "premium";
+
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const subscriptionId = sub.id;
+        const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
         
-        let subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        if (subscriptionId && getStripeClient()) {
+        let email = sub.metadata?.email;
+        let uid = sub.metadata?.uid;
+        
+        const priceId = sub.items?.data?.[0]?.price?.id || "";
+        const planId = sub.metadata?.planId || (priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' ? 'annual' : 'monthly');
+        
+        if (!email && stripeCustomerId) {
           try {
             const stripe = getStripeClient();
-            const sub = await stripe!.subscriptions.retrieve(subscriptionId);
-            subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
-          } catch {}
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook updated] Error fetching customer email:", e);
+          }
+        }
+
+        const status = (sub.status === 'active' || sub.status === 'trialing') ? 'active' : sub.status;
+        const subscriptionEndDate = new Date(sub.current_period_end * 1000).toISOString();
+        const trialStart = sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : "";
+        const trialEnds = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : "";
+
+        const updateData = {
+          isPremium: status === 'active',
+          isSubscribed: status === 'active',
+          planId: planId,
+          subscriptionId: subscriptionId,
+          subscriptionEndDate,
+          subscriptionStatus: status,
+          plan: status === 'active' ? planId : 'none',
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: subscriptionId,
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          trialStart,
+          trialEnds
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Direct sync for uid users/${uid} on event ${eventType}`);
         }
 
         if (email) {
-          await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate);
-          await logBillingEvent(email, "RENEWAL_SUCCESS", planId, { invoice_id: _invoice.id, subscriptionId });
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Email sync for users/${d.id} on event ${eventType}`);
+            }
+          }
+          await logBillingEvent(email, `SUBSCRIPTION_${eventType.replace('customer.subscription.', '').toUpperCase()}`, planId, { subscriptionId, status });
         }
         break;
       }
+
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
         const subscriptionId = sub.id;
-        const email = sub.metadata?.email || sub.customer_details?.email;
+        let email = sub.metadata?.email || (sub.customer_details && sub.customer_details.email);
+        const uid = sub.metadata?.uid;
+        const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
         
+        if (!email && stripeCustomerId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook deleted] Error fetching customer email:", e);
+          }
+        }
+
+        const updateData = {
+          isPremium: false,
+          isSubscribed: false,
+          plan: "none",
+          subscriptionStatus: "cancelled",
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: "",
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Cancellation direct sync for users/${uid}`);
+        }
+
         if (email) {
-          const db = getBackendDb();
-          if (db) {
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("email", "==", email.toLowerCase().trim()));
-            const snap = await getDocs(q);
-            for (const d of snap.docs) {
-              await setDoc(doc(db, "users", d.id), {
-                isPremium: false,
-                isSubscribed: false,
-                updatedAt: new Date().toISOString()
-              }, { merge: true });
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Cancellation email sync for users/${d.id}`);
             }
           }
           await logBillingEvent(email, "CANCELLATION", "none", { subscriptionId });
         }
         break;
       }
+
+      case 'invoice.payment_succeeded': {
+        const _invoice = event.data.object;
+        const subscriptionId = _invoice.subscription;
+        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
+        let uid = _invoice.metadata?.uid;
+        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
+        
+        if (!email && stripeCustomerId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook payment_succeeded] Error fetching customer email:", e);
+          }
+        }
+
+        let subscriptionEndDate = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString();
+        let planId = "monthly";
+        let trialStart = "";
+        let trialEnds = "";
+
+        if (subscriptionId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const sub = await stripe!.subscriptions.retrieve(subscriptionId);
+              subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
+              const priceId = sub.items?.data?.[0]?.price?.id || "";
+              planId = sub.metadata?.planId || (priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' ? 'annual' : 'monthly');
+              if (!uid) uid = sub.metadata?.uid;
+              if (!email) email = sub.metadata?.email;
+              if (sub.trial_start) trialStart = new Date(sub.trial_start * 1000).toISOString();
+              if (sub.trial_end) trialEnds = new Date(sub.trial_end * 1000).toISOString();
+            }
+          } catch (subErr) {
+            console.error("[Webhook payment_succeeded] Sub retrieve failed:", subErr);
+          }
+        }
+
+        const updateData = {
+          isPremium: true,
+          isSubscribed: true,
+          planId: planId,
+          subscriptionId: subscriptionId || "",
+          subscriptionEndDate,
+          plan: planId,
+          subscriptionStatus: "active",
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: subscriptionId || "",
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          trialStart,
+          trialEnds
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Payment Succeeded direct sync for users/${uid}`);
+        }
+
+        if (email) {
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Payment Succeeded email sync for users/${d.id}`);
+            }
+          }
+          await logBillingEvent(email, "RENEWAL_SUCCESS", planId, { invoice_id: _invoice.id, subscriptionId });
+        }
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const _invoice = event.data.object;
+        const subscriptionId = _invoice.subscription;
+        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
+        let uid = _invoice.metadata?.uid;
+        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
+        
+        if (!email && stripeCustomerId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook payment_failed] Error fetching customer email:", e);
+          }
+        }
+
+        if (subscriptionId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const sub = await stripe.subscriptions.retrieve(subscriptionId);
+              if (!uid) uid = sub.metadata?.uid;
+              if (!email) email = sub.metadata?.email;
+            }
+          } catch (e) {
+            console.error("[Webhook payment_failed] Sub retrieval failed:", e);
+          }
+        }
+
+        const updateData = {
+          isPremium: false,
+          isSubscribed: false,
+          subscriptionStatus: "unpaid",
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: subscriptionId || "",
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Payment Failed direct sync for users/${uid}`);
+        }
+
+        if (email) {
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Payment Failed email sync for users/${d.id}`);
+            }
+          }
+          await logBillingEvent(email, "PAYMENT_FAILED", "none", { subscriptionId, invoice_id: _invoice.id });
+        }
+        break;
+      }
+
       default:
         console.log(`[Webhook] Evento não tratado explicitamente: ${eventType}`);
     }
@@ -5603,7 +6096,7 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
 // Real Stripe Session Creation & Verification Handlers
 app.post("/api/stripe/create-checkout-session", async (req, res) => {
   try {
-    const { email, planId, planName, lang } = req.body;
+    const { email, planId, planName, lang, uid } = req.body;
     if (!email || !planId) {
       return res.status(400).json({ error: (req as any).t('api.stripe.email_plan_required') });
     }
@@ -5645,45 +6138,72 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       const simulatedUrl = `${origin}?stripe_success=true&session_id=${mockSessionId}&simulated=true&plan_id=${planId}&email=${encodeURIComponent(email)}`;
       
       return res.json({
-        id: mockSessionId,
-        url: simulatedUrl,
-        simulated: true,
-        message: (req as any).t('api.stripe.simulator_active')
+         id: mockSessionId,
+         url: simulatedUrl,
+         simulated: true,
+         message: (req as any).t('api.stripe.simulator_active')
       });
+    }
+
+    // Customer creation or retrieval if it doesn't exist yet
+    let stripeCustomerId: string | undefined = undefined;
+    try {
+      const customers = await stripe.customers.list({ email: email.toLowerCase().trim(), limit: 1 });
+      if (customers.data.length > 0) {
+        stripeCustomerId = customers.data[0].id;
+        console.log(`[Stripe Checkout] Existing customer found: ${stripeCustomerId} for ${email}`);
+      } else {
+        const customer = await stripe.customers.create({
+          email: email.toLowerCase().trim(),
+          metadata: {
+            app: "Orbita",
+            uid: uid || ""
+          }
+        });
+        stripeCustomerId = customer.id;
+        console.log(`[Stripe Checkout] Created new Stripe customer: ${stripeCustomerId} for ${email}`);
+      }
+    } catch (customerErr) {
+      console.warn(`[Stripe Checkout] Customer lookup/creation failed:`, customerErr);
     }
 
     // Creating actual live or test checkout session in Stripe
     const stripeLocale = lang === 'pt' ? 'pt-BR' : lang === 'es' ? 'es' : lang === 'de' ? 'de' : lang === 'fr' ? 'fr' : 'en';
-    const session = await stripe.checkout.sessions.create({
+    const priceId = planId === 'annual' ? 'price_1TjkNaLy2FLlsgZ1p832v8cB' : 'price_1TjjUdLy2FLlsgZ1783FoAAX';
+    
+    const checkoutParams: any = {
       payment_method_types: ['card'],
       locale: stripeLocale,
       line_items: [
         {
-          price_data: {
-            currency: currency,
-            product_data: {
-              name: `Portal Órbita - ${planName || planId.toUpperCase()}`,
-              description: planId === 'annual' 
-                ? 'Sincronização Cósmica Premium ilimitada - Assinatura Anual.' 
-                : 'Sincronização Cósmica Premium ilimitada - Assinatura Mensal.',
-            },
-            unit_amount: amountInCents,
-            recurring: {
-              interval: interval,
-            },
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
       mode: 'subscription',
+      subscription_data: {
+        metadata: {
+          planId,
+          email,
+          uid: uid || "",
+        }
+      },
       metadata: {
         planId,
         email,
+        uid: uid || "",
       },
-      customer_email: email,
       success_url: `${origin}?stripe_success=true&session_id={CHECKOUT_SESSION_ID}&plan_id=${planId}&email=${encodeURIComponent(email)}`,
       cancel_url: `${origin}?stripe_cancel=true`,
-    });
+    };
+
+    if (stripeCustomerId) {
+      checkoutParams.customer = stripeCustomerId;
+    } else {
+      checkoutParams.customer_email = email;
+    }
+
+    const session = await stripe.checkout.sessions.create(checkoutParams);
 
     return res.json({
       id: session.id,
@@ -5707,8 +6227,9 @@ app.get("/api/stripe/verify-session", async (req, res) => {
     if (session_id.startsWith("mock_session_")) {
       const email = (req.query.email || "usuario@exemplo.com").toString();
       const planId = (req.query.plan_id || "premium").toString();
+      const mockCustomerId = `mock_cus_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       
-      await activatePremiumForUser(email, planId, session_id);
+      await activatePremiumForUser(email, planId, session_id, undefined, mockCustomerId);
       await logBillingEvent(email, "VERIFIED_SIMULATED_SESSION", planId, { session_id });
 
       return res.json({
@@ -5737,9 +6258,11 @@ app.get("/api/stripe/verify-session", async (req, res) => {
       });
     }
 
-    const email = session.metadata?.email || session.customer_details?.email || session.customer_email;
-    const planId = session.metadata?.planId || "premium";
+    const queryEmail = (req.query.email || "").toString().trim().toLowerCase();
+    const email = (session.metadata?.email || session.customer_details?.email || session.customer_email || queryEmail).toLowerCase().trim();
+    const planId = session.metadata?.planId || (req.query.plan_id || "premium").toString();
     const subscriptionId = typeof session.subscription === 'string' ? session.subscription : "";
+    const stripeCustomerId = typeof session.customer === 'string' ? session.customer : "";
 
     if (email) {
       let subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -5749,7 +6272,7 @@ app.get("/api/stripe/verify-session", async (req, res) => {
           subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
         } catch {}
       }
-      await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate);
+      await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate, stripeCustomerId);
       await logBillingEvent(email, "VERIFIED_REAL_SESSION_BACKUP", planId, { session_id, subscriptionId });
     }
 

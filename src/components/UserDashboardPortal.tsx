@@ -9,7 +9,12 @@ import {
 } from 'lucide-react';
 import SocialCompatibility from './SocialCompatibility';
 import SocialNetworkView from './SocialNetworkView';
-import { generatePersonalizedProsperityMap } from '../prosperityEngine';
+import { 
+  generatePersonalizedProsperityMap, 
+  generatePersonalizedColorsList, 
+  generateDynamicElementInfo, 
+  generateDynamicAmuletText 
+} from '../prosperityEngine';
 import { generateDailyPrediction } from './dailyPredictionsEngine';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
@@ -1310,14 +1315,24 @@ export default function UserDashboardPortal({
   const userFirstName = user?.name ? user.name.split(' ')[0] : travelerFallback;
   const zodiacSign = getZodiacSign(user?.birthDate);
   const lifePathNumber = getLifePathNumber(user?.birthDate);
+  const preciseZodiacSign = mapData?.astros?.find((a: any) => a.name === "Sol")?.sign || zodiacSign;
 
   const personalProsperity = generatePersonalizedProsperityMap(
     user?.hasCreatedMap ? user.birthDate : "1997-02-11",
-    getZodiacSign(user?.birthDate),
+    preciseZodiacSign,
     user?.hasCreatedMap ? user.name : "",
     new Date(),
-    idioma
+    activeLang
   );
+
+  const dynamicColorsList = generatePersonalizedColorsList(
+    user?.birthDate || "1997-02-11",
+    preciseZodiacSign,
+    activeLang
+  );
+
+  const dynamicElementInfo = generateDynamicElementInfo(preciseZodiacSign, activeLang);
+  const dynamicAmuletText = generateDynamicAmuletText(user?.birthDate || "1997-02-11", activeLang);
 
   // Interactive states
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(9);
@@ -1378,12 +1393,6 @@ export default function UserDashboardPortal({
         { id: 'desenvolvimento', label: 'Desenv. Pessoal', icon: Star, color: 'text-yellow-405', bg: 'hover:bg-yellow-500/5' },
         { id: 'energia_casa', label: 'Energia da Casa', icon: Home, color: 'text-indigo-405', bg: 'hover:bg-indigo-505/5' },
         { id: 'sonhos', label: 'Centro de Sonhos', icon: Moon, color: 'text-pink-400', bg: 'hover:bg-pink-500/5' }
-      ]
-    },
-    {
-      group: "Aplicativo Celular",
-      items: [
-        { id: 'baixar_app', label: 'Instalar APK / PWA', icon: Smartphone, color: 'text-rose-450', bg: 'hover:bg-rose-500/5' }
       ]
     }
   ], []);
@@ -2753,7 +2762,7 @@ export default function UserDashboardPortal({
                       <Sparkles className="w-4 h-4 text-purple-400" />
                       {t('Cores Favoráveis para o Mês de')} {personalProsperity.monthName}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Suas vibrações de pigmentos sintonizadas ao Sol de')} {t(zodiacSign)} {t('e à estabilidade do Caminho de Vida')} {lifePathNumber}.</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Suas vibrações de pigmentos sintonizadas ao Sol de')} {t(preciseZodiacSign)} {t('e à estabilidade do Caminho de Vida')} {lifePathNumber}.</p>
                   </div>
                   <span className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 text-[9px] font-mono font-bold text-purple-450 rounded-lg shrink-0">
                     {t('Mensal')}
@@ -2761,14 +2770,7 @@ export default function UserDashboardPortal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1 font-sans text-left">
-                  {[
-                    { title: t('Cor Principal do Mês'), name: t('Azul Cobalto Real'), hex: '#1e3a8a', bgClass: 'bg-[#1e3a8a]', text: t('Ativa sua mente racional de Aquário, eliminando o estresse dos trânsitos.') },
-                    { title: t('Cor de Transcendência'), name: t('Violeta Estelar'), hex: '#6366f1', bgClass: 'bg-[#6366f1]', text: t('Estimula recepções intuitivas nos sonhos e conecta os meridianos da mente.') },
-                    { title: t('Cor para Prosperidade'), name: t('Dourado Solar'), hex: '#eab308', bgClass: 'bg-[#eab308]', text: t('Amplifica o magnetismo material do Caminho de Vida 8. Use na carteira ou contas.') },
-                    { title: t('Cor para Afeto'), name: t('Rosa Quartzo Sutil'), hex: '#f43f5e', bgClass: 'bg-[#f43f5e]', text: t('Suaviza defesas lógicas em prol do acolhimento amoroso sincero.') },
-                    { title: t('Cor para Trabalho'), name: t('Cinza Slate Saturno'), hex: '#334155', bgClass: 'bg-[#334155]', text: t('Fomenta disciplina diária para finalizar pendências e obrigações.') },
-                    { title: t('Cor de Proteção'), name: t('Off-White Pérola'), hex: '#f8fafc', bgClass: 'bg-[#f8fafc]', text: t('Ideal para purificar vibrações densas em conversas ou ambientes pesados.') }
-                  ].map((c, i) => (
+                  {dynamicColorsList.map((c, i) => (
                     <div key={i} className="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-850/70 space-y-3 hover:border-slate-800 transition">
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-xl ${c.bgClass} border border-white/10 shrink-0 shadow-lg`} />
@@ -2809,10 +2811,10 @@ export default function UserDashboardPortal({
                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                     <div className="flex items-center gap-2 text-sky-400">
                       <Activity className="w-4 h-4 shrink-0 animate-pulse" />
-                      <h4 className="text-[11px] font-bold uppercase font-mono tracking-wider text-sky-400">{t('Seu Elemento Ativo: Ar')}</h4>
+                      <h4 className="text-[11px] font-bold uppercase font-mono tracking-wider text-sky-400">{dynamicElementInfo.title}</h4>
                     </div>
                     <p className="text-[10.5px] text-slate-350 leading-relaxed font-sans">
-                      {t('O Ar governa sua matriz de')} <strong>{t('Aquário')}</strong>. {t('Traz velocidade de raciocínio, intuição aberta e facilidade para propor soluções de negócios. Alinhe seu elemento acendendo sândalo logo pela manhã e abrindo as janelas do quarto.')}
+                      {dynamicElementInfo.text}
                     </p>
                   </div>
 
@@ -2835,7 +2837,7 @@ export default function UserDashboardPortal({
                       <h4 className="text-[11px] font-bold uppercase font-mono tracking-wider text-amber-400">{t('Símbolos Ativos')}</h4>
                     </div>
                     <p className="text-[10.5px] text-slate-350 leading-relaxed font-sans">
-                      {t('O')} <strong>{t('Heptagrama Sagrado (Estrela de Sete Pontas)')}</strong> {t('soterra energias de fadiga celular e atua como escudo áurico nas terças-feiras de negócios arriscados.')}
+                      {t('O')} <strong>{t('Heptagrama Sagrado (Estrela de Sete Pontas)')}</strong> {t('soterra energias de fadiga cellular e atua como escudo áurico nas terças-feiras de negócios arriscados.')}
                     </p>
                   </div>
 
@@ -2846,7 +2848,7 @@ export default function UserDashboardPortal({
                       <h4 className="text-[11px] font-bold uppercase font-mono tracking-wider text-purple-400">{t('Amuletos Recomendados')}</h4>
                     </div>
                     <p className="text-[10.5px] text-slate-350 leading-relaxed font-sans">
-                      {t('Use um')} <strong>{t('Escarabeu de Lápis-Lazúli')}</strong> {t('posicionado na bolsa ou carteira de investimentos para guiar suas ações práticas rumo à consolidação do Caminho 8.')}
+                      {dynamicAmuletText}
                     </p>
                   </div>
                 </div>
@@ -2858,7 +2860,7 @@ export default function UserDashboardPortal({
                     <h4 className="text-[10px] font-bold uppercase font-mono text-amber-400 tracking-wider">{t('Recomendação Estelar de Joia de Poder')}</h4>
                   </div>
                   <p className="text-[11px] text-slate-350 leading-relaxed">
-                    {t('Recomendamos o uso de um')} <strong>{t('Colar de Lápis-Lazúli puro em Prata')}</strong> {t('ou um')} <strong>{t('Anel de Pirita ou Sodalita')}</strong> {t('posicionado no dedo indicador para canalizar de forma sólida o magnetismo materializador do seu Caminho de Vida 8.')}
+                    {t('Recomendamos o uso de um')} <strong>{t('Colar de Lápis-Lazúli puro em Prata')}</strong> {t('ou um')} <strong>{t('Anel de Pirita ou Sodalita')}</strong> {t('posicionado no dedo indicador para canalizar de forma sólida o magnetismo materializador do seu Caminho de Vida')} {lifePathNumber}.
                   </p>
                 </div>
               </div>
