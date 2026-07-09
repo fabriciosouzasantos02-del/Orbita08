@@ -6125,23 +6125,36 @@ let firebaseBackendDb: any = null;
 function getBackendDb() {
   if (!firebaseBackendDb) {
     try {
+      let config: any = null;
       const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
       if (fs.existsSync(configPath)) {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (config.apiKey && config.projectId) {
-          if (getApps().length === 0) {
-            firebaseBackendApp = initializeApp(config);
-          } else {
-            firebaseBackendApp = getApp();
-          }
-          const dbId = config.firestoreDatabaseId;
-          if (dbId && dbId !== "(default)") {
-            firebaseBackendDb = getFirestore(firebaseBackendApp, dbId);
-          } else {
-            firebaseBackendDb = getFirestore(firebaseBackendApp);
-          }
-          console.log("[Firebase Backend] Inicializado com sucesso.");
+        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      } else {
+        // Fallback to process.env if config file is not physically bundled/available
+        config = {
+          apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
+          authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN,
+          projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
+          storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID,
+          appId: process.env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID,
+          firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || process.env.FIREBASE_DATABASE_ID || "(default)"
+        };
+      }
+
+      if (config && config.apiKey && config.projectId) {
+        if (getApps().length === 0) {
+          firebaseBackendApp = initializeApp(config);
+        } else {
+          firebaseBackendApp = getApp();
         }
+        const dbId = config.firestoreDatabaseId || config.databaseId;
+        if (dbId && dbId !== "(default)") {
+          firebaseBackendDb = getFirestore(firebaseBackendApp, dbId);
+        } else {
+          firebaseBackendDb = getFirestore(firebaseBackendApp);
+        }
+        console.log("[Firebase Backend] Inicializado com sucesso.");
       }
     } catch (e) {
       console.error("[Firebase Backend] Erro ao inicializar:", e);
