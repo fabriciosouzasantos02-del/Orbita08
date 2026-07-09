@@ -23,7 +23,6 @@ import {
   AstroAspect
 } from './types';
 import CompatibilityView from './components/CompatibilityView';
-import { calculateNatalChart } from './astrology';
 import { performAstroCalculation } from './components/astroMath';
 import { calculateNumerology } from './numerology';
 // Lazy load heavy computational views for faster initial loading
@@ -76,23 +75,27 @@ import {
   saveNatalChartToDatabase,
   loadNatalChartFromDatabase,
   loadAllNatalCharts,
-  saveTransitToDatabase,
-  saveDailyInsightToDatabase,
-  saveWeeklyInsightToDatabase,
   saveMissionToDatabase,
   loadMissionsFromDatabase,
   saveTarotReadingToDatabase,
   saveNumerologyToDatabase,
   saveProsperityMapToDatabase,
-  saveBiorhythmToDatabase,
-  saveLunarNodesToDatabase,
-  saveNotificationToDatabase,
-  saveSubscriptionToDatabase
+  saveBiorhythmToDatabase
 } from './lib/firebase';
 import { generatePersonalizedProsperityMap } from './prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
 import { Language } from './lib/translations';
 import { useIdioma } from './context/IdiomaContext';
+
+export function cleanStringForChartId(val: string): string {
+  if (!val) return "";
+  return val
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "_");
+}
 
 // High-end Elite Celestial Logo Component
 export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
@@ -1128,9 +1131,9 @@ export default function App() {
           let clientNum: any = null;
 
           if (hasProvidedData) {
-            const birthDateClean = birthDateToUse.replace(/[^a-zA-Z0-9]/g, "_");
-            const birthTimeClean = birthTimeToUse.replace(/[^a-zA-Z0-9]/g, "_");
-            const birthCityClean = birthCityToUse.replace(/[^a-zA-Z0-9]/g, "_");
+            const birthDateClean = cleanStringForChartId(birthDateToUse);
+            const birthTimeClean = cleanStringForChartId(birthTimeToUse);
+            const birthCityClean = cleanStringForChartId(birthCityToUse);
             chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
 
             clientMap = mapLocalChartToAstrologyMap(
@@ -1521,9 +1524,9 @@ export default function App() {
       let clientNum: any = null;
 
       if (hasProvidedData) {
-        const birthDateClean = birthDateToUse.replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = birthTimeToUse.replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = birthCityToUse.replace(/[^a-zA-Z0-9]/g, "_");
+        const birthDateClean = cleanStringForChartId(birthDateToUse);
+        const birthTimeClean = cleanStringForChartId(birthTimeToUse);
+        const birthCityClean = cleanStringForChartId(birthCityToUse);
         chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
 
         clientMap = mapLocalChartToAstrologyMap(
@@ -2113,9 +2116,22 @@ export default function App() {
                             updatedCharts.find(c => c.birthDate === user?.birthDate && (c.lang === activeLang || c.mapData?.lang === activeLang)) ||
                             updatedCharts[0];
         if (targetChart && targetChart.mapData) {
-          setMapData(targetChart.mapData);
+          const chartIdToInject = targetChart.id || targetChart.chartId || "";
+          setMapData({
+            ...targetChart.mapData,
+            chartId: chartIdToInject
+          });
           if (targetChart.numerology) {
-            setNumerology(targetChart.numerology);
+            const numObj = targetChart.numerology;
+            setNumerology({
+              ...numObj,
+              caminhoDeVida: numObj.caminhoDeVida ?? numObj.lifePathNumber ?? numObj.lifePath ?? 7,
+              expressao: numObj.expressao ?? numObj.expressionNumber ?? numObj.expression ?? 3,
+              motivacao: numObj.motivacao ?? numObj.soulUrgeNumber ?? numObj.soulUrge ?? 5,
+              personalidade: numObj.personalidade ?? numObj.personalityNumber ?? numObj.personality ?? 7,
+              ciclos: numObj.ciclos ?? numObj.derivedCycles ?? [],
+              chartId: chartIdToInject
+            });
           }
         }
       }
@@ -2125,11 +2141,27 @@ export default function App() {
 
     // 5. Numerology Real-time Sync
     const unsubNumerology = subscribeToNumerology(loggedEmail, (updatedNumerology) => {
+      // If we already have loaded mapData and rich numerology from the primary natalCharts subscription,
+      // we must NOT allow the separate, thin numerology collection to overwrite it and cause flickering or state corruption.
+      if (mapDataRef.current && numerologyRef.current && numerologyRef.current.chartId) {
+        console.log("[SnapSync] Skipping separate thin numerology sync because rich natalChart is already active.");
+        return;
+      }
       if (updatedNumerology && updatedNumerology.length > 0) {
         const activeLang = idioma || lang || 'pt';
         const targetNum = updatedNumerology.find(n => n.lang === activeLang) || updatedNumerology[0];
         if (targetNum) {
-          setNumerology(targetNum);
+          const mappedNum = {
+            ...targetNum,
+            caminhoDeVida: targetNum.caminhoDeVida ?? targetNum.lifePathNumber ?? targetNum.lifePath ?? 7,
+            expressao: targetNum.expressao ?? targetNum.expressionNumber ?? targetNum.expression ?? 3,
+            motivacao: targetNum.motivacao ?? targetNum.soulUrgeNumber ?? targetNum.soulUrge ?? 5,
+            personalidade: targetNum.personalidade ?? targetNum.personalityNumber ?? targetNum.personality ?? 7,
+            ciclos: targetNum.ciclos ?? targetNum.derivedCycles ?? [],
+            chartId: targetNum.chartId ?? user?.currentChartId ?? "",
+            lang: targetNum.lang ?? activeLang
+          };
+          setNumerology(mappedNum);
         }
       }
     }, (error) => {
@@ -2236,6 +2268,18 @@ export default function App() {
 
   const profileLoadedRef = useRef(false);
   const manualAuthActionRef = useRef(false);
+  const lastSavedNumerologyRef = useRef<string>("");
+
+  const mapDataRef = useRef<any>(null);
+  const numerologyRef = useRef<any>(null);
+
+  useEffect(() => {
+    mapDataRef.current = mapData;
+  }, [mapData]);
+
+  useEffect(() => {
+    numerologyRef.current = numerology;
+  }, [numerology]);
 
   // Firebase Auth session observer hook
   useEffect(() => {
@@ -2601,6 +2645,129 @@ export default function App() {
     }
   }, [currentLang]);
 
+  // CENTRALIZED CELESTIAL DATA VALIDATION UTILITY
+  // Verifies if the rendered/cached data in all modules (Dreams, Oracle, Tarot, Numerology, My Map)
+  // matches the user's active map ID saved in Firestore. Forces recalculation if a discrepancy is found.
+  useEffect(() => {
+    if (!user || !user.birthDate) return;
+    if (isLoadingMain || isLoadingExtraMap || isInterpretingDream || isQueryingOracle || isSendingChat || isDrawingTarot) {
+      console.log("[Validation Utility] Validation suspended during active main calculation or background generation.");
+      return;
+    }
+
+    const birthDateClean = cleanStringForChartId(user.birthDate || "1997-02-11");
+    const birthTimeClean = cleanStringForChartId(user.birthTime || "12:00");
+    const birthCityClean = cleanStringForChartId(user.birthCity || "Sao_Paulo");
+    const expectedChartId = user.currentChartId || `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
+    let needsRecalculateMap = false;
+    let needsRecalculateNum = false;
+
+    // 1. Verify Meu Mapa (My Map)
+    if (mapData) {
+      const mapChartId = mapData.chartId;
+      if (!mapChartId || mapChartId !== expectedChartId) {
+        console.log(`[Validation Utility] My Map discrepancy detected (Expected: ${expectedChartId}, got: ${mapChartId}). Forcing recalculation using the official astro engine...`);
+        needsRecalculateMap = true;
+      }
+    }
+
+    // 2. Verify Numerologia (Numerology)
+    if (numerology) {
+      const numChartId = numerology.chartId;
+      if (!numChartId || numChartId !== expectedChartId) {
+        console.log(`[Validation Utility] Numerology discrepancy detected. Forcing recalculation using the official numerology engine...`);
+        needsRecalculateNum = true;
+      }
+    }
+
+    if (needsRecalculateMap || needsRecalculateNum) {
+      console.log(`[Validation Utility] Recalculating out-of-sync modules: ${needsRecalculateMap ? "Map " : ""}${needsRecalculateNum ? "Numerology" : ""}`);
+      triggerGenerateMainMap({
+        name: user.name,
+        birthDate: user.birthDate,
+        birthTime: user.birthTime,
+        birthCity: user.birthCity,
+        isUnknownTime: user.isUnknownTime,
+        latitude: user.latitude,
+        longitude: user.longitude,
+        currentChartId: expectedChartId
+      }, currentLang).then(() => {
+        // Enforce the current chart ID on the updated states to lock alignment
+        setMapData(prev => prev ? { ...prev, chartId: expectedChartId } : null);
+        setNumerology(prev => prev ? { ...prev, chartId: expectedChartId } : null);
+      });
+    }
+
+    // 3. Verify Tarot draw session discrepancy
+    const tarotSavedChartId = localStorage.getItem("tarot_saved_chart_id_semanal");
+    if (tarotSavedChartId && tarotSavedChartId !== expectedChartId) {
+      console.log(`[Validation Utility] Tarot discrepancy detected. Clearing outdated Tarot readings to force recalculation.`);
+      localStorage.removeItem("tarot_last_draw_semanal");
+      localStorage.removeItem("tarot_saved_reading_semanal");
+      localStorage.removeItem("tarot_saved_guidance_semanal");
+      localStorage.removeItem("tarot_saved_cards_semanal");
+      localStorage.removeItem("tarot_saved_map_semanal");
+      localStorage.removeItem("tarot_saved_indices_semanal");
+      localStorage.removeItem("tarot_saved_chart_id_semanal");
+    }
+
+    // 4. Verify Oráculo dos Sonhos (Dreams History)
+    if (dreamsHistory && dreamsHistory.length > 0) {
+      const mostRecentDream = dreamsHistory[0];
+      if (mostRecentDream.chartId && mostRecentDream.chartId !== expectedChartId && !isInterpretingDream) {
+        console.log(`[Validation Utility] Dreams discrepancy detected for map ${expectedChartId}. Re-interpreting most recent dream in the background using the official AI engine...`);
+        
+        const reinterpretMostRecentDream = async () => {
+          setIsInterpretingDream(true);
+          try {
+            const res = await fetch("/api/dreams/interpret", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                description: mostRecentDream.description,
+                lang: currentLang,
+                mapData: mapData
+              })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.interpretation) {
+                setDreamsHistory(prev => {
+                  const updated = [...prev];
+                  updated[0] = {
+                    ...mostRecentDream,
+                    interpretation: data.interpretation,
+                    title: data.interpretation.title || mostRecentDream.title,
+                    chartId: expectedChartId
+                  };
+                  return updated;
+                });
+                pushRealNotification("Seu sonho mais recente foi recalculado e sintonizado com o seu novo Mapa Astral! 🌀");
+              }
+            }
+          } catch (err) {
+            console.error("[Validation Utility] Failed to reinterpret dream:", err);
+          } finally {
+            setIsInterpretingDream(false);
+          }
+        };
+        reinterpretMostRecentDream();
+      }
+    }
+  }, [
+    user?.birthDate, 
+    user?.birthTime, 
+    user?.birthCity, 
+    user?.currentChartId, 
+    mapData?.chartId, 
+    numerology?.chartId, 
+    dreamsHistory?.length, 
+    dreamsHistory?.[0]?.chartId, 
+    isLoadingMain, 
+    currentLang
+  ]);
+
   const [weeklyMissions, setWeeklyMissions] = useState<DailyMission[]>(() => {
     const isEn = currentLang === 'en';
     const isEs = currentLang === 'es';
@@ -2932,9 +3099,9 @@ export default function App() {
       if (hasLocalMapParams && isCloudEmpty) {
         console.log("[Migration Engine] Cloud is empty or missing map. Initiating guest-to-cloud automatic migration!");
         
-        const birthDateClean = localProfile.birthDate.replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = (localProfile.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = (localProfile.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthDateClean = cleanStringForChartId(localProfile.birthDate);
+        const birthTimeClean = cleanStringForChartId(localProfile.birthTime || "12:00");
+        const birthCityClean = cleanStringForChartId(localProfile.birthCity || "Sao_Paulo");
         const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
         
         const activeLang = (i18n.language || 'pt').toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr';
@@ -3039,9 +3206,9 @@ export default function App() {
 
     setIsLoadingMain(true);
     try {
-      const birthDateClean = (user.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
-      const birthTimeClean = (user.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-      const birthCityClean = (user.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+      const birthDateClean = cleanStringForChartId(user.birthDate || "1997-02-11");
+      const birthTimeClean = cleanStringForChartId(user.birthTime || "12:00");
+      const birthCityClean = cleanStringForChartId(user.birthCity || "Sao_Paulo");
       const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
 
       await saveNatalChartToDatabase(loggedEmail, chartId, {
@@ -3107,8 +3274,13 @@ export default function App() {
     );
 
     // Set high-precision map values instantly
-    setMapData(clientMap);
-    setNumerology(clientNum);
+    const birthDateCleanInst = cleanStringForChartId(defaultBirthDate);
+    const birthTimeCleanInst = cleanStringForChartId(defaultBirthTime);
+    const birthCityCleanInst = cleanStringForChartId(defaultBirthCity);
+    const expectedChartIdInst = details.currentChartId || user.currentChartId || `chart_${birthDateCleanInst}_${birthTimeCleanInst}_${birthCityCleanInst}`;
+
+    setMapData({ ...clientMap, chartId: expectedChartIdInst });
+    setNumerology({ ...clientNum, chartId: expectedChartIdInst });
     setIsLoadingMain(false);
 
     try {
@@ -3117,9 +3289,9 @@ export default function App() {
       let cachedMatch: any = null;
       if (email) {
         // High-Precision subcollection lookup via candidate IDs (robust and typo-tolerant)
-        const birthDateClean = (details.birthDate || user.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = (details.birthTime || user.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = (details.birthCity || user.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthDateClean = cleanStringForChartId(details.birthDate || user.birthDate || "1997-02-11");
+        const birthTimeClean = cleanStringForChartId(details.birthTime || user.birthTime || "12:00");
+        const birthCityClean = cleanStringForChartId(details.birthCity || user.birthCity || "Sao_Paulo");
         const dynamicChartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
         const typoChartId = `chart_${birthDateClean}_birthTimeClean_birthCityClean`;
 
@@ -3170,8 +3342,8 @@ export default function App() {
 
         if (dbChart && dbChart.mapData && dbChart.numerology && chartLang === activeLang) {
           console.log("[Astro DB] Natal chart successfully restored from Firestore Cloud!");
-          setMapData(dbChart.mapData);
-          setNumerology(dbChart.numerology);
+          setMapData({ ...dbChart.mapData, chartId: activeChartId });
+          setNumerology({ ...dbChart.numerology, chartId: activeChartId });
           pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu Mapa Principal carregado da Nuvem Astrológica! 🪐`);
           return;
         }
@@ -3192,8 +3364,8 @@ export default function App() {
               cachedMatch = cached;
               if (p.lang === activeLang) {
                 console.log("[Intelligent Cache] Natal chart loaded from Firestore cache.");
-                setMapData(cached.map);
-                setNumerology(cached.numerology);
+                setMapData({ ...cached.map, chartId: activeChartId });
+                setNumerology({ ...cached.numerology, chartId: activeChartId });
                 pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu novo Mapa Astral diretamente do Cache Celestial Inteligente! 🪐`);
                 return;
               }
@@ -3236,18 +3408,23 @@ export default function App() {
         data = { map: clientMap, numerology: clientNum };
       }
 
+      const birthDateCleanFinal = cleanStringForChartId(details.birthDate || "1997-02-11");
+      const birthTimeCleanFinal = cleanStringForChartId(details.birthTime || "12:00");
+      const birthCityCleanFinal = cleanStringForChartId(details.birthCity || "Sao_Paulo");
+      const chartIdFinal = details.currentChartId || user.currentChartId || `chart_${birthDateCleanFinal}_${birthTimeCleanFinal}_${birthCityCleanFinal}`;
+
       if (data && data.map) {
-        setMapData(data.map);
+        setMapData({ ...data.map, chartId: chartIdFinal });
       }
       if (data && data.numerology) {
-        setNumerology(data.numerology);
+        setNumerology({ ...data.numerology, chartId: chartIdFinal });
       }
 
       if (email && data && data.map && data.numerology) {
         const activeLang = forcedLang || idioma || lang || 'pt';
-        const birthDateClean = (details.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = (details.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = (details.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthDateClean = cleanStringForChartId(details.birthDate || "1997-02-11");
+        const birthTimeClean = cleanStringForChartId(details.birthTime || "12:00");
+        const birthCityClean = cleanStringForChartId(details.birthCity || "Sao_Paulo");
         const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
 
         if (data.map) {
@@ -3607,7 +3784,8 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description: newDreamDesc,
-          lang: currentLang
+          lang: currentLang,
+          mapData
         })
       });
       const data = await response.json();
@@ -3617,8 +3795,14 @@ export default function App() {
       const currentFormattedDate = now.toISOString().split('T')[0];
       const dreamTitle = data.interpretation?.title || newDreamDesc.slice(0, 30) + "...";
       
+      const birthDateClean = cleanStringForChartId(user?.birthDate || "1997-02-11");
+      const birthTimeClean = cleanStringForChartId(user?.birthTime || "12:00");
+      const birthCityClean = cleanStringForChartId(user?.birthCity || "Sao_Paulo");
+      const expectedChartId = user?.currentChartId || `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
       const newEntry: OracleDreamEntry = {
         id: nextId,
+        chartId: expectedChartId,
         date: currentFormattedDate,
         time: currentFormattedTime,
         title: dreamTitle,
@@ -3714,7 +3898,7 @@ export default function App() {
       const response = await fetch("/api/oraculo/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: oracleQuestion, lang: currentLang })
+        body: JSON.stringify({ question: oracleQuestion, lang: currentLang, mapData })
       });
       const data = await response.json();
       setOracleResponse(data);
@@ -3965,17 +4149,33 @@ export default function App() {
     if (numerology && user.hasCreatedMap) {
       const email = user.email || loggedEmail;
       if (isLoggedIn && email) {
+        // Build a unique signature of the current values to avoid redundant database writes and infinite update loops
+        const currentSig = `${numerology.caminhoDeVida}_${numerology.expressao}_${numerology.motivacao}_${numerology.personalidade}_${numerology.chartId || ''}`;
+        if (lastSavedNumerologyRef.current === currentSig) {
+          return;
+        }
+
+        lastSavedNumerologyRef.current = currentSig;
         const numId = "current_matrix";
         saveNumerologyToDatabase(email, numId, {
           lifePathNumber: numerology.caminhoDeVida,
           expressionNumber: numerology.expressao,
           soulUrgeNumber: numerology.motivacao,
           personalityNumber: numerology.personalidade,
-          derivedCycles: numerology.ciclos || []
+          derivedCycles: numerology.ciclos || [],
+          // Keep both PT and EN schema keys so that listeners don't break
+          caminhoDeVida: numerology.caminhoDeVida,
+          expressao: numerology.expressao,
+          motivacao: numerology.motivacao,
+          personalidade: numerology.personalidade,
+          ciclos: numerology.ciclos || [],
+          description: numerology.description || "",
+          chartId: numerology.chartId || "",
+          lang: currentLang
         }).catch(console.warn);
       }
     }
-  }, [numerology, user?.hasCreatedMap, isLoggedIn, loggedEmail]);
+  }, [numerology, user?.hasCreatedMap, isLoggedIn, loggedEmail, currentLang]);
 
   return (
     <div id="star-map-application" className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-amber-500/20 antialiased relative">
@@ -7154,9 +7354,11 @@ export default function App() {
                       userName={user.name}
                       birthDate={user.birthDate}
                       birthTime={user.birthTime}
+                      birthCity={user.birthCity}
                       latitude={user.latitude}
                       longitude={user.longitude}
                       lang={currentLang}
+                      currentChartId={user.currentChartId}
                     />
                   </div>
                 </div>

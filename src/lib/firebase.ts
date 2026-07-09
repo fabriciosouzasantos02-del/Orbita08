@@ -835,7 +835,10 @@ export function subscribeToNatalCharts(email: string, onUpdate: (charts: any[]) 
   return onSnapshot(collectionRef, (snapshot) => {
     const results: any[] = [];
     snapshot.forEach((snap) => {
-      results.push(snap.data());
+      results.push({
+        id: snap.id,
+        ...snap.data()
+      });
     });
     onUpdate(results);
   }, (error) => {

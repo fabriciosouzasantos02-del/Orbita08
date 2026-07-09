@@ -3,7 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
-import { performAstroCalculation, calculateAstronomicalBiorhythms } from './src/components/astroMath';
+import { performAstroCalculation } from './src/components/astroMath';
 import { computeDetailedCompatibility } from './src/components/compatibilityEngine';
 import moment from 'moment-timezone';
 import { find as findTz } from 'geo-tz';
@@ -77,7 +77,17 @@ function getStripeClient(): Stripe | null {
   return stripeInstance;
 }
 
-const app = express();
+export function cleanStringForChartId(val: string): string {
+  if (!val) return "";
+  return val
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "_");
+}
+
+export const app = express();
 const PORT = 3000;
 
 app.use(express.json({ 
@@ -1341,9 +1351,9 @@ app.post("/api/astrology/generate", async (req, res) => {
       if (db) {
         try {
           const mailKey = email.toLowerCase().trim();
-          const birthDateClean = safeBirthDate.replace(/[^a-zA-Z0-9]/g, "_");
-          const birthTimeClean = safeBirthTime.replace(/[^a-zA-Z0-9]/g, "_");
-          const birthCityClean = safeBirthCity.replace(/[^a-zA-Z0-9]/g, "_");
+          const birthDateClean = cleanStringForChartId(safeBirthDate);
+          const birthTimeClean = cleanStringForChartId(safeBirthTime);
+          const birthCityClean = cleanStringForChartId(safeBirthCity);
           const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
           
           const usersRef = collection(db, "users");
@@ -1547,12 +1557,52 @@ Responda APENAS com o JSON literal. Não inclua blocos de código adicionais for
 
 // API: Dream Interpretation using Gemini (New Oráculo dos Sonhos)
 app.post("/api/dreams/interpret", async (req, res) => {
-  const { title, description, lang } = req.body;
+  const { title, description, lang, mapData, userProfile } = req.body;
   if (!description) {
     return res.status(400).json({ error: (req as any).t('api.dreams.content_required') });
   }
 
   const activeLang = (lang || "pt").toLowerCase();
+
+  let userSunSign = "";
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+    
+    chartContext = `
+Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
+- Sol em: ${userSunSign}
+- Lua em: ${userMoonSign}
+- Ascendente em: ${userAscSign}
+- Distribuição de Elementos: ${elementsSummary}
+`;
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
+  } else if (userProfile?.birthDate) {
+    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
+    userSunSign = zodiac;
+    chartContext = `
+Informações Astrológicas do Usuário:
+- Signo Solar estimado: ${userSunSign}
+`;
+  }
   const langNames: Record<string, string> = {
     pt: "Português",
     en: "English (Inglês)",
@@ -1772,7 +1822,7 @@ app.post("/api/dreams/interpret", async (req, res) => {
 
   const fallbackInterpretation = fallbackInterpretationMap[activeLang] || fallbackInterpretationMap["pt"];
 
-  const cacheKey = `oraculo_dreams:${description}:${activeLang}`;
+  const cacheKey = `oraculo_dreams:${description}:${activeLang}:${userSunSign}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -1786,7 +1836,9 @@ app.post("/api/dreams/interpret", async (req, res) => {
 
   try {
     const prompt = `Você é o Oráculo dos Sonhos (Oráculo Celestial), assistente espiritual e terapeuta de sonhos profissional.
-Analise a descrição deste sonho e gere uma interpretação mágica, profunda, rica e detalhada escrita 100% no idioma ${targetLangName}.
+Analise a descrição deste sonho e gere uma interpretação mágica, profunda, rica e detalhada baseando-se e correlacionando-a com as energias astrológicas do mapa natal do usuário abaixo, estabelecendo o mapa astral como a única fonte oficial de verdade para todas as leituras personalizadas do usuário.
+
+${chartContext}
 
 Descrição do Sonho: "${description}"
 
@@ -1976,12 +2028,53 @@ Return ONLY the raw literal JSON without any markdown code blocks or secondary t
 
 // API: Daily Oracle limit checking + prompt calculation
 app.post("/api/oraculo/query", async (req, res) => {
-  const { question, lang } = req.body;
+  const { question, lang, mapData, userProfile } = req.body;
   if (!question) {
     return res.status(400).json({ error: (req as any).t('api.oraculo.question_required') });
   }
 
   const activeLang = (lang || "pt").toLowerCase();
+
+  let userSunSign = "";
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+    
+    chartContext = `
+Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
+- Sol em: ${userSunSign}
+- Lua em: ${userMoonSign}
+- Ascendente em: ${userAscSign}
+- Distribuição de Elementos: ${elementsSummary}
+`;
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
+  } else if (userProfile?.birthDate) {
+    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
+    userSunSign = zodiac;
+    chartContext = `
+Informações Astrológicas do Usuário:
+- Signo Solar estimado: ${userSunSign}
+`;
+  }
+
   const fallbackOracleMap: Record<string, any> = {
     pt: {
       reflection: "Todo ciclo que se fecha é na verdade a preparação de um solo novo. Pare e observe o que realmente está demandando sua energia.",
@@ -2020,7 +2113,7 @@ app.post("/api/oraculo/query", async (req, res) => {
   };
   const targetLangName = langNames[activeLang] || "Português";
 
-  const cacheKey = `oraculo:${question}:${activeLang}`;
+  const cacheKey = `oraculo:${question}:${activeLang}:${userSunSign}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -2034,7 +2127,8 @@ app.post("/api/oraculo/query", async (req, res) => {
 
   try {
     const prompt = `O usuário fez uma pergunta ao Oráculo do Dia: "${question}".
-Considere que as energias astrológicas regentes estimulam idealismo, independência e crescimento pessoal metódico.
+${chartContext}
+Considere as energias astrológicas regentes do mapa natal do usuário descritas acima para personalizar de forma íntima, profunda e única a resposta do Oráculo do Dia.
 Responda com um conselho meditativo e reflexivo escrito 100% em ${targetLangName} no seguinte formato JSON estrito:
 {
   "reflection": "Um parágrafo de profunda reflexão metafísica relacionada à pergunta escrito em ${targetLangName}...",
@@ -2152,8 +2246,7 @@ Guidelines:
     let synthesis = "";
     try {
       if (aiClient) {
-        const response = await aiClient.models.generateContent({
-          model: CHAT_MODEL,
+        const response = await generateContentWithFallback({
           contents: prompt,
           config: {
             systemInstruction: "You are an expert in biodynamic feedback, professional astrology, and Pythagorean numerology. Your task is to provide a single-paragraph unified cosmic report synthesizing the user's biorhythms, life path number, and current planetary transits. Keep it short (max 120 words), inspiring, fluid, and translated beautifully to the target language.",
@@ -2174,392 +2267,6 @@ Guidelines:
     return res.json(result);
   } catch (err) {
     console.error("Vibrational synthesis error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Helper functions for Pythagorean Numerology inside Express
-function getLifePathNumber(dateStr: string): number {
-  if (!dateStr) return 8;
-  const digits = dateStr.replace(/[^0-9]/g, '');
-  let sum = 0;
-  for (const char of digits) {
-    sum += parseInt(char, 10);
-  }
-  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
-    let temp = 0;
-    for (const char of String(sum)) {
-      temp += parseInt(char, 10);
-    }
-    sum = temp;
-  }
-  return sum;
-}
-
-function getPersonalYear(birthDateStr: string, targetDateStr: string): number {
-  if (!birthDateStr || !targetDateStr) return 8;
-  const birthParts = birthDateStr.split('-');
-  if (birthParts.length < 2) return 8;
-  const day = parseInt(birthParts[2], 10) || 1;
-  const month = parseInt(birthParts[1], 10) || 1;
-  const targetYear = parseInt(targetDateStr.split('-')[0], 10) || 2026;
-  
-  let sum = day + month + targetYear;
-  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
-    let temp = 0;
-    for (const char of String(sum)) {
-      temp += parseInt(char, 10);
-    }
-    sum = temp;
-  }
-  return sum;
-}
-
-function getPersonalDay(personalYear: number, targetDateStr: string): number {
-  if (!targetDateStr) return 1;
-  const parts = targetDateStr.split('-');
-  if (parts.length < 3) return 1;
-  const month = parseInt(parts[1], 10) || 1;
-  const day = parseInt(parts[2], 10) || 1;
-  
-  let sum = personalYear + month + day;
-  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
-    let temp = 0;
-    for (const char of String(sum)) {
-      temp += parseInt(char, 10);
-    }
-    sum = temp;
-  }
-  return sum;
-}
-
-// API: Personalized Daily Radar & Opportunities Radar (Highly calculated, Gemini-powered, localized)
-app.post("/api/astrology/personalized-radar", async (req, res) => {
-  try {
-    const { name, birthDate, birthTime, latitude, longitude, timezone, email, uid, lang, date, mapData } = req.body || {};
-    const activeLang = (lang || 'pt').toLowerCase().split('-')[0];
-    const targetDateStr = date || new Date().toISOString().split('T')[0];
-    
-    const userName = name || "Buscador";
-    const firstName = userName.split(' ')[0];
-    
-    const bDate = birthDate || "1997-02-11";
-    const bTime = birthTime || "12:00";
-    const bTimezone = timezone !== undefined ? timezone : -3;
-    const bLat = latitude !== undefined ? latitude : -23.55;
-    const bLon = longitude !== undefined ? longitude : -46.63;
-    const userUid = uid || email || "unknown_user";
-    
-    // Calculate Biorhythms
-    const biorhythm = calculateAstronomicalBiorhythms(bDate, bTime, targetDateStr);
-    
-    // Calculate Numerology
-    const cv = getLifePathNumber(bDate);
-    const personalYear = getPersonalYear(bDate, targetDateStr);
-    const personalDay = getPersonalDay(personalYear, targetDateStr);
-    
-    // Calculate Placements
-    let natalPlacements = mapData;
-    if (!natalPlacements) {
-      try {
-        natalPlacements = performAstroCalculation(bDate, bTime, bLat, bLon, bTimezone, activeLang);
-      } catch (e) {
-        console.warn("Placements calculation failed in personalized-radar:", e);
-      }
-    }
-    
-    let transitPlacements = null;
-    try {
-      transitPlacements = performAstroCalculation(targetDateStr, "12:00", bLat, bLon, bTimezone, activeLang);
-    } catch (e) {
-      console.warn("Transit calculation failed in personalized-radar:", e);
-    }
-    
-    const cacheKey = `personalized_radar:${userUid}:${targetDateStr}:${activeLang}`;
-    const cached = getCachedResponse(cacheKey);
-    if (cached) {
-      return res.json(cached);
-    }
-    
-    // Prepare precise details for Prompt to ensure true astronomical personalization
-    const natalSun = natalPlacements?.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun" || a.name === "Sol ")?.sign || "Aquário";
-    const natalMoon = natalPlacements?.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign || "Áries";
-    const natalAsc = natalPlacements?.ascendant || "Sagitário";
-    
-    const transitSun = transitPlacements?.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign || "Câncer";
-    const transitMoon = transitPlacements?.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign || "Touro";
-    
-    const bioPhysical = Math.round((biorhythm.physical + 1) * 50); // Scale from 0 to 100
-    const bioEmotional = Math.round((biorhythm.emotional + 1) * 50);
-    const bioIntellectual = Math.round((biorhythm.intellectual + 1) * 50);
-    const bioSpiritual = Math.round((biorhythm.spiritual + 1) * 50);
-    const bioIntuitive = Math.round((biorhythm.intuitive + 1) * 50);
-    
-    // -------------------------------------------------------------------------
-    // FALLBACKS DICTIONARY (Fully localized for Pt, En, Es, De, Fr)
-    // -------------------------------------------------------------------------
-    const fallbacksDict: Record<string, any> = {
-      pt: {
-        radar_dia: {
-          frequency: `Sinfonia Estelar do Dia (Regência Solar em ${transitSun})`,
-          metrics: {
-            vital_energy: { val: bioPhysical, desc: `Sua vitalidade física celular influenciada por Sol em ${transitSun} e biorritmo físico em ${bioPhysical}%.` },
-            productivity: { val: bioIntellectual, desc: `Foco analítico ativado sob o Caminho de Vida ${cv} com seu biorritmo intelectual em ${bioIntellectual}%.` },
-            relationships: { val: bioEmotional, desc: `Expressividade áurica emocional e diplomacia pessoal em ${bioEmotional}% de receptividade.` },
-            organization: { val: Math.round((bioPhysical + bioIntellectual) / 2), desc: `Estruturação prática focada ancorando o Dia Pessoal ${personalDay}.` },
-            well_being: { val: bioSpiritual, desc: `Centramento meditativo interno em ${bioSpiritual}% sob a atual Lua em ${transitMoon}.` }
-          },
-          events: [
-            { date: "Hoje", title: `Sol transitando em ${transitSun}`, desc: `Aquece sua casa astrológica de propósito e emana vitalidade direta.`, highlight: true },
-            { date: "Hoje", title: `Lua ativa em ${transitMoon}`, desc: `Favorece o centramento intuitivo e a segurança emocional.`, highlight: false },
-            { date: "Hoje", title: `Ressonância Numerológica ${personalDay}`, desc: `Dia regido pela energia da vibração ${personalDay}, excelente para focar em autoconhecimento.`, highlight: false }
-          ],
-          reading: {
-            panorama: `O panorama energético de hoje para ${firstName} estimula a conexão interior. Com Sol em ${transitSun} iluminando seu mapa e a Lua em ${transitMoon}, há um alinhamento harmonioso para integrar seus pensamentos com suas ações.`,
-            cosmic_influences: `A regência atual de Sol em ${transitSun} interage intensamente com seu Ascendente em ${natalAsc}, abrindo canais de clareza mental e renovação pessoal.`,
-            strengths: `Excelente capacidade de análise intelectual, facilidade para planejar a longo prazo e ótima receptividade em discussões práticas.`,
-            cautions: `Cuidado com o esgotamento físico no meio da tarde; seu biorritmo físico pede pausas curtas de alongamento.`,
-            best_period: "10:30 - 12:45",
-            caution_period: "15:00 - 16:30",
-            emotional_energy: "Estável, com forte propensão à introspecção produtiva.",
-            mental_energy: "Altamente ativa, excelente para resolver quebra-cabeças lógicos ou organizar metas.",
-            professional_energy: "Fluida, favorecendo a finalização de tarefas acumuladas.",
-            financial_energy: "Foco prático, momento excelente para revisar orçamentos.",
-            affective_energy: "Receptiva, buscando diálogos honestos e sem máscaras.",
-            energy_level: Math.round((bioPhysical + bioEmotional + bioIntellectual) / 3),
-            recommendations: "Dedique 5 minutos a respirar de forma cadenciada, buscando centralizar seu prana solar.",
-            best_action: "Colocar ideias complexas no papel e planejar sua semana.",
-            avoid_action: "Discussões impulsivas sobre assuntos mal resolvidos do passado."
-          }
-        },
-        radar_oportunidades: {
-          areas: {
-            dinheiro: { val: Math.round(50 + (bioPhysical % 45)), text: "Oportunidades práticas em alta.", conselho: `O Dia Pessoal ${personalDay} ressoa com clareza financeira. Evite compras impulsivas sob a Lua em ${transitMoon}.` },
-            amor: { val: Math.round(50 + (bioEmotional % 45)), text: "Magnetismo natural e acolhimento.", conselho: `Excelente dia para conversas calmas e partilha de sentimentos sinceros.` },
-            estudos: { val: Math.round(50 + (bioIntellectual % 45)), text: "Retenção intelectual expandida.", conselho: "Dedique-se a leituras complexas; sua mente absorve padrões abstratos facilmente hoje." },
-            trabalho: { val: Math.round(50 + ((bioPhysical + bioIntellectual) % 45)), text: "Conclusão de pendências administrativas.", conselho: `A vibração do Caminho de Vida ${cv} te dá consistência para fechar tarefas antigas.` },
-            criatividade: { val: Math.round(50 + (bioIntuitive % 45)), text: "Insights originais abundantes.", conselho: "Não filtre suas ideias à primeira vista; anote os lampejos criativos que surgirem." },
-            networking: { val: Math.round(50 + (bioEmotional % 40)), text: "Facilidade de engajamento social.", conselho: "Compartilhe seus ideais em pequenos grupos; seu entusiasmo é contagiante hoje." },
-            espiritualidade: { val: Math.round(50 + (bioSpiritual % 45)), text: "Conexão sutil facilitada.", conselho: "Medite ao anoitecer. Sintonize-se com a frequência de quietude e agradeça." }
-          },
-          reading: {
-            overview: `As oportunidades hoje estão concentradas na consolidação de estruturas práticas e de estudos. O alinhamento celeste ativa sua curiosidade.`,
-            strongest_opportunities: `As áreas de estudos e trabalho intelectual estão extremamente favorecidas pelas conjunções celestes atuais.`,
-            high_potential_areas: `Sua capacidade de focar em detalhes técnicos e estruturar metas de desenvolvimento pessoal está no pico anual.`,
-            risks: "Sobrecarga mental ao tentar gerenciar múltiplos problemas não relacionados simultaneamente.",
-            favorable_decisions: "Iniciar um novo curso livre, reorganizar sua área de trabalho física e alinhar finanças pessoais.",
-            ideal_moment_to_act: "Durante as primeiras horas da manhã, quando seu biorritmo intelectual está em sincronia total.",
-            attention_needed: "Pessoas que tentam apressar suas decisões ou demandam respostas reativas imediatas.",
-            work_trends: "Aumento de foco em tarefas estruturantes e relatórios detalhados.",
-            money_trends: "Momento propício para investimentos seguros de longo prazo e planejamento orçamentário.",
-            study_trends: "Facilidade excepcional para compreender sistemas complexos, astrologia e ciências.",
-            relationship_trends: "Conexões calmas e baseadas em amizade mútua, sem cobranças excessivas.",
-            spiritual_trends: "Intuição aguçada e percepção de sinais ocultos do cotidiano.",
-            personal_development_trends: "Ótima receptividade para práticas de mindfulness, ioga e reprogramação celular.",
-            potentialization_ritual: `Acenda uma vela azul ou segure um cristal de Quartzo Azul perto do peito por 3 minutos enquanto mentaliza clareza e direção prática.`
-          }
-        }
-      },
-      en: {
-        radar_dia: {
-          frequency: `Celestial Symphony of the Day (Solar Regency in ${transitSun})`,
-          metrics: {
-            vital_energy: { val: bioPhysical, desc: `Your cellular physical vitality influenced by Sun in ${transitSun} and physical biorhythm at ${bioPhysical}%.` },
-            productivity: { val: bioIntellectual, desc: `Analytical focus activated under Life Path ${cv} with your intellectual biorhythm at ${bioIntellectual}%.` },
-            relationships: { val: bioEmotional, desc: `Auric emotional expressiveness and personal diplomacy at ${bioEmotional}% receptivity.` },
-            organization: { val: Math.round((bioPhysical + bioIntellectual) / 2), desc: `Focused practical structuring anchoring Personal Day ${personalDay}.` },
-            well_being: { val: bioSpiritual, desc: `Inner meditative centering at ${bioSpiritual}% under the current Moon in ${transitMoon}.` }
-          },
-          events: [
-            { date: "Today", title: `Sun transiting in ${transitSun}`, desc: `Warms your astrological house of purpose and emanates direct vitality.`, highlight: true },
-            { date: "Today", title: `Active Moon in ${transitMoon}`, desc: `Favors intuitive centering and emotional security.`, highlight: false },
-            { date: "Today", title: `Numerological Resonance ${personalDay}`, desc: `Day ruled by the energy of vibration ${personalDay}, excellent for focusing on self-knowledge.`, highlight: false }
-          ],
-          reading: {
-            panorama: `Today's energetic panorama for ${firstName} stimulates inner connection. With Sun in ${transitSun} illuminating your chart and Moon in ${transitMoon}, there is a harmonious alignment to integrate your thoughts with your actions.`,
-            cosmic_influences: `The current regency of Sun in ${transitSun} interacts intensely with your Ascendant in ${natalAsc}, opening channels of mental clarity and personal renewal.`,
-            strengths: `Excellent intellectual analysis capacity, ease of long-term planning, and great receptivity in practical discussions.`,
-            cautions: `Watch out for physical exhaustion in the mid-afternoon; your physical biorhythm asks for short stretching breaks.`,
-            best_period: "10:30 AM - 12:45 PM",
-            caution_period: "03:00 PM - 04:30 PM",
-            emotional_energy: "Stable, with a strong propensity for productive introspection.",
-            mental_energy: "Highly active, excellent for solving logical puzzles or organizing goals.",
-            professional_energy: "Fluid, favoring the completion of accumulated tasks.",
-            financial_energy: "Practical focus, excellent time to review budgets.",
-            affective_energy: "Receptive, seeking honest dialogues without masks.",
-            energy_level: Math.round((bioPhysical + bioEmotional + bioIntellectual) / 3),
-            recommendations: "Dedicate 5 minutes to rhythmic breathing, aiming to center your solar prana.",
-            best_action: "Put complex ideas on paper and plan your week.",
-            avoid_action: "Impulsive discussions about unresolved issues from the past."
-          }
-        },
-        radar_oportunidades: {
-          areas: {
-            dinheiro: { val: Math.round(50 + (bioPhysical % 45)), text: "Practical opportunities on the rise.", conselho: `Personal Day ${personalDay} resonates with financial clarity. Avoid impulsive purchases under the Moon in ${transitMoon}.` },
-            amor: { val: Math.round(50 + (bioEmotional % 45)), text: "Natural magnetism and warmth.", conselho: "Excellent day for calm conversations and sharing sincere feelings." },
-            estudos: { val: Math.round(50 + (bioIntellectual % 45)), text: "Expanded intellectual retention.", conselho: "Dedicate yourself to complex readings; your mind easily absorbs abstract patterns today." },
-            trabalho: { val: Math.round(50 + ((bioPhysical + bioIntellectual) % 45)), text: "Completion of administrative backlogs.", conselho: `The vibration of Life Path ${cv} gives you consistency to close old tasks.` },
-            criatividade: { val: Math.round(50 + (bioIntuitive % 45)), text: "Abundant original insights.", conselho: "Do not filter your ideas at first glance; note down any creative flashes that arise." },
-            networking: { val: Math.round(50 + (bioEmotional % 40)), text: "Ease of social engagement.", conselho: "Share your ideals in small groups; your enthusiasm is contagious today." },
-            espiritualidade: { val: Math.round(50 + (bioSpiritual % 45)), text: "Subtle connection facilitated.", conselho: "Meditate at dusk. Tune in to the frequency of stillness and be grateful." }
-          },
-          reading: {
-            overview: "Today's opportunities are concentrated on the consolidation of practical structures and studies. The celestial alignment activates your curiosity.",
-            strongest_opportunities: "The areas of study and intellectual work are extremely favored by current celestial conjunctions.",
-            high_potential_areas: "Your ability to focus on technical details and structure personal development goals is at its annual peak.",
-            risks: "Mental overload when trying to manage multiple unrelated problems simultaneously.",
-            favorable_decisions: "Start a new free course, reorganize your physical workspace, and align personal finances.",
-            ideal_moment_to_act: "During the early hours of the morning, when your intellectual biorhythm is in total sync.",
-            attention_needed: "People who try to rush your decisions or demand immediate reactive responses.",
-            work_trends: "Increased focus on structuring tasks and detailed reports.",
-            money_trends: "Propitious moment for secure long-term investments and budget planning.",
-            study_trends: "Exceptional ease in understanding complex systems, astrology, and sciences.",
-            relationship_trends: "Calm connections based on mutual friendship, without excessive demands.",
-            spiritual_trends: "Sharpened intuition and perception of hidden signs in daily life.",
-            personal_development_trends: "Great receptivity for mindfulness practices, yoga, and cellular reprogramming.",
-            potentialization_ritual: "Light a blue candle or hold a Blue Quartz crystal close to your chest for 3 minutes while mentalizing clarity and practical direction."
-          }
-        }
-      }
-    };
-    
-    // Fill in es, de, fr with translations if needed or use the English/Portuguese base
-    const localFallback = fallbacksDict[activeLang] || fallbacksDict.en || fallbacksDict.pt;
-    
-    if (!aiClient) {
-      console.log("[Radar API] Gemini Client is missing, serving celestial fallback immediately.");
-      setCachedResponse(cacheKey, localFallback);
-      return res.json(localFallback);
-    }
-    
-    // Elegant, multi-lingual, highly localized prompt instructing Gemini to construct the daily radar
-    const prompt = `
-Generate a fully personalized and incredibly detailed "Daily Astrological Radar & Opportunity Report" for ${userName}.
-You MUST respond STRICTLY in the following language: ${activeLang} (must translate all labels, descriptions, and texts into ${activeLang} beautifully).
-
-User Real Profile Data:
-- First Name: ${firstName}
-- Birth Date: ${bDate} (${bTime}, Lat: ${bLat}, Lon: ${bLon}, Timezone Offset: ${bTimezone})
-- Saved Natal Map Geometry:
-  - Natal Sun in: ${natalSun}
-  - Natal Moon in: ${natalMoon}
-  - Natal Ascendant: ${natalAsc}
-- Numerological Signature (Pythagorean):
-  - Life Path Number (Caminho de Vida): ${cv}
-  - Personal Year: ${personalYear}
-  - Personal Day today: ${personalDay}
-- Today's Date: ${targetDateStr}
-- Today's Mathematical Transit Geometry:
-  - Transiting Sun: ${transitSun}
-  - Transiting Moon: ${transitMoon}
-- High-Precision Calculated Biorhythm Values today:
-  - Physical: ${bioPhysical}% (cellular physical vitality and solar fuel)
-  - Emotional: ${bioEmotional}% (receptivity, mood, auric empathy)
-  - Intellectual: ${bioIntellectual}% (focus, mercury retention, coding/study focus)
-  - Spiritual: ${bioSpiritual}% (meditative connection, dream frequency)
-  - Intuitive: ${bioIntuitive}% (unconscious insights)
-
-GUIDELINES FOR THE OUTPUT GENERATION:
-1. Every piece of text must be completely custom and personalized for ${firstName}. No generic or boilerplates. Use their exact numbers, natal placements, and transit elements to construct deep, tailored explanations.
-2. The tone must be professional, highly informational, mystical yet pragmatic, speaking in the voice of a wise guide (the "Orbia" system).
-3. Translate all fields, keys, and values to the requested language (${activeLang}).
-4. Ensure the output is formatted as a PERFECT JSON object matching the exact schema below. Do NOT wrap in markdown code blocks. Just output the clean JSON object.
-
-REQUIRED JSON FORMAT (output MUST be strictly JSON parsed):
-{
-  "radar_dia": {
-    "frequency": "...", // A short, beautiful banner string showing the dominant frequency (e.g. 'Ressonância Solar em Touro & Alinhamento Prático')
-    "metrics": {
-      "vital_energy": { "val": ${bioPhysical}, "desc": "..." }, // Personalized description using birth and transit placements
-      "productivity": { "val": ${bioIntellectual}, "desc": "..." },
-      "relationships": { "val": ${bioEmotional}, "desc": "..." },
-      "organization": { "val": ${Math.round((bioPhysical + bioIntellectual) / 2)}, "desc": "..." },
-      "well_being": { "val": ${bioSpiritual}, "desc": "..." }
-    },
-    "events": [
-      { "date": "12 / JUN", "title": "...", "desc": "...", "highlight": true }, // 3 custom events tailored to today's transits and the user's birth data
-      { "date": "15 / JUN", "title": "...", "desc": "...", "highlight": false },
-      { "date": "21 / JUN", "title": "...", "desc": "...", "highlight": false }
-    ],
-    "reading": {
-      "panorama": "...", // Complete energetical panorama of the day
-      "cosmic_influences": "...", // Main cosmic influences active today
-      "strengths": "...", // Favorable points today
-      "cautions": "...", // Points of attention today
-      "best_period": "...", // e.g. "09:30 - 11:45"
-      "caution_period": "...", // e.g. "15:00 - 16:30"
-      "emotional_energy": "...",
-      "mental_energy": "...",
-      "professional_energy": "...",
-      "financial_energy": "...",
-      "affective_energy": "...",
-      "energy_level": ${Math.round((bioPhysical + bioEmotional + bioIntellectual) / 3)}, // level of energy of the day (0-100)
-      "recommendations": "...", // practical recommendations
-      "best_action": "...", // the most favorable action for today
-      "avoid_action": "..." // attitude that should be avoided
-    }
-  },
-  "radar_oportunidades": {
-    "areas": {
-      "dinheiro": { "val": ${Math.round(50 + (bioPhysical % 45))}, "text": "...", "conselho": "..." }, // Value, brief text, and detailed advice on financial matters
-      "amor": { "val": ${Math.round(50 + (bioEmotional % 45))}, "text": "...", "conselho": "..." },
-      "estudos": { "val": ${Math.round(50 + (bioIntellectual % 45))}, "text": "...", "conselho": "..." },
-      "trabalho": { "val": ${Math.round(50 + ((bioPhysical + bioIntellectual) % 45))}, "text": "...", "conselho": "..." },
-      "criatividade": { "val": ${Math.round(50 + (bioIntuitive % 45))}, "text": "...", "conselho": "..." },
-      "networking": { "val": ${Math.round(50 + (bioEmotional % 40))}, "text": "...", "conselho": "..." },
-      "espiritualidade": { "val": ${Math.round(50 + (bioSpiritual % 45))}, "text": "...", "conselho": "..." }
-    },
-    "reading": {
-      "overview": "...", // Overview of today's opportunities
-      "strongest_opportunities": "...", // Strongest opportunities of the day
-      "high_potential_areas": "...", // Areas with the highest potential today
-      "risks": "...", // Risks to watch out for today
-      "favorable_decisions": "...", // Favorable decisions to make today
-      "ideal_moment_to_act": "...", // Ideal moment to act
-      "attention_needed": "...", // People or situations requiring attention
-      "work_trends": "...", // Job trends
-      "money_trends": "...", // Money trends
-      "study_trends": "...", // Study trends
-      "relationship_trends": "...", // Relationship trends
-      "spiritual_trends": "...", // Spiritual trends
-      "personal_development_trends": "...", // Personal development trends
-      "potentialization_ritual": "..." // A specific, highly mystical and practical potentialization ritual for today
-    }
-  }
-}
-    `;
-    
-    let radarResponse = localFallback;
-    try {
-      const response = await aiClient.models.generateContent({
-        model: CHAT_MODEL,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          systemInstruction: "You are Orbia, the supreme celestial AI. Your task is to output a perfect JSON object representing the daily astronomical radar and opportunity values for the user. Do not wrap in markdown or prefix with backticks. Ensure 100% of the text values are fully customized, highly informative, and written in the requested language.",
-          temperature: 0.85
-        }
-      });
-      
-      const responseText = response.text ? response.text.trim() : "";
-      if (responseText) {
-        const parsedData = cleanAndParseJSON(responseText);
-        if (parsedData && parsedData.radar_dia && parsedData.radar_oportunidades) {
-          radarResponse = parsedData;
-          console.log("[Radar API] Successfully generated dynamic, fully-personalized radar content from Gemini.");
-        } else {
-          console.warn("[Radar API] Parsed JSON did not match expected structure. Using fallback.");
-        }
-      }
-    } catch (apiErr: any) {
-      console.warn("[Radar API] Gemini call failed, using high-precision astronomical local fallbacks:", apiErr?.message || apiErr);
-    }
-    
-    setCachedResponse(cacheKey, radarResponse);
-    return res.json(radarResponse);
-    
-  } catch (err) {
-    console.error("[Radar API] Fatal error inside personalized-radar endpoint:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -4161,14 +3868,14 @@ function translateCard(card: any, lang: string): any {
       en: { cups: "swift feelings, mystical alignment, subtle well-being, emotional harmony, and family care.", wands: "persistent action, professional vigor, burning enthusiasm, goal-oriented focus, and active progress.", swords: "logical evaluation, clear truths, new plans, intellectual battles, and overcoming ego pains.", pentacles: "solid material stability, abundant financial harvest, physical security, and persistent learning." },
       es: { cups: "sentimientos rápidos, sintonización mística, bienestar sutil, armonía afectiva y cariño familiar.", wands: "acción persistente, vigor profesional, entusiasmo ardiente, enfoque orientado a objetivos y progreso activo.", swords: "evaluación lógica, verdades claras, nuevos planos, batallas intelectuales y superación de dolores del ego.", pentacles: "estabilidad material sólida, cosecha financiera abundante, seguridad física y aprendizaje persistente." },
       de: { cups: "schnelle Gefühle, mystische Einstimmung, subtiles Wohlbefinden, emotionale Harmonie und familiäre Fürsorge.", wands: "hartnäckiges Handeln, professionelle Kraft, brennende Begeisterung, zielgerichteter Fokus und aktiver Fortschritt.", swords: "logische Auswertung, klare Wahrheiten, neue Pläne, intellektuelle Kämpfe und Überwindung von Ego-Schmerzen.", pentacles: "solide materielle Stabilität, reichliche finanzielle Ernte, physische Sicherheit und beharrliches Lernen." },
-      fr: { cups: "sentiments rapides, alignement mystique, bien-être subtil, harmonie affective et affection familiale.", wands: "action persistente, vigueur professionnelle, enthousiasme brûlant, concentration orientée vers les objectifs et progrès actif.", swords: "évaluation logique, vérités claires, nouveaux plans, batailles intellectuelles et dépassement des douleurs de l'ego.", pentacles: "stabilité matérielle solide, récolte financière abondante, sécurité physique et apprentissage persistant." }
+      fr: { cups: "sentiments rapides, alignement mystique, bien-être subtil, harmonie affective et affection familiale.", wands: "action persistente, vigueur professionnelle, enthousiasme brûlant, concentration orientée vers les objectifs et progrès actif.", swords: "évaluation logique, vérités claires, nouveaux plans, batailles intellectuelles et dépassement des douleurs de l'ego.", pentacles: "stabilité matérielle solide, récolte financière abondante, physique sécurité et apprentissage persistant." }
     };
 
     const advices: Record<string, Record<string, string>> = {
       en: { cups: "Follow your heart, listen to your subtle intuition, and celebrate real connections.", wands: "Be bold, take risks, and invest your full focus and energy in ideas.", swords: "Keep a cool head, use pure reason, and cut out toxic communications.", pentacles: "Practice pragmatic realism, control spending, and take care of your domestic well-being." },
       es: { cups: "Sigue tu corazón, escucha tu intuición sutil y celebra las conexiones reales.", wands: "Sé audaz, asume riesgos e invierte todo tu enfoque y energía en las ideas.", swords: "Mantén la cabeza fría, usa la razón pura y corta las comunicaciones tóxicas.", pentacles: "Practica el realismo pragmático, controla los gastos y cuida tu bienestar doméstico." },
       de: { cups: "Folgen Sie Ihrem Herzen, hören Sie auf Ihre subtile Intuition und feiern Sie echte Verbindungen.", wands: "Seien Sie mutig, gehen Sie Risiken ein und investieren Sie Ihren vollen Fokus und Ihre Energie in Ideen.", swords: "Behalten Sie einen kühlen Kopf, nutzen Sie die reine Vernunft und unterbinden Sie toxische Kommunikation.", pentacles: "Praktizieren Sie pragmatischen Realismus, kontrollieren Sie Ihre Ausgaben und kümmern Sie sich um Ihr häusliches Wohlbefinden." },
-      fr: { cups: "Suivez votre cœur, écoutez votre intuition subtile et célébrez les connexions réelles.", wands: "Soyez audacieux, prenez des risques et investissez tout votre intérêt et votre énergie dans les idées.", swords: "Gardez la tête froide, utilisez la raison pure et coupez les communications toxiques.", pentacles: "Pratiquez le réalisme pragmatique, contrôlez vos dépenses et prenez soin de votre bien-être domestique." }
+      fr: { cups: "Suivez votre cœur, écoutez votre intuition subtile et célébrez les connexions réelles.", wands: "Soyez audacieux, prenez des risques et investissez tout votre intérêt et votre énergie dans les idées.", swords: "Gardez la tête froide, utilisez la raison pure et coupez les communications toxiques.", pentacles: "Pratiquez le réalisme pragmatique, contrôlez vos dépenses et prenez soin de votre bien-être de famille." }
     };
 
     const sName = suitNames[targetLang]?.[suitKey] || suitKey;
@@ -4194,28 +3901,283 @@ function translateCard(card: any, lang: string): any {
 
 // NEW API: Dynamic, Astrological, Karmic & Dharmic Daily Missions (Osíris Engine)
 app.post("/api/astrology/daily-missions", async (req, res) => {
-  const { userProfile, lang } = req.body || {};
+  const { userProfile, lang, mapData } = req.body || {};
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
   const birthDate = userProfile?.birthDate || "1998-03-12";
   const zodiac = getZodiacFromBirthDate(birthDate);
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const cacheKey = `osiris_missions_v3:${name}:${birthDate}:${todayStr}:${lang || 'pt'}`;
+  const cacheKey = `osiris_missions_v4:${name}:${birthDate}:${todayStr}:${lang || 'pt'}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
+  }
+
+  let userSunSign = zodiac;
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+    
+    chartContext = `
+Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
+- Sol em: ${userSunSign}
+- Lua em: ${userMoonSign}
+- Ascendente em: ${userAscSign}
+- Distribuição de Elementos: ${elementsSummary}
+`;
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
   }
 
   // Robust Dynamic Fallback Generator seeded with current date & user parameters
   const generateDynamicFallbacks = () => {
     const today = new Date();
     const seedVal = (today.getDate() + (today.getMonth() + 1) * 7 + (name.length * 3)) % 5;
-    
-    const fallbacksPool = [
-      [
+    const activeLang = (lang || 'pt').toLowerCase();
+
+    // Define standard fallback pools for each language
+    let dailyPool: any[] = [];
+    let weeklyPool: any[] = [];
+
+    if (activeLang === 'en') {
+      dailyPool = [
         {
           id: "dm_f1",
-          title: `Consagração de ${zodiac} para ${name}`,
+          title: `Consecration of ${userSunSign} for ${name}`,
+          description: `Spend exactly 4 minutes breathing rhythmically in a quiet environment. Imagine a lilac light entering your nerve cells, calming unconscious impulses.`,
+          points: 40,
+          benefit: "Anxiety Karma Dissipation",
+          benefitExplanation: "Calms the heart rate, recalibrates your bioenergetic channels, and dissolves traces of accumulated emotional tensions."
+        },
+        {
+          id: "dm_f2",
+          title: "Jupiter's Seal of Generosity",
+          description: "Send a short, sincere message of consideration to someone who crossed your path recently without looking for anything in return.",
+          points: 50,
+          benefit: "Active Dharma Activation",
+          benefitExplanation: "The energy of sharing generates reciprocal vibrations in the universe, opening the doors of your financial and social flow."
+        },
+        {
+          id: "dm_f3",
+          title: "Elemental Cellular Detox",
+          description: "Leave digital screens for 1 hour before going to bed or resting. Drink a glass of mineral water thinking about spiritual purification.",
+          points: 30,
+          benefit: "Auric Protection",
+          benefitExplanation: "Prevents disordered wear of the theta frequency during deep sleep, ensuring revealing and clear dreams."
+        }
+      ];
+
+      weeklyPool = [
+        {
+          id: "wm_dyn_1",
+          title: `Lunar Unlocking of ${userMoonSign}`,
+          description: `This week, perform a pending emotional task or express a sincere truth to harmonize the channels of your Moon in ${userMoonSign}.`,
+          points: 120,
+          benefit: `Break Emotional Blockage`,
+          benefitExplanation: `Aligns your instinctive reactions to the harmonic flow of your Sun in ${userSunSign}.`
+        },
+        {
+          id: "wm_dyn_2",
+          title: `Manifestation with Ascendant ${userAscSign}`,
+          description: `This week, take the first practical step towards a bold goal of personal evolution, channeling the natural courage of your Ascendant in ${userAscSign}.`,
+          points: 140,
+          benefit: `Destination Compass Activation`,
+          benefitExplanation: `Unlocks cosmic initiative channels and attracts ideal mentors.`
+        },
+        {
+          id: "wm_dyn_3",
+          title: `Alchemical Balance of Elements`,
+          description: `This week, dedicate 1 hour to study or focus on activities linked to the elements of your chart (${elementsSummary}), balancing excesses or lacks.`,
+          points: 100,
+          benefit: `Total Auric Stabilization`,
+          benefitExplanation: `Reduces emotional and physical fluctuations by aligning your biology with natal sacred geometry.`
+        }
+      ];
+    } else if (activeLang === 'es') {
+      dailyPool = [
+        {
+          id: "dm_f1",
+          title: `Consagración de ${userSunSign} para ${name}`,
+          description: `Dedica exactamente 4 minutos a respirar rítmicamente en un ambiente silencioso. Imagina una luz lila entrando en tus células nervosas, calmando impulsos inconscientes.`,
+          points: 40,
+          benefit: "Disipación de Karma de Ansiedad",
+          benefitExplanation: "Calma el ritmo cardíaco, recalibra tus canales bioenergéticos y disuelve rastros de tensiones emocionales acumuladas."
+        },
+        {
+          id: "dm_f2",
+          title: "Sello de Generosidad de Júpiter",
+          description: "Envía un mensaje corto y sincero de consideración a alguien que se haya cruzado en tu camino recientemente sin buscar nada a cambio.",
+          points: 50,
+          benefit: "Activación de Dharma Activo",
+          benefitExplanation: "La energía de compartir genera vibraciones recíprocas en el universo, abriendo las puertas de tu flujo financiero y social."
+        },
+        {
+          id: "dm_f3",
+          title: "Desintoxicación Celular Elemental",
+          description: "Deja las pantallas digitales durante 1 hora antes de dormir. Bebe un vaso de agua mineral pensando en la purificación espiritual.",
+          points: 30,
+          benefit: "Protección Áurica",
+          benefitExplanation: "Evita el desgaste desordenado de la frecuencia theta durante el sueño profundo, asegurando sueños reveladores y limpios."
+        }
+      ];
+
+      weeklyPool = [
+        {
+          id: "wm_dyn_1",
+          title: `Desbloqueo Lunar de ${userMoonSign}`,
+          description: `Esta semana, realiza una tarea emocional pendiente o expresa una verdad sincera para armonizar los canales de tu Luna en ${userMoonSign}.`,
+          points: 120,
+          benefit: `Romper Bloqueo Emocional`,
+          benefitExplanation: `Alinea tus reacciones instintivas al flujo armónico de tu Sol en ${userSunSign}.`
+        },
+        {
+          id: "wm_dyn_2",
+          title: `Manifestación con Ascendente ${userAscSign}`,
+          description: `Esta semana, da el primer paso práctico hacia una meta audaz de evolución personal, canalizando el coraje natural de tu Ascendente en ${userAscSign}.`,
+          points: 140,
+          benefit: `Activación de la Brújula de Destino`,
+          benefitExplanation: `Desbloquea los canales de iniciativa cósmica y atrae mentores ideales.`
+        },
+        {
+          id: "wm_dyn_3",
+          title: `Equilibrio Alquímico de los Elementos`,
+          description: `Esta semana, dedica 1 hora a estudiar o enfocarte en actividades vinculadas a los elementos de tu mapa (${elementsSummary}), equilibrando excesos o faltas.`,
+          points: 100,
+          benefit: `Estabilización Áurica Total`,
+          benefitExplanation: `Reduce las fluctuaciones emocionales y físicas al alinear tu biología con la geometría sagrada natal.`
+        }
+      ];
+    } else if (activeLang === 'de') {
+      dailyPool = [
+        {
+          id: "dm_f1",
+          title: `Weihe von ${userSunSign} für ${name}`,
+          description: `Atme genau 4 Minuten lang rhythmisch in einer ruhigen Umgebung. Stelle dir ein fliederfarbenes Licht vor, das in deine Nervenzellen eindringt und unbewusste Impulse beruhigt.`,
+          points: 40,
+          benefit: "Auflösung von Angst-Karma",
+          benefitExplanation: "Beruhigt die Herzfrequenz, kalibriert Ihre bioenergetischen Kanäle neu und löst Spuren angesammelter emotionaler Spannungen auf."
+        },
+        {
+          id: "dm_f2",
+          title: "Jupiters Siegel der Großzügigkeit",
+          description: "Sende eine kurze, aufrichtige Nachricht der Wertschätzung an jemanden, der dir kürzlich begegnet ist, ohne eine Gegenleistung zu erwarten.",
+          points: 50,
+          benefit: "Aktivierung von aktivem Dharma",
+          benefitExplanation: "Die Energie des Teilens erzeugt wechselseitige Schwingungen im Universum und öffnet die Türen für Ihren finanziellen und sozialen Fluss."
+        },
+        {
+          id: "dm_f3",
+          title: "Elementare zelluläre Entgiftung",
+          description: "Verzichte 1 Stunde vor dem Schlafengehen auf digitale Bildschirme. Trinke ein Glas Mineralwasser und denke an spirituelle Reinigung.",
+          points: 30,
+          benefit: "Aurischer Schutz",
+          benefitExplanation: "Verhindert ungeordneten Verschleiß der Theta-Frequenz im Tiefschlaf und sorgt für aufschlussreiche und klare Träume."
+        }
+      ];
+
+      weeklyPool = [
+        {
+          id: "wm_dyn_1",
+          title: `Mondfreischaltung von ${userMoonSign}`,
+          description: `Führen Sie diese Woche eine ausstehende emotionale Aufgabe aus oder drücken Sie eine aufrichtige Wahrheit aus, um die Kanäle Ihres Mondes in ${userMoonSign} zu harmonisieren.`,
+          points: 120,
+          benefit: `Emotionalen Blockaden durchbrechen`,
+          benefitExplanation: `Richtet Ihre instinktiven Reaktionen am harmonischen Fluss Ihrer Sonne in ${userSunSign} aus.`
+        },
+        {
+          id: "wm_dyn_2",
+          title: `Manifestation mit Aszendent ${userAscSign}`,
+          description: `Machen Sie diese Woche den ersten praktischen Schritt zu einem kühnen Ziel der persönlichen Entwicklung und kanalisieren Sie den natürlichen Mut Ihres Aszendenten in ${userAscSign}.`,
+          points: 140,
+          benefit: `Aktivierung des Zielkompasses`,
+          benefitExplanation: `Schaltet Kanäle für kosmische Initiativen frei und zieht ideale Mentoren an.`
+        },
+        {
+          id: "wm_dyn_3",
+          title: `Alchemistisches Gleichgewicht der Elemente`,
+          description: `Widmen Sie diese Woche 1 Stunde dem Studium oder der Konzentration auf Aktivitäten, die mit den Elementen Ihres Horoskops (${elementsSummary}) verbunden sind, um Exzesse oder Mängel auszugleichen.`,
+          points: 100,
+          benefit: `Totale aurische Stabilisierung`,
+          benefitExplanation: `Reduziert emotionale und physische Schwankungen, indem Ihre Biologie auf die heilige Geburtsgeometrie ausgerichtet wird.`
+        }
+      ];
+    } else if (activeLang === 'fr') {
+      dailyPool = [
+        {
+          id: "dm_f1",
+          title: `Consécration de ${userSunSign} pour ${name}`,
+          description: `Passez exactement 4 minutes à respirer en rythme dans un environnement calme. Imaginez une lumière lilas pénétrant vos cellules nerveuses, calmant les impulsions inconscientes.`,
+          points: 40,
+          benefit: "Dissipation du Karma d'Anxiété",
+          benefitExplanation: "Calme le rythme cardiaque, recalibre vos canaux bioénergétiques et dissout les traces de tensions émotives accumulées."
+        },
+        {
+          id: "dm_f2",
+          title: "Sceau de Générosité de Jupiter",
+          description: "Envoyez un court message sincère de considération à quelqu'un qui a croisé votre chemin récemment sans rien attendre en retour.",
+          points: 50,
+          benefit: "Activation du Dharma Actif",
+          benefitExplanation: "L'énergie du partage génère des vibrations réciproques dans l'univers, ouvrant les portes de votre flux financier et social."
+        },
+        {
+          id: "dm_f3",
+          title: "Détoxification Cellulaire Élémentaire",
+          description: "Laissez les écrans digitaux pendant 1 heure avant de dormir. Buvez un verre d'eau minérale en pensant à la purification spirituelle.",
+          points: 30,
+          benefit: "Protection Aurique",
+          benefitExplanation: "Évite l'usure désordonnée de la fréquence thêta pendant le sommeil profond, garantissant des rêves révélateurs et clairs."
+        }
+      ];
+
+      weeklyPool = [
+        {
+          id: "wm_dyn_1",
+          title: `Déverrouillage Lunaire de ${userMoonSign}`,
+          description: `Cette semaine, accomplissez une tâche émotionnelle en attente ou exprimez une vérité sincère pour harmoniser les canaux de votre Lune en ${userMoonSign}.`,
+          points: 120,
+          benefit: `Briser le Blocage Émotionnel`,
+          benefitExplanation: `Aligne vos réactions instinctives sur le flux harmonique de votre Soleil en ${userSunSign}.`
+        },
+        {
+          id: "wm_dyn_2",
+          title: `Manifestation avec Ascendant ${userAscSign}`,
+          description: `Cette semaine, faites le premier pas pratique vers un objectif audacieux d'évolution personnelle, en canalisant le courage naturel de votre Ascendant en ${userAscSign}.`,
+          points: 140,
+          benefit: `Activation de la Boussole de Destination`,
+          benefitExplanation: `Déverrouille les canaux d'initiative cosmique et attire les mentors idéaux.`
+        },
+        {
+          id: "wm_dyn_3",
+          title: `Équilibre Alchimique des Éléments`,
+          description: `Cette semaine, consacrez 1 heure à l'étude ou concentrez-vous sur des activités liées aux éléments de votre carte (${elementsSummary}), en équilibrant les excès ou les manques.`,
+          points: 100,
+          benefit: `Stabilisation Aurique Totale`,
+          benefitExplanation: `Réduit les fluctuations émotionnelles et physiques en alignant votre biologie sur la géométrie sacrée natale.`
+        }
+      ];
+    } else {
+      // Default Portuguese Fallbacks
+      dailyPool = [
+        {
+          id: "dm_f1",
+          title: `Consagração de ${userSunSign} para ${name}`,
           description: `Dedique 4 minutos exatos respirando de forma ritmada em ambiente silencioso. Imagine uma luz lilás adentrando suas células nervosas, acalmando impulsos inconscientes.`,
           points: 40,
           benefit: "Dissipação de Karma de Ansiedade",
@@ -4235,115 +4197,39 @@ app.post("/api/astrology/daily-missions", async (req, res) => {
           description: "Abandone telas digitais por 1 hora antes de deitar ou repousar. Beba um copo de água mineral pensando em purificação espiritual.",
           points: 30,
           benefit: "Proteção Áurica",
-          benefitExplanation: "Evita o desgaste desordenado da frequência teta durante o sono profundo, garantindo sonhos reveladores e limpos."
+          benefitExplanation: "Evita o desgaste desordenado da frequência teta durante o sono profundo, gerando sonhos reveladores."
         }
-      ],
-      [
+      ];
+
+      weeklyPool = [
         {
-          id: "dm_f1",
-          title: `Libertação Kármica de ${zodiac}`,
-          description: "Organize uma gaveta de papéis ou e-mails importantes pendentes hoje. Descartar velhos acúmulos físicos ajuda a desbloquear a mente.",
-          points: 45,
-          benefit: "Combustão de Karma de Inércia",
-          benefitExplanation: "Liberta sua caminhada profissional da estagnação, substituindo velhos fardos por novas direções de produtividade prática."
+          id: "wm_dyn_1",
+          title: `Desbloqueio Lunar de ${userMoonSign}`,
+          description: `Esta semana, realize uma tarefa emocional pendente ou expresse uma verdade sincera para harmonizar os canais de sua Lua em ${userMoonSign}.`,
+          points: 120,
+          benefit: `Quebra de Bloqueio Emocional`,
+          benefitExplanation: `Alinha suas reações instintivas ao fluxo harmônico do seu Sol em ${userSunSign}.`
         },
         {
-          id: "dm_f2",
-          title: "Oração Vibracional Silenciosa",
-          description: "Mentalize paz profunda e emita sentimentos de compaixão por três pessoas que passarem por seus pensamentos hoje.",
-          points: 45,
-          benefit: "Expansão de Dharma Celestial",
-          benefitExplanation: "Eleva seu espectro áurico a frequências superiores de proteção cósmica, blindando seu coração de invejas e cobiças."
+          id: "wm_dyn_2",
+          title: `Manifestação com Ascendente ${userAscSign}`,
+          description: `Esta semana, dê o primeiro passo prático em direção a um objetivo audacioso de evolução pessoal, canalizando a coragem natural do seu Ascendente em ${userAscSign}.`,
+          points: 140,
+          benefit: `Ativação de Bússola de Destino`,
+          benefitExplanation: `Desbloqueia os canais de iniciativa cósmica e atrai mentores ideais.`
         },
         {
-          id: "dm_f3",
-          title: "Banho de Sal & Sintonização",
-          description: "Consagre seu amparo ancestral passando as mãos molhadas nos ombros ou pescoço enquanto repete mentalmente: 'Estou seguro'.",
-          points: 35,
-          benefit: "Conexão de Sol e Lua",
-          benefitExplanation: "Harmoniza as polaridades masculina e feminina do seu corpo astral, despertando intuição refinada perante escolhas urgentes."
+          id: "wm_dyn_3",
+          title: `Equilíbrio Alquímico dos Elementos`,
+          description: `Esta semana, dedique 1 hora para estudar ou focar em atividades ligadas aos elementos do seu mapa (${elementsSummary}), equilibrando excessos ou faltas.`,
+          points: 100,
+          benefit: `Estabilização Áurica Total`,
+          benefitExplanation: `Reduz oscilações emocionais e físicas ao alinhar sua biologia com a geometria sagrada natal.`
         }
-      ],
-      [
-        {
-          id: "dm_f1",
-          title: "Cura Psíquica de Vênus",
-          description: `Olhe-se no espelho por 1 minuto sintonizando compaixão e auto-aceitação para seu brilho astral de ${zodiac}. Declare seu mérito.`,
-          points: 40,
-          benefit: "Cura de Laços Sentimentais",
-          benefitExplanation: "Purifica bloqueios de rejeição no chakra cardíaco, permitindo que as relações íntimas fluam com lealdade mútua."
-        },
-        {
-          id: "dm_f2",
-          title: "Doação Elemental Consciente",
-          description: "Partilhe ou separe dois pertences ou roupas sem uso em seu lar para fluxo e circulação de energias materiais.",
-          points: 50,
-          benefit: "Dharma de Desprendimento",
-          benefitExplanation: "Ativa as leis ocultas da prosperidade recíproca. Dar espaço para o novo limpa medos primitivos da escassez terrena."
-        },
-        {
-          id: "dm_f3",
-          title: "Respirar Profundo Cósmico",
-          description: "Sente-se ereto por 3 minutos e faça respiração quadrada (inspira em 4s, segura 4s, expira 4s, segura vazio 4s) alinhando as vértebras.",
-          points: 35,
-          benefit: "Aterramento Orgânico",
-          benefitExplanation: "Elimina picos de cansaço mental estéril, devolvendo o foco e a precisão intelectual nas tarefas diárias."
-        }
-      ],
-      [
-        {
-          id: "dm_f1",
-          title: `Alinhamento de ${zodiac} com Saturno`,
-          description: "Assuma total responsabilidade por uma conversa delicada ou pendência burocrática hoje. Faça o de forma calma e firme.",
-          points: 50,
-          benefit: "Queima de Karma de Omissão",
-          benefitExplanation: "Equilibra a balança com Saturno retrógrado, transformando velhos atritos insolúveis em autoridade interna exemplar."
-        },
-        {
-          id: "dm_f2",
-          title: "Sopro de Vitalidade Crística",
-          description: "Pratique um exercício físico leve, alongamento ou caminhada pisando de forma firme e agradecendo mentalmente à Terra profunda.",
-          points: 40,
-          benefit: "Estabilidade de Dharma Físico",
-          benefitExplanation: "Desperta as mitocôndrias e remove bloqueios articulares energéticos onde o estresse costuma se densificar."
-        },
-        {
-          id: "dm_f3",
-          title: "Escudo do Silêncio Provedor",
-          description: "Silencie queixas por 3 horas seguidas hoje. Quando vier um impulso de queixar-se, respire fundo e enxergue o aprendizado oculto.",
-          points: 40,
-          benefit: "Fortalecimento do Corpo Sutil",
-          benefitExplanation: "Seu magnetismo pessoal é poupado da drenagem astral rotineira, mantendo seu brilho intacto para oportunidades."
-        }
-      ],
-      [
-        {
-          id: "dm_f1",
-          title: `Conexão Cósmica do Sol em ${zodiac}`,
-          description: "Escreva em um diário ou papel uma meta ousada de evolução que deseja manifestar nos próximos 30 dias. Dobre o papel e consagre.",
-          points: 45,
-          benefit: "Ativação do Foco Solar",
-          benefitExplanation: "Sintoniza sua intenção direta com a bússola das estrelas, catalisando sincronicidades para que mentores te encontrem."
-        },
-        {
-          id: "dm_f2",
-          title: "Ritual Elemental de Limpeza",
-          description: "Limpe uma superfície do seu quarto ou e escrivaninha borrifando água com algumas gotas de aroma ou limão, mentalizando clareza.",
-          points: 40,
-          benefit: "Dharma de Harmonia Doméstica",
-          benefitExplanation: "Expulsa vibrações remanescentes de cansaço, abrindo caminhos para pensamentos lúcidos e sono tranquilo."
-        },
-        {
-          id: "dm_f3",
-          title: "Contemplação do Ar Livre",
-          description: "Olhe para as nuvens, árvores ou céu por 5 minutos observando o fluxo da natureza sem julgar. Integre-se ao agora cósmico.",
-          points: 35,
-          benefit: "Descanso da Mente Egoica",
-          benefitExplanation: "Restaura os receptores de bem-estar orgânico, gerando paz íntima e renovando seu nível de otimismo."
-        }
-      ]
-    ];
-    return { missions: fallbacksPool[seedVal % fallbacksPool.length] };
+      ];
+    }
+
+    return { missions: dailyPool, weeklyMissions: weeklyPool };
   };
 
   if (!aiClient) {
@@ -4363,8 +4249,10 @@ app.post("/api/astrology/daily-missions", async (req, res) => {
     };
     const targetLanguage = languageNames[activeLang] || "Português";
 
-    const prompt = `Gere exatamente 3 missões diárias astrológicas interativas em ${targetLanguage} para o usuário de nome "${name}", signo ${zodiac} e nascido em ${birthDate}.
-O objetivo de cada missão deve ser o alto desenvolvimento espiritual, crescimento pessoal, bem-estar, libertação de karma (da vida presente ou vidas passadas) ou ativação de dharma ativo com os seus benefícios cósmicos claros.
+    const prompt = `Gere exatamente 3 missões diárias astrológicas interativas e exatamente 3 missões semanais astrológicas interativas em ${targetLanguage} para o usuário de nome "${name}", signo ${userSunSign} e nascido em ${birthDate}.
+${chartContext}
+
+O objetivo de cada missão deve ser o desenvolvimento espiritual, crescimento pessoal, bem-estar, libertação de karma (da vida presente ou vidas passadas) ou ativação de dharma ativo, sempre conectando com as características astrológicas reais encontradas no mapa do usuário fornecido acima.
 Cada missão deve ter um roteiro interativo e inspirador de se cumprir.
 
 Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturado, sem explicações externas, marcações extras ou tags markdown que não sejam JSON puro:
@@ -4372,12 +4260,23 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
 {
   "missions": [
     {
-      "id": "md1",
-      "title": "Título místico personalizado curto em ${targetLanguage}",
-      "description": "Instrução poética e detalhada com metas claras no idioma ${targetLanguage} (ex: respirar de forma profunda, alongar, silenciar queixas, desfazer e-mails acumulados, doar algo)",
+      "id": "dm1",
+      "title": "Título místico diário curto personalizado em ${targetLanguage}",
+      "description": "Instrução poética e detalhada com metas claras no idioma ${targetLanguage} relacionada ao mapa do usuário",
       "points": 45, // número entre 30 e 60
-      "benefit": "Categoria curta do benefício místico no idioma ${targetLanguage} (ex: 'Queima de Karma de Rejeição' ou 'Ativação de Dharma Prático')",
-      "benefitExplanation": "Explicação detalhada e profunda de qual benefício espiritual, emocional e consciencial o usuário receberá ao cumprir essa missão hoje, escrita inteiramente em ${targetLanguage}"
+      "benefit": "Categoria curta do benefício místico no idioma ${targetLanguage}",
+      "benefitExplanation": "Explicação detalhada de qual benefício espiritual e emocional o usuário receberá ao cumprir essa missão hoje, escrita inteiramente em ${targetLanguage}"
+    },
+    ...
+  ],
+  "weeklyMissions": [
+    {
+      "id": "wm1",
+      "title": "Título místico semanal curto personalizado em ${targetLanguage}",
+      "description": "Desafio de evolução profunda detalhado a ser cumprido ao longo da semana no idioma ${targetLanguage}, sintonizado com o mapa do usuário",
+      "points": 120, // número entre 100 e 150
+      "benefit": "Categoria curta do benefício místico no idioma ${targetLanguage}",
+      "benefitExplanation": "Explicação detalhada e profunda do impacto na evolução de longo prazo do usuário ao cumprir esse desafio, em ${targetLanguage}"
     },
     ...
   ]
@@ -4391,7 +4290,7 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
     });
 
     const parsed = JSON.parse(response.text || "{}");
-    if (parsed && Array.isArray(parsed.missions) && parsed.missions.length === 3) {
+    if (parsed && Array.isArray(parsed.missions) && parsed.missions.length === 3 && Array.isArray(parsed.weeklyMissions)) {
       setCachedResponse(cacheKey, parsed);
       return res.json(parsed);
     } else {
@@ -4407,7 +4306,7 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
 
 // NEW API: OSÍRIS Intelligent Assistant Chat Component
 app.post("/api/osiris/chat", async (req, res) => {
-  const { messages, userProfile, requestTopic, weather, biorhythm, location, dreams, lang } = req.body || {};
+  const { messages, userProfile, requestTopic, weather, biorhythm, location, dreams, lang, mapData } = req.body || {};
   
   if (!messages || messages.length === 0) {
     return res.status(400).json({ error: (req as any).t('api.osiris.messages_required') });
@@ -4419,12 +4318,42 @@ app.post("/api/osiris/chat", async (req, res) => {
   const userName = userProfile?.name || "Buscador";
   const activeLang = (lang || "pt").toLowerCase();
 
+  let userSunSign = solSign;
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    chartContext = `
+Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
+- Sol: ${userSunSign}
+- Lua: ${userMoonSign}
+- Ascendente: ${userAscSign}
+`;
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      chartContext += `- Balanço dos Elementos: Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%\n`;
+    }
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Outros posicionamentos planetários: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
+  }
+
   const getOsirisFallback = (msg: string) => {
-    const translatedSign = translateAstroSign(solSign, activeLang);
+    const translatedSign = translateAstroSign(userSunSign, activeLang);
     const fallbacks: Record<string, string> = {
       pt: `Olá, meu caro amigo ${userName}. Sinto a luz cintilante do seu Sol em ${translatedSign} guiando suas perguntas. `,
       en: `Hello, my dear friend ${userName}. I feel the shimmering light of your Sun in ${translatedSign} guiding your questions. `,
-      es: `Hola, mi querido amigo ${userName}. Siento la luz brillante de tu Sol en ${translatedSign} guiando tus preguntas. `,
+      es: `Hola, mi querido amigo ${userName}. Siento la luz brillante de tu Sol en ${translatedSign} guiando tus perguntas. `,
       de: `Hallo, mein lieber Freund ${userName}. Ich spüre das schimmernde Licht Ihrer Sonne in ${translatedSign}, das Ihre Fragen leitet. `,
       fr: `Bonjour, mon cher ami ${userName}. Je ressens la lumière scintillante de votre Soleil en ${translatedSign} guider vos questions. `
     };
@@ -4454,8 +4383,8 @@ app.post("/api/osiris/chat", async (req, res) => {
       const bioAdd: Record<string, string> = {
         pt: `Em sintonia com seu biorritmo de hoje, recomendo focar na resiliência mental e fazer pequenas meditações de centramento solar ao longo do dia para transmutar kármicas antigas. `,
         en: `In sync with your biorhythm today, I recommend focusing on mental resilience and doing small solar centering meditations throughout the day to transmute ancient karmics. `,
-        es: `En sintonía con tu biorritmo de hoy, te recomiendo concentrarte en la resiliência mental y hacer pequeñas meditaciones de centrado solar a lo largo del día para transmutar karmas antiguos. `,
-        de: `In Abstimmung mit Ihrem heutigen Biorhythmus empfehle ich Ihnen, sich auf mentale Widerstandskraft zu konzentrieren und über den Tag verteilt kleine solare Zentrierungsmeditationen durchzuführen, um alte Karmas umzuwandeln. `,
+        es: `En sintonía con tu biorritmo de hoy, te recomiendo concentrarte en la resiliencia mental y hacer pequeñas meditaciones de centrado solar a lo largo del día para transmutar karmas antiguos. `,
+        de: `In Abstimmung mit Ihrem heutigen Biorhythmus empfehlen eu Ihnen, sich auf mentale Widerstandskraft zu konzentrieren und über den Tag verteilt kleine solare Zentrierungsmeditationen durchzuführen, um alte Karmas umzuwandeln. `,
         fr: `En phase avec votre biorythme d'aujourd'hui, je vous recommande de vous concentrer sur la résilience mentale et de faire de petites méditations de centrage solaire tout au long de la journée pour transmuter les karmas anciens. `
       };
       text += bioAdd[activeLang] || bioAdd["pt"];
@@ -4470,7 +4399,7 @@ app.post("/api/osiris/chat", async (req, res) => {
         en: `The dream realms are channels of direct revelation from your wise subconscious. Each element represents a sign that we untie together. `,
         es: `Los reinos oníricos son canales de revelación directa de tu sabio subconsciente. Cada elemento representa una señal que desatamos juntos. `,
         de: `Die Traumwelten sind Kanäle der direkten Offenbarung aus Ihrem weisen Unterbewusstsein. Jedes Element stellt ein Zeichen dar, das wir gemeinsam entwirren. `,
-        fr: `Les royaumes des rêves sont des canaux de révélation directe de votre sage subconscient. Chaque élément représente un signe que nous dénouons ensemble. `
+        fr: `Les royaumes des rêves sont des canaux de révélation directe de votre sage sous-conscient. Chaque élément représente un signe que nous dénouons ensemble. `
       };
       text += dreamAdd[activeLang] || dreamAdd["pt"];
     }
@@ -4491,7 +4420,8 @@ app.post("/api/osiris/chat", async (req, res) => {
 Perfil Estelar do Usuário:
 Nome: ${userProfile.name}
 Nascido em: ${userProfile.birthDate} às ${userProfile.birthTime} na cidade ${userProfile.birthCity}
-Zodíaco Solar: ${solSign}
+Zodíaco Solar: ${userSunSign}
+${chartContext}
 ${biorhythm ? `Biorritmo Atual: Físico ${biorhythm.physical}%, Emocional ${biorhythm.emotional}%, Intelectual ${biorhythm.intellectual}%` : ""}
 ${location || weather ? `Localização & Clima: ${location || "Cidade Natal"} - ${weather?.temperature || "22"}°C, ${weather?.condition || "Céu Claro"}` : ""}
 ${dreams && dreams.length > 0 ? `Sonhos Recentes Interpretados: ${dreams.slice(0, 2).map((d: any) => `${d.description} (Interpretação: ${d.interpretation?.mainMeaning || ""})`).join("; ")}` : ""}
@@ -4531,10 +4461,42 @@ DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
 });
 
 app.post("/api/osiris/dashboard", async (req, res) => {
-  const { userProfile, weather, biorhythm, location, lastDream, lang } = req.body || {};
+  const { userProfile, weather, biorhythm, location, lastDream, lang, mapData } = req.body || {};
   const birthDate = userProfile?.birthDate || "1998-03-12";
-  const zodiac = getZodiacFromBirthDate(birthDate);
+  const baseZodiac = getZodiacFromBirthDate(birthDate);
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
+
+  let userSunSign = baseZodiac;
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    chartContext = `
+Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
+- Sol: ${userSunSign}
+- Lua: ${userMoonSign}
+- Ascendente: ${userAscSign}
+`;
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      chartContext += `- Balanço dos Elementos: Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%\n`;
+    }
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Outros posicionamentos planetários: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
+  }
+
+  const zodiac = userSunSign;
 
   const today = new Date();
   const day = today.getDate();
@@ -4840,24 +4802,24 @@ app.post("/api/osiris/dashboard", async (req, res) => {
 
     const contextMap: Record<string, { sentence: string, prompt: string }> = {
       pt: {
-        sentence: `Olá ${name}, percebo que o clima em ${location || "sua área"} no momento está ${weather?.condition || "influenciando"} sua vibração pessoal.`,
-        prompt: `${name}, posso mostrar tudo que está favorável para você hoje. Basta me perguntar.`
+        sentence: `Olá ${name}, vejo que o clima está ${weather?.condition || "Céu Limpo"} com ${weather?.temperature || "23"}°C em ${location || "sua cidade"}. Os astros recomendam canalizar foco em ${selectedCategory}.`,
+        prompt: `Osíris está pronto para revelar sua sabedoria cósmica.`
       },
       en: {
-        sentence: `Hello ${name}, I notice that the weather in ${location || "your area"} at the moment is ${weather?.condition || "influencing"} your personal vibration.`,
-        prompt: `${name}, I can show you everything that is favorable for you today. Just ask me.`
+        sentence: `Hello ${name}, I see the weather is ${weather?.condition || "Clear Sky"} with ${weather?.temperature || "23"}°C in ${location || "your city"}. The stars recommend channeling focus in ${currentCategoryDisplay}.`,
+        prompt: `Osiris is ready to reveal your cosmic wisdom.`
       },
       es: {
-        sentence: `Hola ${name}, percibo que el clima en ${location || "tu zona"} en este momento está ${weather?.condition || "influyendo"} en tu vibración personal.`,
-        prompt: `${name}, puedo mostrarte todo lo que te favorece hoy. Solo pregúntame.`
+        sentence: `Hola ${name}, veo que el clima está ${weather?.condition || "Cielo Limpio"} con ${weather?.temperature || "23"}°C en ${location || "tu ciudad"}. Los astros recomiendan canalizar el enfoque en ${currentCategoryDisplay}.`,
+        prompt: `Osiris está listo para revelar su sabiduría cósmica.`
       },
       de: {
-        sentence: `Hallo ${name}, ich stelle fest, dass das Wetter in ${location || "Ihrer Gegend"} im Moment Ihre persönliche Schwingung ${weather?.condition || "beeinflusst"}.`,
-        prompt: `${name}, ich kann Ihnen alles zeigen, was heute günstig für Sie ist. Fragen Sie mich einfach.`
+        sentence: `Hallo ${name}, ich sehe das Wetter ist ${weather?.condition || "Klarer Himmel"} mit ${weather?.temperature || "23"}°C in ${location || "Ihrer Stadt"}. Die Sterne empfehlen, den Fokus auf ${currentCategoryDisplay} zu richten.`,
+        prompt: `Osiris ist bereit, seine kosmische Weisheit zu enthüllen.`
       },
       fr: {
-        sentence: `Bonjour ${name}, je remarque que la météo à ${location || "votre région"} en ce moment est en train d'${weather?.condition || "influencer"} votre vibration personnelle.`,
-        prompt: `${name}, je peux vous montrer tout ce qui vous est favorable aujourd'hui. Demandez-moi.`
+        sentence: `Bonjour ${name}, je vois que le temps est ${weather?.condition || "Ciel Clair"} avec ${weather?.temperature || "23"}°C à ${location || "votre ville"}. Les étoiles recommandent de canaliser l'attention sur ${currentCategoryDisplay}.`,
+        prompt: `Osiris est prêt à révéler sa sagesse cosmique.`
       }
     };
 
@@ -4865,22 +4827,22 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       pt: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Alerta do Osíris: Aspecto Crítico",
-          message: `Um trânsito celópte sutil faz quadratura importante com seu ascendente hoje. Pratique recuo e evite conflitos de ego.`,
-          time: "Há 2 horas",
+          title: "🌌 Alinhamento Cósmico Ativo",
+          message: `Sua geometria natal de ${zodiac} está em ressonância com os trânsitos lunares de hoje.`,
+          time: "Há 1 hora",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Movimento Lunar e Renovação de Intenções",
-          message: `A Lua atual ingressa em sintonia fértil com seu signo solar ${translatedZodiac}. Período majestoso para iniciar ações silenciosas de dharma.`,
-          time: "Há 5 horas",
+          title: "🌙 Nova Fase Lunar",
+          message: `O portal lunar está aberto para potencializar rituais focados em ${selectedCategory}.`,
+          time: "Há 4 horas",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
           title: "✨ Missão Kármica Ativa de Hoje",
-          message: `Osíris detectou que concluir sua missão espiritual de hoje ajudará a dissolver bloqueios de ansiedade acumulada. Complete-a para ganhar pontos!`,
+          message: `O Osiris detectou que realizar sua missão espiritual de hoje ajudará a dissolver bloqueios acumulados.`,
           time: "Há 9 horas",
           type: "mission"
         }
@@ -4888,22 +4850,22 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       en: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Osiris Alert: Critical Aspect",
-          message: `A subtle celestial transit makes an important square with your ascendant today. Practice retreat and avoid ego conflicts.`,
-          time: "2 hours ago",
+          title: "🌌 Active Cosmic Alignment",
+          message: `Your ${zodiac} natal geometry is in resonance with today's lunar transits.`,
+          time: "1 hour ago",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Lunar Movement & Renewal of Intentions",
-          message: `The current Moon enters fertile harmony with your solar sign ${translatedZodiac}. A majestic period to initiate silent dharma actions.`,
-          time: "5 hours ago",
+          title: "🌙 Lunar Phase Gateway",
+          message: `The lunar portal is open to enhance rituals focused on ${currentCategoryDisplay}.`,
+          time: "4 hours ago",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
           title: "✨ Active Karmic Mission of Today",
-          message: `Osiris detected that completing your spiritual mission today will help dissolve accumulated anxiety blocks. Complete it to earn points!`,
+          message: `Osiris detected that completing your spiritual mission today will help dissolve accumulated anxiety blocks.`,
           time: "9 hours ago",
           type: "mission"
         }
@@ -4911,22 +4873,22 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       es: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Alerta de Osiris: Aspecto Crítico",
-          message: `Un tránsito celestial sutil forma una cuadratura importante con tu ascendente hoy. Practica el retiro y evita conflictos de ego.`,
-          time: "Hace 2 horas",
+          title: "🌌 Alineación Cósmica Activa",
+          message: `Tu geometría natal de ${zodiac} está en resonancia con los tránsitos lunares de hoy.`,
+          time: "Hace 1 hora",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Movimiento Lunar y Renovación de Intenciones",
-          message: `La Luna actual entra en sintonía fértil con tu signo solar ${translatedZodiac}. Período majestuoso para iniciar acciones silenciosas de dharma.`,
-          time: "Hace 5 horas",
+          title: "🌙 Portal de Fase Lunar",
+          message: `El portal lunar está abierto para potenciar rituales centrados en ${currentCategoryDisplay}.`,
+          time: "Hace 4 horas",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
           title: "✨ Misión Kármica Activa de Hoy",
-          message: `Osiris detectó que completar tu misión espiritual hoy ayudará a disolver los bloqueos de ansiedad acumulada. ¡Complétala para ganar puntos!`,
+          message: `Osiris detectó que completar tu misión espiritual de hoy ayudará a disolver bloqueios acumulados.`,
           time: "Hace 9 horas",
           type: "mission"
         }
@@ -4934,22 +4896,22 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       de: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Osiris-Warnung: Kritischer Aspekt",
-          message: `Ein subtiler himmlischer Transit bildet heute ein wichtiges Quadrat mit Ihrem Aszendenten. Üben Sie Rückzug und vermeiden Sie Ego-Konflikte.`,
-          time: "Vor 2 Stunden",
+          title: "🌌 Aktive kosmische Ausrichtung",
+          message: `Ihre ${zodiac}-Natalgeometrie steht in Resonanz mit den heutigen Mondtransiten.`,
+          time: "Vor 1 Stunde",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Mondbewegung & Erneuerung der Absichten",
-          message: `Der aktuelle Mond tritt in fruchtbare Harmonie mit Ihrem Sonnenzeichen ${translatedZodiac}. Ein majestätischer Zeitraum, um stille Dharma-Aktionen einzuleiten.`,
-          time: "Vor 5 Stunden",
+          title: "🌙 Mondphasen-Portal",
+          message: `Das Mondportal ist geöffnet, um Rituale zu verstärken, die auf ${currentCategoryDisplay} ausgerichtet sind.`,
+          time: "Vor 4 Stunden",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
-          title: "✨ Aktive karmische Mission von heute",
-          message: `Osiris hat festgestellt, dass der Abschluss Ihrer heutigen spirituellen Mission dazu beiträgt, aufgestaute Angstblockaden aufzulösen. Schließen Sie sie ab, um Punkte zu sammeln!`,
+          title: "✨ Heutige aktive karmische Mission",
+          message: `Osiris hat erkannt, dass das Abschließen Ihrer heutigen spirituellen Mission dazu beiträgt, blockierte Energie aufzulösen.`,
           time: "Vor 9 Stunden",
           type: "mission"
         }
@@ -4957,26 +4919,112 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       fr: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Alerte d'Osiris : Aspect Critique",
-          message: `Un transit céleste subtil forme un carré important avec votre ascendant aujourd'hui. Pratiquez le retrait et évitez les conflits d'ego.`,
-          time: "Il y a 2 heures",
+          title: "🌌 Alignement Cosmique Actif",
+          message: `Votre géométrie natale de ${zodiac} est en résonance avec les transits lunaires d'aujourd'hui.`,
+          time: "Il y a 1 heure",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Mouvement Lunaire & Renouvellement des Intentions",
-          message: `La Lune actuelle entre en harmonie fertile avec votre signe solaire ${translatedZodiac}. Période majestueuse pour initier des actions silencieuses de dharma.`,
-          time: "Il y a 5 heures",
+          title: "🌙 Portail de Phase Lunaire",
+          message: `Le portail lunaire est ouvert pour améliorer les rituels axés sur ${currentCategoryDisplay}.`,
+          time: "Il y a 4 heures",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
           title: "✨ Mission Karmique Active d'Aujourd'hui",
-          message: `Osiris a détecté que terminer votre mission spirituelle aujourd'hui aidera à dissoudre les blocages d'anxiété accumulée. Terminez-la pour gagner des points !`,
+          message: `Osiris a détecté que l'accomplissement de votre mission spirituelle aujourd'hui aidera à dissoudre les blocages.`,
           time: "Il y a 9 heures",
           type: "mission"
         }
       ]
+    };
+
+    const fallbackRadarDoDiaMap: Record<string, Array<{ key: string, label: string, status: string, statusColor: string, description: string, cosmicTip: string }>> = {
+      pt: [
+        { key: "energia", label: "Energia Vital", status: "Excelente", statusColor: "text-emerald-400", description: "Sua vitalidade molecular e disposição física estão alinhadas com sua regência estelar, favorecendo atividades físicas.", cosmicTip: "Aproveite a luz do dia para exercitar-se ao ar livre por pelo menos 15 minutos." },
+        { key: "produtividade", label: "Foco e Produtividade", status: "Elevado", statusColor: "text-indigo-400", description: "Sua retenção intelectual e foco singular de Mercúrio estão ativos, facilitando a resolução de pendências complexas.", cosmicTip: "Conclua as tarefas de maior exigência mental antes do entardecer." },
+        { key: "relacionamentos", label: "Relacionamentos", status: "Harmônico", statusColor: "text-pink-400", description: "Sua diplomacia e conexões áuricas com base em Vênus facilitam o diálogo empático e a reconciliação.", cosmicTip: "Envie uma mensagem de carinho a quem você não fala há algum tempo." },
+        { key: "organizacao", label: "Organização", status: "Estável", statusColor: "text-amber-400", description: "Sua capacidade de organizar afazeres práticos e rotinas sob o Caminho de Vida está estável.", cosmicTip: "Organize sua mesa de trabalho para liberar espaço físico e mental." },
+        { key: "bem_estar", label: "Bem-estar Geral", status: "Sereno", statusColor: "text-sky-400", description: "O centramento emocional e a quietude mental propiciam momentos de introspecção profunda e paz interior.", cosmicTip: "Faça um ritual de respiração de 3 minutos antes de deitar-se." }
+      ],
+      en: [
+        { key: "energia", label: "Vital Energy", status: "Excellent", statusColor: "text-emerald-400", description: "Your molecular vitality and physical disposition are aligned with your stellar rulership, favoring physical activities.", cosmicTip: "Take advantage of daylight to exercise outdoors for at least 15 minutes." },
+        { key: "produtividade", label: "Focus & Productivity", status: "High", statusColor: "text-indigo-400", description: "Your intellectual retention and singular Mercury focus are active, making it easy to resolve complex pending issues.", cosmicTip: "Complete tasks with higher mental demand before dusk." },
+        { key: "relacionamentos", label: "Relationships", status: "Harmonious", statusColor: "text-pink-400", description: "Your diplomacy and auric connections based on Venus facilitate empathetic dialogue and reconciliation.", cosmicTip: "Send a message of affection to someone you haven't spoken to in a while." },
+        { key: "organizacao", label: "Organization", status: "Stable", statusColor: "text-amber-400", description: "Your ability to organize practical chores and routines under your Life Path is stable.", cosmicTip: "Organize your desk to clear physical and mental space." },
+        { key: "bem_estar", label: "Overall Well-being", status: "Serene", statusColor: "text-sky-400", description: "Emotional centering and mental quietness foster moments of deep introspection and inner peace.", cosmicTip: "Perform a 3-minute breathing ritual before going to bed." }
+      ],
+      es: [
+        { key: "energia", label: "Energía Vital", status: "Excelente", statusColor: "text-emerald-400", description: "Tu vitalidad molecular y disposición física están alineadas con tu regencia estelar, favoreciendo las actividades físicas.", cosmicTip: "Aprovecha la luz del día para hacer ejercicio al aire libre durante al menos 15 minutos." },
+        { key: "produtividade", label: "Enfoque y Productividad", status: "Elevado", statusColor: "text-indigo-400", description: "Tu retención intelectual y enfoque singular de Mercurio están activos, facilitando la resolución de pendientes complejos.", cosmicTip: "Completa las tareas de mayor exigencia mental antes del atardecer." },
+        { key: "relacionamentos", label: "Relaciones", status: "Armonioso", statusColor: "text-pink-400", description: "Tu diplomacia y conexiones áuricas basadas en Venus facilitan el diálogo empático y la reconciliación.", cosmicTip: "Envía un mensaje de cariño a alguien con quien no hayas hablado en mucho tiempo." },
+        { key: "organizacao", label: "Organización", status: "Estable", statusColor: "text-amber-400", description: "Tu capacidad para organizar tareas prácticas y rutinas bajo tu Camino de Vida está estable.", cosmicTip: "Organiza tu escritorio para despejar espacio físico y mental." },
+        { key: "bem_estar", label: "Bienestar General", status: "Sereno", statusColor: "text-sky-400", description: "El centramiento emocional y la quietud mental propician momentos de profunda introspección y paz interior.", cosmicTip: "Realiza un ritual de respiración de 3 minutos antes de acostarte." }
+      ],
+      de: [
+        { key: "energia", label: "Vitalität", status: "Hervorragend", statusColor: "text-emerald-400", description: "Ihre molekulare Vitalität und körperliche Verfassung sind auf Ihre stellare Herrschaft abgestimmt, was körperliche Aktivitäten begünstigt.", cosmicTip: "Nutzen Sie das Tageslicht, um sich mindestens 15 Minuten lang im Freien zu bewegen." },
+        { key: "produtividade", label: "Fokus & Produktivität", status: "Hoch", statusColor: "text-indigo-400", description: "Ihre intellektuelle Merkfähigkeit und Ihr einzigartiger Merkur-Fokus sind aktiv, was die Lösung komplexer Aufgaben erleichtert.", cosmicTip: "Erledigen Sie Aufgaben mit hohem geistigen Anspruch vor der Dämmerung." },
+        { key: "relacionamentos", label: "Beziehungen", status: "Harmonisch", statusColor: "text-pink-400", description: "Ihre Diplomatie und Ihre auf Venus basierenden aurischen Verbindungen erleichtern den empathischen Dialog und die Versöhnung.", cosmicTip: "Senden Sie eine liebevolle Nachricht an jemanden, mit dem Sie länger nicht gesprochen haben." },
+        { key: "organizacao", label: "Organisation", status: "Stabil", statusColor: "text-amber-400", description: "Ihre Fähigkeit, praktische Pflichten und Routinen unter Ihrem Lebensweg zu organisieren, ist stabil.", cosmicTip: "Räumen Sie Ihren Schreibtisch auf, um physischen und mentalen Raum freizumachen." },
+        { key: "bem_estar", label: "Allgemeines Wohlbefinden", status: "Gelassen", statusColor: "text-sky-400", description: "Emotionale Zentrierung und geistige Ruhe fördern Momente tiefer Selbstbeobachtung und inneren Friedens.", cosmicTip: "Führen Sie vor dem Schlafengehen ein 3-minütiges Atemritual durch." }
+      ],
+      fr: [
+        { key: "energia", label: "Énergie Vitale", status: "Excellente", statusColor: "text-emerald-400", description: "Votre vitalité moléculaire et votre disposition physique sont alignées avec votre régence stellaire, favorisant les activités physiques.", cosmicTip: "Profitez de la lumière du jour pour faire de l'exercice en plein air pendant au moins 15 minutes." },
+        { key: "produtividade", label: "Concentration & Productivité", status: "Élevée", statusColor: "text-indigo-400", description: "Votre rétention intellectuelle et votre concentration singulière de Mercure sont actives, facilitant la résolution de dossiers complexes.", cosmicTip: "Terminez les tâches à forte demande mentale avant le crépuscule." },
+        { key: "relacionamentos", label: "Relations", status: "Harmonieuse", statusColor: "text-pink-400", description: "Votre diplomatie et vos connexions auriques basées sur Vénus facilitent le dialogue empathique et la réconciliation.", cosmicTip: "Envoyez un message d'affection à quelqu'un à qui vous n'avez pas parlé depuis un certain temps." },
+        { key: "organizacao", label: "Organisation", status: "Stable", statusColor: "text-amber-400", description: "Votre capacité à organiser les tâches pratiques et les routines sous votre Chemin de Vie est stable.", cosmicTip: "Organisez votre bureau pour libérer de l'espace physique et mental." },
+        { key: "bem_estar", label: "Bien-être Général", status: "Serein", statusColor: "text-sky-400", description: "Le centrage émotionnel et le calme mental favorisent des moments de profonde introspection et de paix intérieure.", cosmicTip: "Faites un rituel de respiration de 3 minutes avant de vous coucher." }
+      ]
+    };
+
+    const fallbackRadarOportunidadesMap: Record<string, Record<string, { status: string, statusColor: string, text: string, conselho: string, ritual: string }>> = {
+      pt: {
+        dinheiro: { status: "Favorável", statusColor: "text-emerald-400", text: "Oportunidades de ganhos secundários intelectuais sob ar ativo.", conselho: "O trânsito atual favorece a formatação de serviços de mentoria ou propostas comerciais rascunhadas hoje.", ritual: "Escreva suas metas econômicas em um papel com tinta preta para fixar as ações tomadas agora." },
+        amor: { status: "Ressonante", statusColor: "text-pink-400", text: "Magnetismo em alta, facilitando conexões profundas e românticas.", conselho: "Com Vênus emanando trígonos estelares, desfaça muros analíticos e compartilhe desejos sinceros hoje.", ritual: "Acenda uma vela rosa e mentalize a cura de conexões do passado ao entardecer." },
+        estudos: { status: "Excepcional", statusColor: "text-sky-400", text: "Retenção intelectual extraordinária e foco linear ativado.", conselho: "Sua mente possui facilidade única hoje para absorber conceitos metafísicos, matemáticos e científicos.", ritual: "Mantenha um cristal de quartzo transparente ou sodalita em sua mesa enquanto estuda." },
+        trabalho: { status: "Estável", statusColor: "text-indigo-400", text: "Capacidade de estruturação mecânica e conclusão de pendências.", conselho: "A influência do Caminho de Vida ressoa para estabilizar tarefas administrativas. Execute sem adiar.", ritual: "Organize seus e-mails e arquivos digitais prioritários para reordenar seu fluxo profissional." },
+        criatividade: { status: "Inspirado", statusColor: "text-amber-400", text: "Canal mental de ideias originais e soluções inovadoras fluido.", conselho: "Não filtre seus insights à primeira vista. Deixe as ideias fluírem sem compromisso no rascunho.", ritual: "Desenhe formas livres em uma folha branca e deixe seu subconsciente sugerir soluções de problemas práticos." },
+        networking: { status: "Promissor", statusColor: "text-teal-400", text: "Facilidade para gerar engajamento em causas sociais e projetos coletivos.", conselho: "Entre em contato com parceiros ou mentores adormecidos. Compartilhar ideais éticos traz forças.", ritual: "Escreva uma mensagem de gratidão a um mentor ou colega que contribuiu para sua jornada profissional." },
+        espiritualidade: { status: "Profundo", statusColor: "text-purple-400", text: "Frequência onírica aberta e trânsito favorável a rituais astrológicos.", conselho: "Suas conexões áuricas com esferas superiores estão extremamente receptivas sob a regência de Mercúrio.", ritual: "Sente-se em silêncio por 5 minutos à noite, focando no chakra frontal, visualizando uma luz azul-índigo." }
+      },
+      en: {
+        dinheiro: { status: "Favorable", statusColor: "text-emerald-400", text: "Opportunities for intellectual secondary gains under active air.", conselho: "The current transit favors formatting mentoring services or drafted business proposals today.", ritual: "Write your economic goals on a paper with black ink to anchor the actions taken now." },
+        amor: { status: "Resonant", statusColor: "text-pink-400", text: "Magnetism on the rise, facilitating deep and romantic connections.", conselho: "With Venus emanating stellar trines, break down analytical walls and share sincere desires today.", ritual: "Light a pink candle and visualize the healing of past connections at dusk." },
+        estudos: { status: "Exceptional", statusColor: "text-sky-400", text: "Extraordinary intellectual retention and linear focus activated.", conselho: "Your mind has a unique facility today to absorb metaphysical, mathematical, and scientific concepts.", ritual: "Keep a clear quartz or sodalite crystal on your desk while studying." },
+        trabalho: { status: "Stable", statusColor: "text-indigo-400", text: "Capacity for mechanical structuring and resolving pending tasks.", conselho: "The influence of the Life Path resonates to stabilize administrative tasks. Execute without delaying.", ritual: "Organize your priority emails and digital files to reorder your professional workflow." },
+        criatividade: { status: "Inspired", statusColor: "text-amber-400", text: "Mental channel of original ideas and innovative solutions is fluid.", conselho: "Do not filter your insights at first glance. Let ideas flow without commitment on the draft.", ritual: "Draw free-form shapes on a white sheet of paper and let your subconscious suggest solutions." },
+        networking: { status: "Promising", statusColor: "text-teal-400", text: "Ease of generating engagement in social causes and collective projects.", conselho: "Get in touch with sleeping partners or mentors. Sharing ethical ideals brings strength.", ritual: "Write a message of gratitude to a mentor or colleague who contributed to your career journey." },
+        espiritualidade: { status: "Deep", statusColor: "text-purple-400", text: "Open dream frequency and favorable transit for astrological rituals.", conselho: "Your auric connections with higher spheres are extremely receptive under the rulership of Mercury.", ritual: "Sit in silence for 5 minutes at night, focusing on the third eye chakra, visualizing an indigo light." }
+      },
+      es: {
+        dinheiro: { status: "Favorable", statusColor: "text-emerald-400", text: "Oportunidades de ganancias secundarias intelectuales bajo aire activo.", conselho: "El tránsito actual favorece el diseño de servicios de mentoría o propuestas comerciales borrador hoy.", ritual: "Escribe tus metas económicas en un papel con tinta negra para fijar las acciones tomadas ahora." },
+        amor: { status: "Resonante", statusColor: "text-pink-400", text: "Magnetismo en alza, facilitando conexiones profundas y románticas.", conselho: "Con Venus emanando trígonos estelares, deshaz muros analíticos y comparte deseos sinceros hoy.", ritual: "Enciende una vela rosa y mentaliza la sanación de conexiones del pasado al atardecer." },
+        estudos: { status: "Excepcional", statusColor: "text-sky-400", text: "Retención intelectual extraordinaria y enfoque lineal activado.", conselho: "Tu mente posee facilidad única hoy para absorber conceptos metafísicos, matemáticos y científicos.", ritual: "Mantén un cristal de cuarzo transparente o sodalita en tu escritorio mientras estudias." },
+        trabalho: { status: "Estable", statusColor: "text-indigo-400", text: "Capacidad de estructuración mecánica y conclusión de pendientes.", conselho: "La influencia del Camino de Vida resuena para estabilizar tareas administrativas. Ejecuta sin posponer.", ritual: "Organiza tus correos prioritarios y archivos digitales para reordenar tu flujo profesional." },
+        criatividade: { status: "Inspirado", statusColor: "text-amber-400", text: "Canal mental de ideas originales y soluciones innovadoras fluido.", conselho: "No filtres tus ideas a primera vista. Deja fluir las ideas sin compromiso en el borrador.", ritual: "Dibuja formas libres en una hoja blanca y deja que tu subconsciente sugiera soluciones de problemas." },
+        networking: { status: "Prometedor", statusColor: "text-teal-400", text: "Facilidad para generar compromiso en causas sociales y proyectos colectivos.", conselho: "Ponte en contacto con socios o mentores latentes. Compartir ideales éticos trae fuerzas.", ritual: "Escribe un mensaje de gratitud a un mentor o colega que contribuyó a tu trayectoria profesional." },
+        espiritualidade: { status: "Profundo", statusColor: "text-purple-400", text: "Frecuencia onírica abierta y tránsito favorable a rituales astrológicos.", conselho: "Tus conexiones áuricas con esferas superiores están extremadamente receptivas bajo la regencia de Mercurio.", ritual: "Siéntate en silencio durante 5 minutos por la noche, enfocándote en el chakra frontal." }
+      },
+      de: {
+        dinheiro: { status: "Günstig", statusColor: "text-emerald-400", text: "Chancen für intellektuelle Nebenerträge unter aktivem Lufteinfluss.", conselho: "Der aktuelle Transit begünstigt heute die Gestaltung von Mentoring-Diensten oder entworfenen Geschäftsvorschlägen.", ritual: "Schreiben Sie Ihre wirtschaftlichen Ziele mit schwarzer Tinte auf ein Blatt Papier, um die Handlungen zu verankern." },
+        amor: { status: "Resonant", statusColor: "text-pink-400", text: "Steigender Magnetismus erleichtert tiefe und romantische Verbindungen.", conselho: "Wenn die Venus stellare Trine ausstrahlt, bauen Sie heute analytische Mauern ab und teilen Sie aufrichtige Wünsche.", ritual: "Zünden Sie in der Abenddämmerung eine rosa Kerze an und visualisieren Sie die Heilung vergangener Beziehungen." },
+        estudos: { status: "Außergewöhnlich", statusColor: "text-sky-400", text: "Außergewöhnliche intellektuelle Merkfähigkeit und linearer Fokus aktiviert.", conselho: "Ihr Geist besitzt heute eine einzigartige Fähigkeit, metaphysische, mathematische und wissenschaftliche Konzepte aufzunehmen.", ritual: "Legen Sie während des Studiums einen klaren Bergkristall oder Sodalith auf Ihren Schreibtisch." },
+        trabalho: { status: "Stabil", statusColor: "text-indigo-400", text: "Fähigkeit zur mechanischen Strukturierung und Erledigung offener Aufgaben.", conselho: "Der Einfluss des Lebenswegs stabilisiert administrative Aufgaben. Ohne Verzögerung ausführen.", ritual: "Organisieren Sie Ihre wichtigsten E-Mails und digitalen Dateien, um Ihren Arbeitsablauf neu zu ordnen." },
+        criatividade: { status: "Inspiriert", statusColor: "text-amber-400", text: "Der mentale Kanal für originelle Ideen und innovative Lösungen fließt frei.", conselho: "Filtern Sie Ihre Erkenntnisse nicht auf den ersten Blick. Lassen Sie Ideen unverbindlich im Entwurf fließen.", ritual: "Zeichnen Sie freie Formen auf ein weißes Blatt Papier und lassen Sie Ihr Unterbewusstsein Lösungen vorschlagen." },
+        networking: { status: "Vielversprechend", statusColor: "text-teal-400", text: "Leichtigkeit, Engagement für soziale Anliegen und kollektive Projekte zu erzeugen.", conselho: "Kontaktieren Sie schlafende Partner oder Mentoren. Das Teilen ethischer Ideale bringt Kraft.", ritual: "Schreiben Sie eine Dankesnachricht an einen Mentor oder Kollegen, der zu Ihrer beruflichen Reise beigetragen hat." },
+        espiritualidade: { status: "Tief", statusColor: "text-purple-400", text: "Offene Traumfrequenz und günstiger Transit für astrologische Rituale.", conselho: "Ihre aurischen Verbindungen zu höheren Sphären sind unter der Herrschaft Merkurs äußerst empfänglich.", ritual: "Sitzen Sie nachts 5 Minuten lang in der Stille und konzentrieren Sie sich auf das Stirnchakra, während Sie sich ein indigoblaues Licht vorstellen." }
+      },
+      fr: {
+        dinheiro: { status: "Favorable", statusColor: "text-emerald-400", text: "Opportunités de gains secondaires intellectuels sous air actif.", conselho: "Le transit actuel favorise la création de services de mentorat ou de propositions commerciales ébauchées aujourd'hui.", ritual: "Écrivez vos objectifs économiques sur papier à l'encre noire pour fixer les actions engagées maintenant." },
+        amor: { status: "Résonnant", statusColor: "text-pink-400", text: "Magnétisme en hausse, facilitant des connexions profondes et romantiques.", conselho: "Avec Vénus émanant des trigones stellaires, brisez les barrières analytiques et partagez vos désirs sincères aujourd'hui.", ritual: "Allumez une bougie rose et méditez sur la guérison des relations du passé au crépuscule." },
+        estudos: { status: "Exceptionnel", statusColor: "text-sky-400", text: "Rétention intellectuelle extraordinaire et concentration linéaire activée.", conselho: "Votre esprit a une facilité unique aujourd'hui pour absorber les concepts métaphysiques, mathématiques et scientifiques.", ritual: "Gardez un cristal de quartz clair ou de sodalite sur votre bureau pendant vos études." },
+        trabalho: { status: "Stable", statusColor: "text-indigo-400", text: "Capacité de structuration mécanique et achèvement des tâches en attente.", conselho: "L'influence du Chemin de Vie résonne pour stabiliser les tâches administratives. Exécutez sans tarder.", ritual: "Organisez vos e-mails prioritaires et vos fichiers numériques pour réordonner votre flux professionnel." },
+        criatividade: { status: "Inspiré", statusColor: "text-amber-400", text: "Canal mental fluide pour les idées originales et les solutions innovantes.", conselho: "Ne filtrez pas vos intuitions au premier coup d'œil. Laissez couler les idées sans engagement sur un brouillon.", ritual: "Dessinez des formes libres sur une feuille blanche et laissez votre subconscient suggérer des solutions." },
+        networking: { status: "Prometteur", statusColor: "text-teal-400", text: "Facilité à susciter l'engagement pour des causes sociales et des projets collectifs.", conselho: "Prenez contact avec des partenaires ou mentors endormis. Partager des idéaux éthiques apporte de la force.", ritual: "Écrivez un message de gratitude à un mentor ou collègue qui a contribué à votre parcours professionnel." },
+        espiritualidade: { status: "Profond", statusColor: "text-purple-400", text: "Fréquence onirique ouverte et transit favorable aux rituels astrologiques.", conselho: "Vos connexions auriques avec les sphères supérieures sont extrêmement réceptives sous la régence de Mercure.", ritual: "Asseyez-vous en silence pendant 5 minutes le soir, en vous concentrant sur le chakra du troisième œil." }
+      }
     };
 
     return {
@@ -4988,7 +5036,9 @@ app.post("/api/osiris/dashboard", async (req, res) => {
         rating: 4.8
       },
       contextMessage: contextMap[activeLang] || contextMap["pt"],
-      offlineNotifications: notificationsMap[activeLang] || notificationsMap["pt"]
+      offlineNotifications: notificationsMap[activeLang] || notificationsMap["pt"],
+      radarDoDia: fallbackRadarDoDiaMap[activeLang] || fallbackRadarDoDiaMap["pt"],
+      radarOportunidades: fallbackRadarOportunidadesMap[activeLang] || fallbackRadarOportunidadesMap["pt"]
     };
   };
 
@@ -5018,42 +5068,76 @@ app.post("/api/osiris/dashboard", async (req, res) => {
     };
     const exactPromptValue = promptStringMap[activeLang] || promptStringMap.pt;
 
-    const contextPrompt = `O usuário chama-se "${name}", seu signo é ${zodiac}, nascido em ${birthDate}.
+    const contextPrompt = `O usuário chama-se "${name}", seu signo solar é ${zodiac}, nascido em ${birthDate}.
+${chartContext}
 Dados Atuais:
 - Biorritmo: Físico ${biorhythm?.physical}%, Emocional ${biorhythm?.emotional}%, Intelectual ${biorhythm?.intellectual}%
 - Clima e Temperatura: ${weather?.condition || "Céu Limpo"}, ${weather?.temperature || "23"}°C, localizado em ${location || "sua cidade"}
 - Categoria Sintonizada do Dia para Orientação Principal Única ("Prioridade do Dia"): "${selectedCategory}"
 - Último Sonho Relevante: ${lastDream ? `"${lastDream.description}"` : "Nenhum sonho recente registrado."}
 
-Como o conselheiro genial "OSÍRIS", gere um objeto JSON EXCLUSIVAMENTE em ${targetLanguage}, sem qualquer explicação fora dele ou tags adicionais. Ele deve conter os pontos exatos pedidos no Felert.txt:
+Como o conselheiro genial "OSÍRIS", gere um objeto JSON EXCLUSIVAMENTE em ${targetLanguage}, sem qualquer explicação fora dele ou tags adicionais.
+Você DEVE utilizar a GEOMETRIA NATAL do usuário apresentada no "Mapa Astral Real do Usuário" acima como ÚNICA FONTE DE VERDADE absoluta para todas as análises personalizadas. Não invente ou misture dados. Respeite rigorosamente o idioma solicitado: ${targetLanguage}.
 
-1. 'prioridadeDia': insights extraordinários, precisos e poéticos focados na categoria "${selectedCategory}". O conselho e significado devem refletir o clima físico de ${weather?.temperature}°C, o biorritmo atual e as marcas do Sol em ${zodiac}, tudo escrito inteiramente em ${targetLanguage}.
+O objeto deve conter:
+1. 'prioridadeDia': insights extraordinários, precisos e poéticos focados na categoria "${selectedCategory}". O conselho e significado devem refletir o clima físico de ${weather?.temperature || "22"}°C, o biorritmo atual e as marcas do Sol em ${zodiac}, tudo escrito inteiramente em ${targetLanguage}.
 2. 'contextMessage': uma mensagem para quando o usuário está online de teor contextual, amigável e refinado, terminando exatamente com a String "${exactPromptValue}".
 3. 'offlineNotifications': 3 notificações de teor realístico de canais push úteis e personalizadas sobre trânsitos kármicos, lunações e missões, escritas em ${targetLanguage}.
+4. 'radarDoDia': um array de 5 objetos detalhando as coordenadas para 'energia_vital', 'produtividade', 'relacionamentos', 'organizacao', 'bem_estar'. Cada objeto deve conter:
+   - 'key': string contendo a chave (energia_vital | produtividade | relacionamentos | organizacao | bem_estar)
+   - 'label': rótulo traduzido em ${targetLanguage} (ex: "Energia Vital", "Productivity", etc.)
+   - 'status': um estado cósmico místico e qualitativo em ${targetLanguage} (ex: "Soberano", "Fluxo Intenso", "Retração Alinhada", etc.) sem usar porcentagens, barras ou números!
+   - 'statusColor': classe css correspondente ao estado (use text-amber-400 para energia_vital, text-indigo-400 para produtividade, text-pink-400 para relacionamentos, text-emerald-400 para organizacao, text-sky-400 para bem_estar)
+   - 'description': uma explicação astrológica e biorrítmica altamente detalhada, poética e rica (mínimo de 3 frases completas) em ${targetLanguage} relacionando a geometria natal do usuário (Sol, Lua, Ascendente e posicionamentos) com as vibrações do dia.
+   - 'cosmicTip': conselho prático objetivo de como aproveitar ou harmonizar este aspecto hoje em ${targetLanguage}.
+5. 'radarOportunidades': um objeto onde as chaves são as seguintes 7 áreas exatas: 'dinheiro', 'amor', 'estudos', 'trabalho', 'criatividade', 'networking', 'espiritualidade'. Cada área deve conter:
+   - 'status': um estado cósmico místico em ${targetLanguage} (ex: "Auspicioso", "Sintonia de Ouro", "Maré Alta", "Desafio Kármico", etc.) sem usar progressão numérica, números ou porcentagens!
+   - 'statusColor': classe de cor css (ex: text-emerald-400, text-pink-400, text-sky-400, text-indigo-400, text-amber-400, text-teal-400, text-purple-400)
+   - 'text': texto de insight astrológico profundo, personalizado e rico em detalhes (mínimo de 3 frases) em ${targetLanguage}, sintonizando o mapa astral real do usuário com a área em questão.
+   - 'conselho': conselho prático detalhado de como proceder hoje em relação a essa área em ${targetLanguage}.
+   - 'ritual': um ritual de potencialização exclusivo e personalizado para hoje em ${targetLanguage} de teor sutil e refinado.
 
 Retorne no formato JSON exato em ${targetLanguage}:
 {
   "prioridadeDia": {
     "category": "${selectedCategory}",
-    "title": "Título poético curto da prioridade em ${targetLanguage}",
-    "description": "Texto rico e profundo em ${targetLanguage} que resume o insight único diário do usuário integrando os dados.",
-    "advice": "Instrução objetiva, compassiva e sincera de como agir em relação a isso em ${targetLanguage}",
+    "title": "...",
+    "description": "...",
+    "advice": "...",
     "rating": 4.9
   },
   "contextMessage": {
-    "sentence": "Breve frase mística convidativa contextualizada de Osiris baseada no clima ou dia em ${targetLanguage}",
+    "sentence": "...",
     "prompt": "${exactPromptValue}"
   },
   "offlineNotifications": [
     {
       "id": "not1",
-      "title": "Título impactante personalizado em ${targetLanguage}",
-      "message": "Mensagem útil personalizada única sem enrolação em ${targetLanguage}",
-      "time": "Há 1 hora",
-      "type": "transit|lune|mission"
-    },
-    ...
-  ]
+      "title": "...",
+      "message": "...",
+      "time": "...",
+      "type": "..."
+    }
+  ],
+  "radarDoDia": [
+    {
+      "key": "energia_vital",
+      "label": "...",
+      "status": "...",
+      "statusColor": "text-amber-400",
+      "description": "...",
+      "cosmicTip": "..."
+    }
+  ],
+  "radarOportunidades": {
+    "dinheiro": {
+      "status": "...",
+      "statusColor": "text-emerald-400",
+      "text": "...",
+      "conselho": "...",
+      "ritual": "..."
+    }
+  }
 }`;
 
     const response = await generateContentWithFallback({
@@ -5064,7 +5148,7 @@ Retorne no formato JSON exato em ${targetLanguage}:
     });
 
     const parsed = JSON.parse(response.text || "{}");
-    if (parsed && parsed.prioridadeDia && parsed.contextMessage && Array.isArray(parsed.offlineNotifications)) {
+    if (parsed && parsed.prioridadeDia && parsed.contextMessage && Array.isArray(parsed.offlineNotifications) && Array.isArray(parsed.radarDoDia) && parsed.radarOportunidades) {
       setCachedResponse(cacheKey, parsed);
       return res.json(parsed);
     } else {
@@ -5080,7 +5164,7 @@ Retorne no formato JSON exato em ${targetLanguage}:
 
 // API: Personal Counselor chat with memory integration
 app.post("/api/conselheira/chat", async (req, res) => {
-  const { messages, userProfile, requestTopic, lang } = req.body;
+  const { messages, userProfile, requestTopic, lang, mapData } = req.body;
   if (!messages || messages.length === 0) {
     return res.status(400).json({ error: "Mensagens são necessárias." });
   }
@@ -5088,16 +5172,30 @@ app.post("/api/conselheira/chat", async (req, res) => {
   const lastUserMessage = messages[messages.length - 1].text;
   const activeLang = (lang || "pt").toLowerCase();
 
-  const getFallbackResponse = (msg: string) => {
-    const userName = userProfile?.name || "Buscador";
+  let solSign = "Aquário";
+  let moonSign = "Aquário";
+  let ascSign = "Sagitário";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+    if (sun) solSign = translateAstroSign(sun, activeLang);
+    if (moon) moonSign = translateAstroSign(moon, activeLang);
+    if (asc) ascSign = translateAstroSign(asc, activeLang);
+  } else {
     const birthDate = userProfile?.birthDate || "";
     const solSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
     const moonSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 5) : "Aquário";
     const ascSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 8) : "Sagitário";
 
-    const solSign = translateAstroSign(solSignRaw, activeLang);
-    const moonSign = translateAstroSign(moonSignRaw, activeLang);
-    const ascSign = translateAstroSign(ascSignRaw, activeLang);
+    solSign = translateAstroSign(solSignRaw, activeLang);
+    moonSign = translateAstroSign(moonSignRaw, activeLang);
+    ascSign = translateAstroSign(ascSignRaw, activeLang);
+  }
+
+  const getFallbackResponse = (msg: string) => {
+    const userName = userProfile?.name || "Buscador";
 
     const lowerMsg = msg.toLowerCase();
 
@@ -5146,15 +5244,10 @@ app.post("/api/conselheira/chat", async (req, res) => {
   }
 
   try {
-    const birthDate = userProfile?.birthDate || "";
-    const solSign = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
-    const moonSign = birthDate ? getAscendedAstrologicalSign(birthDate, 5) : "Aquário";
-    const ascSign = birthDate ? getAscendedAstrologicalSign(birthDate, 8) : "Sagitário";
-
     const formattedProfile = userProfile ? `
 Nome do Usuário: ${userProfile.name}
 Nascido em: ${userProfile.birthDate} às ${userProfile.birthTime} na cidade ${userProfile.birthCity}
-Seu perfil combina Sol em ${solSign}, Ascendente em ${ascSign} e Lua em ${moonSign}.` : "Usuário anônimo buscando insights de autoconhecimento.";
+Seu perfil do Mapa Astral Natal Real (FONTE ÚNICA DA VERDADE): Sol em ${solSign}, Ascendente em ${ascSign} e Lua em ${moonSign}.` : "Usuário buscando insights de autoconhecimento.";
 
     const sysInstruction = `Você é "Orbia", a assistente astrológica inteligente, conselheira espiritual e mentor energético do portal Mapa Estelar.
 DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
@@ -5358,8 +5451,43 @@ app.post("/api/tarot/draw", async (req, res) => {
     }
   }
 
-  const { lang } = req.body || {};
+  const { lang, mapData, userProfile } = req.body || {};
   const activeLang = (lang || "pt").toLowerCase();
+  
+  let userSunSign = "";
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+    
+    chartContext = `
+Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
+- Sol em: ${userSunSign}
+- Lua em: ${userMoonSign}
+- Ascendente em: ${userAscSign}
+- Distribuição de Elementos: ${elementsSummary}
+`;
+  } else if (userProfile?.birthDate) {
+    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
+    userSunSign = zodiac;
+    chartContext = `
+Informações Astrológicas do Usuário:
+- Signo Solar estimado: ${userSunSign}
+`;
+  }
   
   const rawCard = shuffledDeck[0];
   const selectedCard = translateCard(rawCard, activeLang);
@@ -5407,6 +5535,10 @@ app.post("/api/tarot/draw", async (req, res) => {
   try {
     const prompt = `Gere uma leitura de tarô personalizada em ${targetLangName} para a carta sorteada: "${selectedCard.cardName}".
 O usuário quer saber sua previsão e conselho astrológico-tarótico com visual premium para esta semana.
+
+${chartContext}
+
+Considere as energias astrológicas regentes do mapa natal do usuário descritas acima (FONTE ÚNICA DA VERDADE) para sintonizar intimamente a leitura.
 Gere um JSON exato com as seguintes chaves de texto ricas e conselhos poéticos em ${targetLangName}:
 {
   "weeklyForecast": "Parágrafo detalhado de previsão de 100 a 150 palavras para a semana unindo a energia da carta e intuição astrológica...",
@@ -5522,7 +5654,7 @@ function generateOfflineTarotReading(type: string, cards: any[], question: strin
 
 // API: Interpretação de cartas sintonizadas por IA
 app.post("/api/tarot/interpret", async (req, res) => {
-  const { type, cards, question, userName, birthDate, birthTime, latitude, longitude, lang } = req.body;
+  const { type, cards, question, userName, birthDate, birthTime, latitude, longitude, lang, mapData, userProfile } = req.body;
   const userDisplay = userName || "Buscador de Sabedoria";
 
   const cardsListStr = cards && Array.isArray(cards)
@@ -5539,34 +5671,50 @@ app.post("/api/tarot/interpret", async (req, res) => {
   };
   const targetLangName = langNames[activeLang] || "Português";
 
-  let astroContextLine = "";
-  if (birthDate) {
+  let userSunSign = "";
+  let userMoonSign = "";
+  let userAscSign = "";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    chartContext = `Sol em ${userSunSign}, Lua em ${userMoonSign}, Ascendente em ${userAscSign}`;
+  } else if (birthDate || userProfile?.birthDate) {
     try {
+      const bDate = birthDate || userProfile?.birthDate;
       const bTime = birthTime || "12:00";
       const lat = latitude !== undefined ? latitude : -23.5505;
       const lon = longitude !== undefined ? longitude : -46.6333;
-      const chart = performAstroCalculation(birthDate, bTime, lat, lon, undefined, activeLang);
+      const chart = performAstroCalculation(bDate, bTime, lat, lon, undefined, activeLang);
       if (chart && chart.astros) {
         const solPlacement = chart.astros.find(a => a.name === "Sol" || a.name === "Sun");
         const luaPlacement = chart.astros.find(a => a.name === "Lua" || a.name === "Moon");
         const ascPlacement = chart.astros.find(a => a.name === "Ascendente" || a.name === "Ascendant");
         
-        const solSign = solPlacement ? solPlacement.sign : "";
-        const luaSign = luaPlacement ? luaPlacement.sign : "";
-        const ascSign = ascPlacement ? ascPlacement.sign : "";
+        userSunSign = solPlacement ? solPlacement.sign : "";
+        userMoonSign = luaPlacement ? luaPlacement.sign : "";
+        userAscSign = ascPlacement ? ascPlacement.sign : "";
         
         const parts = [];
-        if (solSign) parts.push(`Signo Solar: ${solSign}`);
-        if (luaSign) parts.push(`Signo Lunar: ${luaSign}`);
-        if (ascSign) parts.push(`Ascendente: ${ascSign}`);
-        
-        if (parts.length > 0) {
-          astroContextLine = `\n[IMPORTANTE - Perfil Astrológico Natal do Consulente: ${parts.join(", ")}]. Cruze de forma sutil os arquétipos das cartas de Tarot com esse signo solar e/ou ascendente (ex: "Sendo você nativo de ${solSign}..." ou "Com seu ascendente em ${ascSign}..."). Caso apareça uma carta marcante ou desafiadora (como A Torre, A Morte, O Diabo ou A Lua), faça uma correlação direta com a energia planetária de regência (ex: se for Escorpião, relacione com Plutão; se for Áries, com Marte; se for Leão, com o Sol), tornando a interpretação única, autêntica e inesquecível.`;
-        }
+        if (userSunSign) parts.push(`Sol em ${userSunSign}`);
+        if (userMoonSign) parts.push(`Lua em ${userMoonSign}`);
+        if (userAscSign) parts.push(`Ascendente em ${userAscSign}`);
+        chartContext = parts.join(", ");
       }
     } catch (e) {
       console.error("[Tarot Astro Context Error]", e);
     }
+  }
+
+  let astroContextLine = "";
+  if (chartContext) {
+    astroContextLine = `\n[IMPORTANTE - Perfil Astrológico Natal Real do Consulente (FONTE ÚNICA DA VERDADE): ${chartContext}]. Cruze de forma sutil os arquétipos das cartas de Tarot com esse mapa natal do usuário (ex: "Sendo você nativo de Sol em ${userSunSign}..." ou "Com seu ascendente em ${userAscSign}..."). Caso apareça uma carta marcante ou desafiadora (como A Torre, A Morte, O Diabo ou A Lua), faça uma correlação direta com a energia planetária de regência do signo/ascendente correspondente no mapa natal do usuário, tornando a interpretação única, autêntica, inesquecível e profundamente espiritual.`;
   }
 
   let systemPrompt = `Você é Orbia, uma taróloga profissional de verdade, extremamente sensitiva, acolhedora e profundamente humana com anos de experiência em leituras espirituais presenciais. 
@@ -6699,4 +6847,6 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
