@@ -2,7 +2,6 @@ import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
-import { createServer as createViteServer } from 'vite';
 import { performAstroCalculation } from './src/components/astroMath';
 import { computeDetailedCompatibility } from './src/components/compatibilityEngine';
 import moment from 'moment-timezone';
@@ -6716,14 +6715,23 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
 
     // Creating actual live or test checkout session in Stripe
     const stripeLocale = lang === 'pt' ? 'pt-BR' : lang === 'es' ? 'es' : lang === 'de' ? 'de' : lang === 'fr' ? 'fr' : 'en';
-    const priceId = planId === 'annual' ? 'price_1TjkNaLy2FLlsgZ1p832v8cB' : 'price_1TjjUdLy2FLlsgZ1783FoAAX';
     
     const checkoutParams: any = {
       payment_method_types: ['card'],
       locale: stripeLocale,
       line_items: [
         {
-          price: priceId,
+          price_data: {
+            currency: currency,
+            product_data: {
+              name: planName || `Portal Órbita - ${planId === 'annual' ? 'Anual' : 'Mensal'}`,
+              description: `Acesso Premium ao Portal Órbita (${planId})`,
+            },
+            unit_amount: amountInCents,
+            recurring: {
+              interval: interval,
+            },
+          },
           quantity: 1,
         },
       ],
@@ -6840,6 +6848,7 @@ app.get("/api/stripe/verify-session", async (req, res) => {
 // Serve frontend assets in development vs production
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
