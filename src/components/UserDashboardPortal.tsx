@@ -65,6 +65,10 @@ interface UserDashboardPortalProps {
     isPremium?: boolean;
     email?: string;
     profilePhoto?: string;
+    latitude?: number;
+    longitude?: number;
+    timezone?: string;
+    id?: string;
   };
   scorePoints: number;
   setScorePoints: React.Dispatch<React.SetStateAction<number>>;
@@ -1337,6 +1341,48 @@ export default function UserDashboardPortal({
   // Interactive states
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(9);
 
+  // Dynamic Gemini-powered daily radar data state
+  const [radarApiData, setRadarApiData] = useState<any>(null);
+  const [isLoadingRadar, setIsLoadingRadar] = useState<boolean>(false);
+
+  useEffect(() => {
+    let active = true;
+    const fetchRadar = async () => {
+      setIsLoadingRadar(true);
+      try {
+        const res = await fetch("/api/astrology/personalized-radar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: user?.name,
+            birthDate: user?.birthDate,
+            birthTime: user?.birthTime,
+            latitude: user?.latitude,
+            longitude: user?.longitude,
+            timezone: user?.timezone,
+            email: user?.email,
+            uid: user?.id,
+            lang: activeLang,
+            date: new Date().toISOString().split('T')[0],
+            mapData: mapData
+          })
+        });
+        if (!res.ok) throw new Error("API error");
+        const data = await res.json();
+        if (active && data) {
+          setRadarApiData(data);
+        }
+      } catch (err) {
+        console.error("Error fetching personalized daily radar:", err);
+      } finally {
+        if (active) setIsLoadingRadar(false);
+      }
+    };
+
+    fetchRadar();
+    return () => { active = false; };
+  }, [user?.name, user?.birthDate, user?.birthTime, user?.latitude, user?.longitude, user?.timezone, activeLang, mapData]);
+
   const selectedDayPrediction = generateDailyPrediction(
     user?.hasCreatedMap ? user.birthDate : "1997-02-11",
     mapData?.astros?.find((a: any) => a.name === "Sol")?.sign || getZodiacSign(user?.birthDate),
@@ -1862,39 +1908,39 @@ export default function UserDashboardPortal({
   // 1. DATA DEFINITIONS FOR DISPENSATION & TENDENCIES
   const opportunityRadarValues: Record<string, { val: number, bg: string, color: string, text: string, conselho: string }> = {
     dinheiro: { 
-      val: 85, bg: 'bg-emerald-500/10 border-emerald-500/35', color: 'text-emerald-400', 
-      text: 'Oportunidades de ganhos secundários intelectuais sob ar ativo.',
-      conselho: 'O trânsito atual favorece a formatação de serviços de mentoria ou rascunhos de propostas comerciais. Fique atento a propostas nas terças ou quintas-feiras.'
+      val: radarApiData?.radar_oportunidades?.areas?.dinheiro?.val ?? 85, bg: 'bg-emerald-500/10 border-emerald-500/35', color: 'text-emerald-400', 
+      text: radarApiData?.radar_oportunidades?.areas?.dinheiro?.text ?? 'Oportunidades de ganhos secundários intelectuais sob ar ativo.',
+      conselho: radarApiData?.radar_oportunidades?.areas?.dinheiro?.conselho ?? 'O trânsito atual favorece a formatação de serviços de mentoria ou rascunhos de propostas comerciais. Fique atento a propostas nas terças ou quintas-feiras.'
     },
     amor: { 
-      val: 68, bg: 'bg-pink-500/10 border-pink-500/35', color: 'text-pink-400', 
-      text: 'Magnetismo em alta, facilitando conexões profundas e românticas.',
-      conselho: 'Com Vênus emanando trígonos estelares, desfaça os muros analíticos e compartilhe desejos sinceros. Sexta-feira à noite é o melhor período para conversas afetivas.'
+      val: radarApiData?.radar_oportunidades?.areas?.amor?.val ?? 68, bg: 'bg-pink-500/10 border-pink-500/35', color: 'text-pink-400', 
+      text: radarApiData?.radar_oportunidades?.areas?.amor?.text ?? 'Magnetismo em alta, facilitando conexões profundas e românticas.',
+      conselho: radarApiData?.radar_oportunidades?.areas?.amor?.conselho ?? 'Com Vênus emanando trígonos estelares, desfaça os muros analíticos e compartilhe desejos sinceros. Sexta-feira à noite é o melhor período para conversas afetivas.'
     },
     estudos: { 
-      val: 94, bg: 'bg-sky-500/10 border-sky-505/35', color: 'text-sky-400', 
-      text: 'Retenção intelectual extraordinária e foco linear ativado.',
-      conselho: 'Sua mente possui uma facilidade única hoje para absorver conceitos metafísicos, matemáticos e científicos. Ótimo dia para devorar livros ou rascunhar códigos.'
+      val: radarApiData?.radar_oportunidades?.areas?.estudos?.val ?? 94, bg: 'bg-sky-500/10 border-sky-505/35', color: 'text-sky-400', 
+      text: radarApiData?.radar_oportunidades?.areas?.estudos?.text ?? 'Retenção intelectual extraordinária e foco linear ativado.',
+      conselho: radarApiData?.radar_oportunidades?.areas?.estudos?.conselho ?? 'Sua mente possui uma facilidade única hoje para absorver conceitos metafísicos, matemáticos e científicos. Ótimo dia para devorar livros ou rascunhar códigos.'
     },
     trabalho: { 
-      val: 81, bg: 'bg-indigo-500/10 border-indigo-500/35', color: 'text-indigo-400', 
-      text: 'Capacidade de estruturação mecânica e conclusão de pendências.',
-      conselho: 'A influência do Caminho de Vida 8 ressoa para estabilizar as tarefas administrativas do seu negócio. Execute sem procrastinar.'
+      val: radarApiData?.radar_oportunidades?.areas?.trabalho?.val ?? 81, bg: 'bg-indigo-500/10 border-indigo-500/35', color: 'text-indigo-400', 
+      text: radarApiData?.radar_oportunidades?.areas?.trabalho?.text ?? 'Capacidade de estruturação mecânica e conclusão de pendências.',
+      conselho: radarApiData?.radar_oportunidades?.areas?.trabalho?.conselho ?? 'A influência do Caminho de Vida 8 ressoa para estabilizar as tarefas administrativas do seu negócio. Execute sem procrastinar.'
     },
     criatividade: { 
-      val: 90, bg: 'bg-amber-500/10 border-amber-500/35', color: 'text-amber-400', 
-      text: 'Canal mental de ideias originais e soluções inovadoras fluido.',
-      conselho: 'Não filtre seus insights à primeira vista. Deixe o ar soprar novas ideias sem compromisso no papel de rascunho.'
+      val: radarApiData?.radar_oportunidades?.areas?.criatividade?.val ?? 90, bg: 'bg-amber-500/10 border-amber-500/35', color: 'text-amber-400', 
+      text: radarApiData?.radar_oportunidades?.areas?.criatividade?.text ?? 'Canal mental de ideias originais e soluções inovadoras fluido.',
+      conselho: radarApiData?.radar_oportunidades?.areas?.criatividade?.conselho ?? 'Não filtre seus insights à primeira vista. Deixe o ar soprar novas ideias sem compromisso no papel de rascunho.'
     },
     networking: { 
-      val: 75, bg: 'bg-teal-500/10 border-teal-500/35', color: 'text-teal-400', 
-      text: 'Facilidade para gerar engajamento em causas sociais e projetos coletivos.',
-      conselho: 'Entre em contato com mentores ou parceiros adormecidos. Compartilhar ideais éticos fortalece o Sol em Aquário.'
+      val: radarApiData?.radar_oportunidades?.areas?.networking?.val ?? 75, bg: 'bg-teal-500/10 border-teal-500/35', color: 'text-teal-400', 
+      text: radarApiData?.radar_oportunidades?.areas?.networking?.text ?? 'Facilidade para gerar engajamento em causas sociais e projetos coletivos.',
+      conselho: radarApiData?.radar_oportunidades?.areas?.networking?.conselho ?? 'Entre em contato com mentores ou parceiros adormecidos. Compartilhar ideais éticos fortalece o Sol em Aquário.'
     },
     espiritualidade: { 
-      val: 88, bg: 'bg-purple-500/10 border-purple-500/35', color: 'text-purple-400', 
-      text: 'Frequência onírica aberta e trânsito favorável a rituais astrológicos.',
-      conselho: 'Medite com cristais de Sodalita ou Selenita. Suas conexões áuricas com esferas superiores estão extremamente receptivas hoje.'
+      val: radarApiData?.radar_oportunidades?.areas?.espiritualidade?.val ?? 88, bg: 'bg-purple-500/10 border-purple-500/35', color: 'text-purple-400', 
+      text: radarApiData?.radar_oportunidades?.areas?.espiritualidade?.text ?? 'Frequência onírica aberta e trânsito favorável a rituais astrológicos.',
+      conselho: radarApiData?.radar_oportunidades?.areas?.espiritualidade?.conselho ?? 'Medite com cristais de Sodalita ou Selenita. Suas conexões áuricas com esferas superiores estão extremamente receptivas hoje.'
     }
   };
 
@@ -2318,137 +2364,403 @@ export default function UserDashboardPortal({
           {/* TAB 2: RADAR DO DIA */}
           {areaSubTab === 'radar' && (
             <div className="space-y-6">
-              <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-5">
-                <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center">
-                  <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-rose-500 animate-pulse" />
-                    {t("Radar do Dia")}
-                  </h3>
-                  <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-[9px] font-mono font-bold text-rose-455 rounded-lg">
-                    {t("Atualização Diária")}
+              {isLoadingRadar && !radarApiData ? (
+                <div className="flex flex-col items-center justify-center p-12 bg-slate-900/20 border border-slate-800 rounded-3xl min-h-[450px] space-y-4 animate-pulse">
+                  <div className="w-12 h-12 rounded-full border-4 border-rose-500/30 border-t-rose-500 animate-spin" />
+                  <span className="text-xs font-mono text-slate-400 uppercase tracking-widest animate-pulse">
+                    {activeLang === 'pt' ? 'Sintonizando Frequências Celestes...' : 
+                     activeLang === 'es' ? 'Sintonizando Frecuencias Celestes...' :
+                     activeLang === 'en' ? 'Tuning Celestial Frequencies...' :
+                     activeLang === 'de' ? 'Stimmen der himmlischen Frequenzen...' :
+                     'Accorder les fréquences célestes...'}
                   </span>
+                  <p className="text-[11px] text-slate-500 text-center max-w-sm">
+                    {activeLang === 'pt' ? 'Calculando efemérides em tempo real, trânsitos e biorritmos de alta precisão.' : 
+                     activeLang === 'en' ? 'Calculating real-time ephemerides, transits, and high-precision biorhythms.' :
+                     'Calcul de trânsitos, efemérides e biorritmo molecular em tempo real.'}
+                  </p>
                 </div>
-
-                <div className="space-y-4 font-sans text-left">
-                  <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850/60">
-                    <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{t("Frequência Dominante Celular")}</span>
-                    <span className="text-xs font-black text-rose-455 block tracking-wide mt-1">
-                      {t("Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)")}
-                    </span>
-                  </div>
-
-                  {/* The 5 Metrics */}
-                  <div className="space-y-3 pt-1">
-                    {[
-                      { label: 'Energia Vital', val: 92, grad: 'from-amber-500 to-orange-500', desc: 'Sua vitalidade celular física e impulso vital ativo sob sua regência estelar.' },
-                      { label: 'Produtividade', val: 88, grad: 'from-indigo-500 to-purple-600', desc: 'Retenção intelectual e foco singular de mercúrio ativo.' },
-                      { label: 'Relacionamentos', val: 74, grad: 'from-pink-500 to-rose-550', desc: 'Expressão de afetos, diplomacia e conexões áuricas com base em Vênus.' },
-                      { label: 'Organização', val: 81, grad: 'from-emerald-500 to-teal-500', desc: 'Estruturação de afazeres diários sob o Caminho de Vida 8.' },
-                      { label: 'Bem-estar', val: 90, grad: 'from-sky-400 to-indigo-500', desc: 'Centramento emocional e quietude mental do respirar.' }
-                    ].map((metric, i) => (
-                      <div key={i} className="p-3 bg-slate-950/60 rounded-2xl border border-slate-850 space-y-1.5">
-                        <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 uppercase font-bold">
-                          <span>{t(metric.label)}</span>
-                          <span className="text-slate-205">{metric.val}%</span>
-                        </div>
-                        <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                          <div className={`h-full bg-gradient-to-r ${metric.grad}`} style={{ width: `${metric.val}%` }} />
-                        </div>
-                        <p className="text-[9px] text-slate-500 leading-normal italic">{t(metric.desc)}</p>
+              ) : (
+                <div className="space-y-6">
+                  {/* MAIN CARD */}
+                  <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-6">
+                    
+                    {/* Header */}
+                    <div className="space-y-0.5 pb-3 border-b border-slate-850 flex justify-between items-center">
+                      <div>
+                        <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                          <Activity className="w-4 h-4 text-rose-500 animate-pulse" />
+                          {t("Radar do Dia")}
+                        </h3>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          {activeLang === 'pt' ? 'Previsões astrológicas e biorritmos integrados em tempo real.' : 'Real-time integrated astrological forecasts and biorhythms.'}
+                        </p>
                       </div>
-                    ))}
+                      <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-[9px] font-mono font-bold text-rose-455 rounded-lg">
+                        {t("Atualização Diária")}
+                      </span>
+                    </div>
+
+                    <div className="space-y-6 font-sans text-left">
+                      
+                      {/* Dominant Celestial Frequency */}
+                      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 rounded-2xl border border-rose-500/20 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-xl pointer-events-none" />
+                        <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold tracking-wider">{t("Frequência Dominante Celular")}</span>
+                        <span className="text-xs sm:text-sm font-black text-rose-455 block tracking-wide mt-1">
+                          {radarApiData?.radar_dia?.frequency || t("Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)")}
+                        </span>
+                      </div>
+
+                      {/* The 5 Metrics in visual bars */}
+                      <div className="space-y-3 pt-1">
+                        <h4 className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest">{t("Indicadores de Energia do Dia")}</h4>
+                        {[
+                          { key: 'vital_energy', label: 'Energia Vital', val: radarApiData?.radar_dia?.metrics?.vital_energy?.val ?? 92, grad: 'from-amber-500 to-orange-500', desc: radarApiData?.radar_dia?.metrics?.vital_energy?.desc || 'Sua vitalidade celular física e impulso vital ativo sob sua regência estelar.' },
+                          { key: 'productivity', label: 'Produtividade', val: radarApiData?.radar_dia?.metrics?.productivity?.val ?? 88, grad: 'from-indigo-500 to-purple-600', desc: radarApiData?.radar_dia?.metrics?.productivity?.desc || 'Retenção intelectual e foco singular de mercúrio ativo.' },
+                          { key: 'relationships', label: 'Relacionamentos', val: radarApiData?.radar_dia?.metrics?.relationships?.val ?? 74, grad: 'from-pink-500 to-rose-550', desc: radarApiData?.radar_dia?.metrics?.relationships?.desc || 'Expressão de afetos, diplomacia e conexões áuricas com base em Vênus.' },
+                          { key: 'organization', label: 'Organização', val: radarApiData?.radar_dia?.metrics?.organization?.val ?? 81, grad: 'from-emerald-500 to-teal-500', desc: radarApiData?.radar_dia?.metrics?.organization?.desc || 'Estruturação de afazeres diários sob o Caminho de Vida 8.' },
+                          { key: 'well_being', label: 'Bem-estar', val: radarApiData?.radar_dia?.metrics?.well_being?.val ?? 90, grad: 'from-sky-400 to-indigo-500', desc: radarApiData?.radar_dia?.metrics?.well_being?.desc || 'Centramento emocional e quietude mental do respirar.' }
+                        ].map((metric, i) => (
+                          <div key={i} className="p-3.5 bg-slate-950/60 rounded-2xl border border-slate-850 space-y-2 hover:border-slate-800 transition">
+                            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 uppercase font-black">
+                              <span>{t(metric.label)}</span>
+                              <span className="text-slate-205 px-1.5 py-0.5 bg-slate-900 rounded-sm">{metric.val}%</span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                              <div className={`h-full bg-gradient-to-r ${metric.grad}`} style={{ width: `${metric.val}%` }} />
+                            </div>
+                            <p className="text-[10px] text-slate-450 leading-relaxed font-serif italic">{metric.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Panorama / Daily Reading Block */}
+                      {radarApiData?.radar_dia?.reading?.panorama && (
+                        <div className="p-5 bg-slate-950 rounded-2xl border border-slate-850 space-y-3">
+                          <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold tracking-widest">{t("Panorama do Dia")}</span>
+                          <p className="text-xs text-slate-300 leading-relaxed font-serif italic text-justify">
+                            "{radarApiData.radar_dia.reading.panorama}"
+                          </p>
+                          {radarApiData.radar_dia.reading.cosmic_influences && (
+                            <p className="text-[11px] text-slate-404 leading-relaxed border-t border-slate-900 pt-2.5">
+                              {radarApiData.radar_dia.reading.cosmic_influences}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Strengths & Cautions */}
+                      {(radarApiData?.radar_dia?.reading?.strengths || radarApiData?.radar_dia?.reading?.cautions) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {radarApiData.radar_dia.reading.strengths && (
+                            <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 space-y-2">
+                              <span className="text-[9px] font-mono text-emerald-400 block uppercase font-bold tracking-widest">{t("Forças & Facilidades")}</span>
+                              <p className="text-[11px] text-slate-300 leading-relaxed">
+                                {radarApiData.radar_dia.reading.strengths}
+                              </p>
+                            </div>
+                          )}
+                          {radarApiData.radar_dia.reading.cautions && (
+                            <div className="p-4 bg-orange-500/5 rounded-2xl border border-orange-500/20 space-y-2">
+                              <span className="text-[9px] font-mono text-orange-400 block uppercase font-bold tracking-widest">{t("Pontos de Atenção & Cuidado")}</span>
+                              <p className="text-[11px] text-slate-300 leading-relaxed">
+                                {radarApiData.radar_dia.reading.cautions}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Best periods side by side */}
+                      {(radarApiData?.radar_dia?.reading?.best_period || radarApiData?.radar_dia?.reading?.caution_period) && (
+                        <div className="grid grid-cols-2 gap-4">
+                          {radarApiData.radar_dia.reading.best_period && (
+                            <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex items-center gap-2.5">
+                              <Clock className="w-4 h-4 text-emerald-400" />
+                              <div>
+                                <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Período Favorável")}</span>
+                                <span className="text-xs font-mono text-slate-200 font-bold">{radarApiData.radar_dia.reading.best_period}</span>
+                              </div>
+                            </div>
+                          )}
+                          {radarApiData.radar_dia.reading.caution_period && (
+                            <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex items-center gap-2.5">
+                              <Clock className="w-4 h-4 text-orange-400" />
+                              <div>
+                                <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Período de Cuidado")}</span>
+                                <span className="text-xs font-mono text-slate-200 font-bold">{radarApiData.radar_dia.reading.caution_period}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Sector Specific Energy Indicators */}
+                      <div className="p-5 bg-slate-950 rounded-2xl border border-slate-850 space-y-4">
+                        <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold tracking-widest">{t("Alinhamento dos Setores da Vida")}</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[
+                            { label: "Energia Emocional", val: radarApiData?.radar_dia?.reading?.emotional_energy || t("Harmônica") },
+                            { label: "Energia Mental", val: radarApiData?.radar_dia?.reading?.mental_energy || t("Altamente Ativa") },
+                            { label: "Energia Profissional", val: radarApiData?.radar_dia?.reading?.professional_energy || t("Fluida") },
+                            { label: "Energia Financeira", val: radarApiData?.radar_dia?.reading?.financial_energy || t("Moderada") },
+                            { label: "Energia Afetiva", val: radarApiData?.radar_dia?.reading?.affective_energy || t("Receptiva") }
+                          ].map((sec, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-[11px] pb-2 border-b border-slate-900 last:border-b-0">
+                              <span className="text-slate-400 font-medium">{t(sec.label)}</span>
+                              <span className="text-slate-200 font-bold text-right">{sec.val}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Recommendations & Action Rules */}
+                      <div className="space-y-3">
+                        {radarApiData?.radar_dia?.reading?.recommendations && (
+                          <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 text-left">
+                            <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold mb-1 tracking-wider">{t("Recomendação do Dia")}</span>
+                            <p className="text-[11px] text-slate-350 leading-relaxed font-serif">
+                              {radarApiData.radar_dia.reading.recommendations}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {radarApiData?.radar_dia?.reading?.best_action && (
+                            <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 text-left flex gap-3">
+                              <div className="p-1 bg-emerald-500/10 rounded-lg text-emerald-400 h-fit shrink-0">✓</div>
+                              <div>
+                                <span className="text-[9px] font-mono text-emerald-400 block uppercase font-bold tracking-wider mb-1">{t("Atitude Recomendada")}</span>
+                                <p className="text-[11px] text-slate-300 leading-relaxed">
+                                  {radarApiData.radar_dia.reading.best_action}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          {radarApiData?.radar_dia?.reading?.avoid_action && (
+                            <div className="p-4 bg-rose-500/5 rounded-2xl border border-rose-500/10 text-left flex gap-3">
+                              <div className="p-1 bg-rose-500/10 rounded-lg text-rose-400 h-fit shrink-0">✗</div>
+                              <div>
+                                <span className="text-[9px] font-mono text-rose-455 block uppercase font-bold tracking-wider mb-1">{t("Atitude a Evitar")}</span>
+                                <p className="text-[11px] text-slate-300 leading-relaxed">
+                                  {radarApiData.radar_dia.reading.avoid_action}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Events list */}
+                      {radarApiData?.radar_dia?.events && radarApiData.radar_dia.events.length > 0 && (
+                        <div className="space-y-3.5 pt-2">
+                          <h4 className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest">{t("Destaques Celestes Próximos")}</h4>
+                          <div className="space-y-2.5">
+                            {radarApiData.radar_dia.events.map((evt: any, i: number) => (
+                              <div 
+                                key={i} 
+                                className={`p-4 rounded-2xl border text-left transition ${
+                                  evt.highlight 
+                                    ? 'bg-rose-550/5 border-rose-500/25 shadow-xs' 
+                                    : 'bg-slate-950/60 border-slate-850'
+                                }`}
+                              >
+                                <div className="flex justify-between items-center pb-1.5 border-b border-slate-900 mb-2">
+                                  <span className="text-[9px] font-mono font-bold text-slate-400">{evt.date}</span>
+                                  {evt.highlight && (
+                                    <span className="px-1.5 py-0.5 bg-rose-500/10 text-[8px] font-mono text-rose-455 uppercase font-bold tracking-wider rounded-sm">
+                                      {t("Foco Ativo")}
+                                    </span>
+                                  )}
+                                </div>
+                                <h5 className="text-[11px] font-bold text-slate-200">{evt.title}</h5>
+                                <p className="text-[10px] text-slate-400 leading-relaxed mt-1">{evt.desc}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* TAB 3: RADAR DE OPORTUNIDADES (DAILY 0 TO 100 SLIDERS) */}
           {areaSubTab === 'oportunidades_hoje' && (
             <div className="space-y-6">
-              <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-5">
-                <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center">
-                  <div>
-                    <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
-                      <Compass className="w-4 h-4 text-amber-500" />
-                      {t("Radar de oportunidades diárias")}
-                    </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Clique em cada área para obter direcionamento astrológico de aproveitamento das tendências hoje.')}</p>
-                  </div>
-                  <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[9px] font-mono font-bold text-amber-400 rounded-lg shrink-0">
-                    {t('O Momento Atual')}
+              {isLoadingRadar && !radarApiData ? (
+                <div className="flex flex-col items-center justify-center p-12 bg-slate-900/20 border border-slate-800 rounded-3xl min-h-[450px] space-y-4 animate-pulse">
+                  <div className="w-12 h-12 rounded-full border-4 border-amber-500/30 border-t-amber-500 animate-spin" />
+                  <span className="text-xs font-mono text-slate-400 uppercase tracking-widest animate-pulse">
+                    {activeLang === 'pt' ? 'Mapeando Oportunidades Estelares...' : 
+                     activeLang === 'es' ? 'Mapeando Oportunidades Estelares...' :
+                     activeLang === 'en' ? 'Mapping Celestial Opportunities...' :
+                     'Cartographie des opportunités célestes...'}
                   </span>
+                  <p className="text-[11px] text-slate-500 text-center max-w-sm">
+                    {activeLang === 'pt' ? 'Analisando conjunções, casas de fortuna e trânsitos ativos para cada setor de força.' : 
+                     activeLang === 'en' ? 'Analyzing conjunctions, houses of fortune, and active transits for each sector.' :
+                     'Análise de casas astrológicas e aspectos em tempo real.'}
+                  </p>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                  
-                  {/* Left Column: Interactive Gauges */}
-                  <div className="space-y-3">
-                    {Object.entries(opportunityRadarValues).map(([key, data]) => {
-                      const isSelected = selectedOpportunityArea === key;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setSelectedOpportunityArea(key)}
-                          className={`w-full p-3.5 rounded-2xl border transition text-left cursor-pointer flex flex-col justify-between gap-2 ${
-                            isSelected 
-                              ? 'bg-slate-950 border-amber-500/40 shadow-xs' 
-                              : 'bg-slate-950/40 border-slate-850 hover:border-slate-800'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center w-full">
-                            <span className="text-[10px] font-mono font-black uppercase text-slate-300 flex items-center gap-1.5">
-                              {key === 'dinheiro' && <DollarSign className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />}
-                              {key === 'amor' && <Heart className="w-3.5 h-3.5 text-pink-400 animate-pulse" />}
-                              {key === 'estudos' && <Star className="w-3.5 h-3.5 text-sky-405 animate-pulse" />}
-                              {key === 'trabalho' && <Award className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />}
-                              {key === 'criatividade' && <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />}
-                              {key === 'networking' && <Users className="w-3.5 h-3.5 text-teal-400 animate-pulse" />}
-                              {key === 'espiritualidade' && <Moon className="w-3.5 h-3.5 text-purple-400 animate-pulse" />}
-                              {t(key)}
-                            </span>
-                            <span className={`text-xs font-mono font-black ${data.color}`}>{data.val} / 100</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                            <div className={`h-full bg-linear-to-r from-slate-900 to-amber-400`} style={{ width: `${data.val}%` }} />
-                          </div>
-                        </button>
-                      );
-                    })}
+              ) : (
+                <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-5">
+                  <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center sm:flex-nowrap flex-wrap gap-2">
+                    <div>
+                      <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
+                        <Compass className="w-4 h-4 text-amber-500" />
+                        {t("Radar de oportunidades diárias")}
+                      </h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{t('Clique em cada área para obter direcionamento astrológico de aproveitamento das tendências hoje.')}</p>
+                    </div>
+                    <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[9px] font-mono font-bold text-amber-400 rounded-lg shrink-0">
+                      {t('O Momento Atual')}
+                    </span>
                   </div>
 
-                  {/* Right Column: Detailed focused advice */}
-                  <div className="p-5 rounded-2xl bg-slate-950 border border-slate-850 flex flex-col justify-between">
-                    <div className="space-y-4">
-                      <div className="pb-2 border-b border-slate-900 flex justify-between items-center">
-                        <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{t('Conselho Especial Hoje')}</span>
-                        <span className="px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 font-mono font-black text-[8px] uppercase">{t('Foco Ativo')}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                    
+                    {/* Left Column: Interactive Gauges */}
+                    <div className="space-y-3">
+                      {Object.entries(opportunityRadarValues).map(([key, data]) => {
+                        const isSelected = selectedOpportunityArea === key;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setSelectedOpportunityArea(key)}
+                            className={`w-full p-3.5 rounded-2xl border transition text-left cursor-pointer flex flex-col justify-between gap-2 ${
+                              isSelected 
+                                ? 'bg-slate-950 border-amber-500/40 shadow-xs' 
+                                : 'bg-slate-950/40 border-slate-850 hover:border-slate-800'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center w-full">
+                              <span className="text-[10px] font-mono font-black uppercase text-slate-300 flex items-center gap-1.5">
+                                {key === 'dinheiro' && <DollarSign className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />}
+                                {key === 'amor' && <Heart className="w-3.5 h-3.5 text-pink-400 animate-pulse" />}
+                                {key === 'estudos' && <Star className="w-3.5 h-3.5 text-sky-405 animate-pulse" />}
+                                {key === 'trabalho' && <Award className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />}
+                                {key === 'criatividade' && <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />}
+                                {key === 'networking' && <Users className="w-3.5 h-3.5 text-teal-400 animate-pulse" />}
+                                {key === 'espiritualidade' && <Moon className="w-3.5 h-3.5 text-purple-400 animate-pulse" />}
+                                {t(key)}
+                              </span>
+                              <span className={`text-xs font-mono font-black ${data.color}`}>{data.val} / 100</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                              <div className={`h-full bg-linear-to-r from-slate-900 to-amber-400`} style={{ width: `${data.val}%` }} />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Right Column: Detailed focused advice */}
+                    <div className="p-5 rounded-2xl bg-slate-950 border border-slate-850 flex flex-col justify-between space-y-4">
+                      <div className="space-y-4">
+                        <div className="pb-2 border-b border-slate-900 flex justify-between items-center">
+                          <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{t('Conselho Especial Hoje')}</span>
+                          <span className="px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 font-mono font-black text-[8px] uppercase">{t('Foco Ativo')}</span>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-black uppercase tracking-wide text-slate-100 flex items-center gap-1.5">
+                            <span>{t('Área focada')}: {t(selectedOpportunityArea).toUpperCase()}</span>
+                          </h4>
+                          <p className="text-xs text-slate-350 leading-relaxed font-serif italic">
+                            "{t(opportunityRadarValues[selectedOpportunityArea].text)}"
+                          </p>
+                          <p className="text-[11px] text-slate-400 leading-relaxed pt-2 border-t border-slate-900">
+                            {t(opportunityRadarValues[selectedOpportunityArea].conselho)}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-black uppercase tracking-wide text-slate-100 flex items-center gap-1.5">
-                          <span>{t('Área focada')}: {t(selectedOpportunityArea).toUpperCase()}</span>
-                        </h4>
-                        <p className="text-xs text-slate-350 leading-relaxed font-serif italic">
-                          "{t(opportunityRadarValues[selectedOpportunityArea].text)}"
-                        </p>
-                        <p className="text-[11px] text-slate-400 leading-relaxed pt-2">
-                          {t(opportunityRadarValues[selectedOpportunityArea].conselho)}
+                      {/* Potentialization Ritual Card */}
+                      <div className="p-4 bg-gradient-to-br from-slate-950 to-slate-900/40 rounded-xl border border-slate-850 mt-4 relative overflow-hidden group">
+                        <div className="absolute -top-12 -right-12 w-20 h-20 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
+                        <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1.5 tracking-wider">{t('Ritual de Potencialização Especial')}</span>
+                        <p className="text-[10px] text-slate-355 leading-relaxed italic font-serif">
+                          {radarApiData?.radar_oportunidades?.reading?.potentialization_ritual || t('Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.')}
                         </p>
                       </div>
                     </div>
 
-                    <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-850 mt-4">
-                      <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">{t('Ritual de Potencialização')}</span>
-                      <p className="text-[10px] text-slate-405 leading-relaxed">
-                        {t('Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.')}
-                      </p>
-                    </div>
                   </div>
 
+                  {/* BOTTOM DETAILED INSIGHTS */}
+                  {radarApiData?.radar_oportunidades?.reading && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-850 text-left">
+                      
+                      {/* Overview & High potential areas */}
+                      <div className="p-5 bg-slate-950 rounded-2xl border border-slate-850 space-y-3">
+                        <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold tracking-widest">{t("Panorama de Oportunidades")}</span>
+                        <p className="text-xs text-slate-300 leading-relaxed font-serif text-justify">
+                          {radarApiData.radar_oportunidades.reading.overview}
+                        </p>
+                        {radarApiData.radar_oportunidades.reading.highest_potential_areas && (
+                          <div className="pt-2">
+                            <span className="text-[8px] font-mono text-amber-400 block uppercase font-bold tracking-widest mb-1">{t("Áreas de Alto Potencial")}</span>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                              {radarApiData.radar_oportunidades.reading.highest_potential_areas}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Risks & Decisions */}
+                      <div className="p-5 bg-slate-950 rounded-2xl border border-slate-850 space-y-3">
+                        <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold tracking-widest">{t("Riscos & Decisões")}</span>
+                        {radarApiData.radar_oportunidades.reading.risks && (
+                          <div>
+                            <span className="text-[8px] font-mono text-rose-455 block uppercase font-bold tracking-widest mb-1">{t("Atenção ao Risco")}</span>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                              {radarApiData.radar_oportunidades.reading.risks}
+                            </p>
+                          </div>
+                        )}
+                        {radarApiData.radar_oportunidades.reading.favorable_decisions && (
+                          <div className="pt-2 border-t border-slate-900">
+                            <span className="text-[8px] font-mono text-emerald-400 block uppercase font-bold tracking-widest mb-1">{t("Decisões Favoráveis")}</span>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                              {radarApiData.radar_oportunidades.reading.favorable_decisions}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Detailed Sector Trends Grid */}
+                      <div className="p-5 bg-slate-950 rounded-2xl border border-slate-850 md:col-span-2 space-y-4">
+                        <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold tracking-widest">{t("Tendências Detalhadas dos Setores")}</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                          {[
+                            { title: "Tendências no Trabalho", text: radarApiData.radar_oportunidades.reading.work_trends },
+                            { title: "Tendências de Finanças", text: radarApiData.radar_oportunidades.reading.money_trends },
+                            { title: "Tendências de Estudos", text: radarApiData.radar_oportunidades.reading.study_trends },
+                            { title: "Tendências de Relações", text: radarApiData.radar_oportunidades.reading.relationship_trends },
+                            { title: "Tendências Espirituais", text: radarApiData.radar_oportunidades.reading.spiritual_trends },
+                            { title: "Desenvolvimento Pessoal", text: radarApiData.radar_oportunidades.reading.personal_development_trends }
+                          ].map((trend, idx) => trend.text && (
+                            <div key={idx} className="p-3 bg-slate-900/40 rounded-xl border border-slate-850/60 text-left space-y-1">
+                              <h5 className="text-[10px] font-black text-slate-300 font-mono uppercase">{t(trend.title)}</h5>
+                              <p className="text-[10px] text-slate-400 leading-relaxed font-serif">
+                                {trend.text}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
+
                 </div>
-              </div>
+              )}
             </div>
           )}
 

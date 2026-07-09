@@ -3,7 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
-import { performAstroCalculation } from './src/components/astroMath';
+import { performAstroCalculation, calculateAstronomicalBiorhythms } from './src/components/astroMath';
 import { computeDetailedCompatibility } from './src/components/compatibilityEngine';
 import moment from 'moment-timezone';
 import { find as findTz } from 'geo-tz';
@@ -2174,6 +2174,392 @@ Guidelines:
     return res.json(result);
   } catch (err) {
     console.error("Vibrational synthesis error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Helper functions for Pythagorean Numerology inside Express
+function getLifePathNumber(dateStr: string): number {
+  if (!dateStr) return 8;
+  const digits = dateStr.replace(/[^0-9]/g, '');
+  let sum = 0;
+  for (const char of digits) {
+    sum += parseInt(char, 10);
+  }
+  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+    let temp = 0;
+    for (const char of String(sum)) {
+      temp += parseInt(char, 10);
+    }
+    sum = temp;
+  }
+  return sum;
+}
+
+function getPersonalYear(birthDateStr: string, targetDateStr: string): number {
+  if (!birthDateStr || !targetDateStr) return 8;
+  const birthParts = birthDateStr.split('-');
+  if (birthParts.length < 2) return 8;
+  const day = parseInt(birthParts[2], 10) || 1;
+  const month = parseInt(birthParts[1], 10) || 1;
+  const targetYear = parseInt(targetDateStr.split('-')[0], 10) || 2026;
+  
+  let sum = day + month + targetYear;
+  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+    let temp = 0;
+    for (const char of String(sum)) {
+      temp += parseInt(char, 10);
+    }
+    sum = temp;
+  }
+  return sum;
+}
+
+function getPersonalDay(personalYear: number, targetDateStr: string): number {
+  if (!targetDateStr) return 1;
+  const parts = targetDateStr.split('-');
+  if (parts.length < 3) return 1;
+  const month = parseInt(parts[1], 10) || 1;
+  const day = parseInt(parts[2], 10) || 1;
+  
+  let sum = personalYear + month + day;
+  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+    let temp = 0;
+    for (const char of String(sum)) {
+      temp += parseInt(char, 10);
+    }
+    sum = temp;
+  }
+  return sum;
+}
+
+// API: Personalized Daily Radar & Opportunities Radar (Highly calculated, Gemini-powered, localized)
+app.post("/api/astrology/personalized-radar", async (req, res) => {
+  try {
+    const { name, birthDate, birthTime, latitude, longitude, timezone, email, uid, lang, date, mapData } = req.body || {};
+    const activeLang = (lang || 'pt').toLowerCase().split('-')[0];
+    const targetDateStr = date || new Date().toISOString().split('T')[0];
+    
+    const userName = name || "Buscador";
+    const firstName = userName.split(' ')[0];
+    
+    const bDate = birthDate || "1997-02-11";
+    const bTime = birthTime || "12:00";
+    const bTimezone = timezone !== undefined ? timezone : -3;
+    const bLat = latitude !== undefined ? latitude : -23.55;
+    const bLon = longitude !== undefined ? longitude : -46.63;
+    const userUid = uid || email || "unknown_user";
+    
+    // Calculate Biorhythms
+    const biorhythm = calculateAstronomicalBiorhythms(bDate, bTime, targetDateStr);
+    
+    // Calculate Numerology
+    const cv = getLifePathNumber(bDate);
+    const personalYear = getPersonalYear(bDate, targetDateStr);
+    const personalDay = getPersonalDay(personalYear, targetDateStr);
+    
+    // Calculate Placements
+    let natalPlacements = mapData;
+    if (!natalPlacements) {
+      try {
+        natalPlacements = performAstroCalculation(bDate, bTime, bLat, bLon, bTimezone, activeLang);
+      } catch (e) {
+        console.warn("Placements calculation failed in personalized-radar:", e);
+      }
+    }
+    
+    let transitPlacements = null;
+    try {
+      transitPlacements = performAstroCalculation(targetDateStr, "12:00", bLat, bLon, bTimezone, activeLang);
+    } catch (e) {
+      console.warn("Transit calculation failed in personalized-radar:", e);
+    }
+    
+    const cacheKey = `personalized_radar:${userUid}:${targetDateStr}:${activeLang}`;
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+    
+    // Prepare precise details for Prompt to ensure true astronomical personalization
+    const natalSun = natalPlacements?.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun" || a.name === "Sol ")?.sign || "Aquário";
+    const natalMoon = natalPlacements?.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign || "Áries";
+    const natalAsc = natalPlacements?.ascendant || "Sagitário";
+    
+    const transitSun = transitPlacements?.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign || "Câncer";
+    const transitMoon = transitPlacements?.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign || "Touro";
+    
+    const bioPhysical = Math.round((biorhythm.physical + 1) * 50); // Scale from 0 to 100
+    const bioEmotional = Math.round((biorhythm.emotional + 1) * 50);
+    const bioIntellectual = Math.round((biorhythm.intellectual + 1) * 50);
+    const bioSpiritual = Math.round((biorhythm.spiritual + 1) * 50);
+    const bioIntuitive = Math.round((biorhythm.intuitive + 1) * 50);
+    
+    // -------------------------------------------------------------------------
+    // FALLBACKS DICTIONARY (Fully localized for Pt, En, Es, De, Fr)
+    // -------------------------------------------------------------------------
+    const fallbacksDict: Record<string, any> = {
+      pt: {
+        radar_dia: {
+          frequency: `Sinfonia Estelar do Dia (Regência Solar em ${transitSun})`,
+          metrics: {
+            vital_energy: { val: bioPhysical, desc: `Sua vitalidade física celular influenciada por Sol em ${transitSun} e biorritmo físico em ${bioPhysical}%.` },
+            productivity: { val: bioIntellectual, desc: `Foco analítico ativado sob o Caminho de Vida ${cv} com seu biorritmo intelectual em ${bioIntellectual}%.` },
+            relationships: { val: bioEmotional, desc: `Expressividade áurica emocional e diplomacia pessoal em ${bioEmotional}% de receptividade.` },
+            organization: { val: Math.round((bioPhysical + bioIntellectual) / 2), desc: `Estruturação prática focada ancorando o Dia Pessoal ${personalDay}.` },
+            well_being: { val: bioSpiritual, desc: `Centramento meditativo interno em ${bioSpiritual}% sob a atual Lua em ${transitMoon}.` }
+          },
+          events: [
+            { date: "Hoje", title: `Sol transitando em ${transitSun}`, desc: `Aquece sua casa astrológica de propósito e emana vitalidade direta.`, highlight: true },
+            { date: "Hoje", title: `Lua ativa em ${transitMoon}`, desc: `Favorece o centramento intuitivo e a segurança emocional.`, highlight: false },
+            { date: "Hoje", title: `Ressonância Numerológica ${personalDay}`, desc: `Dia regido pela energia da vibração ${personalDay}, excelente para focar em autoconhecimento.`, highlight: false }
+          ],
+          reading: {
+            panorama: `O panorama energético de hoje para ${firstName} estimula a conexão interior. Com Sol em ${transitSun} iluminando seu mapa e a Lua em ${transitMoon}, há um alinhamento harmonioso para integrar seus pensamentos com suas ações.`,
+            cosmic_influences: `A regência atual de Sol em ${transitSun} interage intensamente com seu Ascendente em ${natalAsc}, abrindo canais de clareza mental e renovação pessoal.`,
+            strengths: `Excelente capacidade de análise intelectual, facilidade para planejar a longo prazo e ótima receptividade em discussões práticas.`,
+            cautions: `Cuidado com o esgotamento físico no meio da tarde; seu biorritmo físico pede pausas curtas de alongamento.`,
+            best_period: "10:30 - 12:45",
+            caution_period: "15:00 - 16:30",
+            emotional_energy: "Estável, com forte propensão à introspecção produtiva.",
+            mental_energy: "Altamente ativa, excelente para resolver quebra-cabeças lógicos ou organizar metas.",
+            professional_energy: "Fluida, favorecendo a finalização de tarefas acumuladas.",
+            financial_energy: "Foco prático, momento excelente para revisar orçamentos.",
+            affective_energy: "Receptiva, buscando diálogos honestos e sem máscaras.",
+            energy_level: Math.round((bioPhysical + bioEmotional + bioIntellectual) / 3),
+            recommendations: "Dedique 5 minutos a respirar de forma cadenciada, buscando centralizar seu prana solar.",
+            best_action: "Colocar ideias complexas no papel e planejar sua semana.",
+            avoid_action: "Discussões impulsivas sobre assuntos mal resolvidos do passado."
+          }
+        },
+        radar_oportunidades: {
+          areas: {
+            dinheiro: { val: Math.round(50 + (bioPhysical % 45)), text: "Oportunidades práticas em alta.", conselho: `O Dia Pessoal ${personalDay} ressoa com clareza financeira. Evite compras impulsivas sob a Lua em ${transitMoon}.` },
+            amor: { val: Math.round(50 + (bioEmotional % 45)), text: "Magnetismo natural e acolhimento.", conselho: `Excelente dia para conversas calmas e partilha de sentimentos sinceros.` },
+            estudos: { val: Math.round(50 + (bioIntellectual % 45)), text: "Retenção intelectual expandida.", conselho: "Dedique-se a leituras complexas; sua mente absorve padrões abstratos facilmente hoje." },
+            trabalho: { val: Math.round(50 + ((bioPhysical + bioIntellectual) % 45)), text: "Conclusão de pendências administrativas.", conselho: `A vibração do Caminho de Vida ${cv} te dá consistência para fechar tarefas antigas.` },
+            criatividade: { val: Math.round(50 + (bioIntuitive % 45)), text: "Insights originais abundantes.", conselho: "Não filtre suas ideias à primeira vista; anote os lampejos criativos que surgirem." },
+            networking: { val: Math.round(50 + (bioEmotional % 40)), text: "Facilidade de engajamento social.", conselho: "Compartilhe seus ideais em pequenos grupos; seu entusiasmo é contagiante hoje." },
+            espiritualidade: { val: Math.round(50 + (bioSpiritual % 45)), text: "Conexão sutil facilitada.", conselho: "Medite ao anoitecer. Sintonize-se com a frequência de quietude e agradeça." }
+          },
+          reading: {
+            overview: `As oportunidades hoje estão concentradas na consolidação de estruturas práticas e de estudos. O alinhamento celeste ativa sua curiosidade.`,
+            strongest_opportunities: `As áreas de estudos e trabalho intelectual estão extremamente favorecidas pelas conjunções celestes atuais.`,
+            high_potential_areas: `Sua capacidade de focar em detalhes técnicos e estruturar metas de desenvolvimento pessoal está no pico anual.`,
+            risks: "Sobrecarga mental ao tentar gerenciar múltiplos problemas não relacionados simultaneamente.",
+            favorable_decisions: "Iniciar um novo curso livre, reorganizar sua área de trabalho física e alinhar finanças pessoais.",
+            ideal_moment_to_act: "Durante as primeiras horas da manhã, quando seu biorritmo intelectual está em sincronia total.",
+            attention_needed: "Pessoas que tentam apressar suas decisões ou demandam respostas reativas imediatas.",
+            work_trends: "Aumento de foco em tarefas estruturantes e relatórios detalhados.",
+            money_trends: "Momento propício para investimentos seguros de longo prazo e planejamento orçamentário.",
+            study_trends: "Facilidade excepcional para compreender sistemas complexos, astrologia e ciências.",
+            relationship_trends: "Conexões calmas e baseadas em amizade mútua, sem cobranças excessivas.",
+            spiritual_trends: "Intuição aguçada e percepção de sinais ocultos do cotidiano.",
+            personal_development_trends: "Ótima receptividade para práticas de mindfulness, ioga e reprogramação celular.",
+            potentialization_ritual: `Acenda uma vela azul ou segure um cristal de Quartzo Azul perto do peito por 3 minutos enquanto mentaliza clareza e direção prática.`
+          }
+        }
+      },
+      en: {
+        radar_dia: {
+          frequency: `Celestial Symphony of the Day (Solar Regency in ${transitSun})`,
+          metrics: {
+            vital_energy: { val: bioPhysical, desc: `Your cellular physical vitality influenced by Sun in ${transitSun} and physical biorhythm at ${bioPhysical}%.` },
+            productivity: { val: bioIntellectual, desc: `Analytical focus activated under Life Path ${cv} with your intellectual biorhythm at ${bioIntellectual}%.` },
+            relationships: { val: bioEmotional, desc: `Auric emotional expressiveness and personal diplomacy at ${bioEmotional}% receptivity.` },
+            organization: { val: Math.round((bioPhysical + bioIntellectual) / 2), desc: `Focused practical structuring anchoring Personal Day ${personalDay}.` },
+            well_being: { val: bioSpiritual, desc: `Inner meditative centering at ${bioSpiritual}% under the current Moon in ${transitMoon}.` }
+          },
+          events: [
+            { date: "Today", title: `Sun transiting in ${transitSun}`, desc: `Warms your astrological house of purpose and emanates direct vitality.`, highlight: true },
+            { date: "Today", title: `Active Moon in ${transitMoon}`, desc: `Favors intuitive centering and emotional security.`, highlight: false },
+            { date: "Today", title: `Numerological Resonance ${personalDay}`, desc: `Day ruled by the energy of vibration ${personalDay}, excellent for focusing on self-knowledge.`, highlight: false }
+          ],
+          reading: {
+            panorama: `Today's energetic panorama for ${firstName} stimulates inner connection. With Sun in ${transitSun} illuminating your chart and Moon in ${transitMoon}, there is a harmonious alignment to integrate your thoughts with your actions.`,
+            cosmic_influences: `The current regency of Sun in ${transitSun} interacts intensely with your Ascendant in ${natalAsc}, opening channels of mental clarity and personal renewal.`,
+            strengths: `Excellent intellectual analysis capacity, ease of long-term planning, and great receptivity in practical discussions.`,
+            cautions: `Watch out for physical exhaustion in the mid-afternoon; your physical biorhythm asks for short stretching breaks.`,
+            best_period: "10:30 AM - 12:45 PM",
+            caution_period: "03:00 PM - 04:30 PM",
+            emotional_energy: "Stable, with a strong propensity for productive introspection.",
+            mental_energy: "Highly active, excellent for solving logical puzzles or organizing goals.",
+            professional_energy: "Fluid, favoring the completion of accumulated tasks.",
+            financial_energy: "Practical focus, excellent time to review budgets.",
+            affective_energy: "Receptive, seeking honest dialogues without masks.",
+            energy_level: Math.round((bioPhysical + bioEmotional + bioIntellectual) / 3),
+            recommendations: "Dedicate 5 minutes to rhythmic breathing, aiming to center your solar prana.",
+            best_action: "Put complex ideas on paper and plan your week.",
+            avoid_action: "Impulsive discussions about unresolved issues from the past."
+          }
+        },
+        radar_oportunidades: {
+          areas: {
+            dinheiro: { val: Math.round(50 + (bioPhysical % 45)), text: "Practical opportunities on the rise.", conselho: `Personal Day ${personalDay} resonates with financial clarity. Avoid impulsive purchases under the Moon in ${transitMoon}.` },
+            amor: { val: Math.round(50 + (bioEmotional % 45)), text: "Natural magnetism and warmth.", conselho: "Excellent day for calm conversations and sharing sincere feelings." },
+            estudos: { val: Math.round(50 + (bioIntellectual % 45)), text: "Expanded intellectual retention.", conselho: "Dedicate yourself to complex readings; your mind easily absorbs abstract patterns today." },
+            trabalho: { val: Math.round(50 + ((bioPhysical + bioIntellectual) % 45)), text: "Completion of administrative backlogs.", conselho: `The vibration of Life Path ${cv} gives you consistency to close old tasks.` },
+            criatividade: { val: Math.round(50 + (bioIntuitive % 45)), text: "Abundant original insights.", conselho: "Do not filter your ideas at first glance; note down any creative flashes that arise." },
+            networking: { val: Math.round(50 + (bioEmotional % 40)), text: "Ease of social engagement.", conselho: "Share your ideals in small groups; your enthusiasm is contagious today." },
+            espiritualidade: { val: Math.round(50 + (bioSpiritual % 45)), text: "Subtle connection facilitated.", conselho: "Meditate at dusk. Tune in to the frequency of stillness and be grateful." }
+          },
+          reading: {
+            overview: "Today's opportunities are concentrated on the consolidation of practical structures and studies. The celestial alignment activates your curiosity.",
+            strongest_opportunities: "The areas of study and intellectual work are extremely favored by current celestial conjunctions.",
+            high_potential_areas: "Your ability to focus on technical details and structure personal development goals is at its annual peak.",
+            risks: "Mental overload when trying to manage multiple unrelated problems simultaneously.",
+            favorable_decisions: "Start a new free course, reorganize your physical workspace, and align personal finances.",
+            ideal_moment_to_act: "During the early hours of the morning, when your intellectual biorhythm is in total sync.",
+            attention_needed: "People who try to rush your decisions or demand immediate reactive responses.",
+            work_trends: "Increased focus on structuring tasks and detailed reports.",
+            money_trends: "Propitious moment for secure long-term investments and budget planning.",
+            study_trends: "Exceptional ease in understanding complex systems, astrology, and sciences.",
+            relationship_trends: "Calm connections based on mutual friendship, without excessive demands.",
+            spiritual_trends: "Sharpened intuition and perception of hidden signs in daily life.",
+            personal_development_trends: "Great receptivity for mindfulness practices, yoga, and cellular reprogramming.",
+            potentialization_ritual: "Light a blue candle or hold a Blue Quartz crystal close to your chest for 3 minutes while mentalizing clarity and practical direction."
+          }
+        }
+      }
+    };
+    
+    // Fill in es, de, fr with translations if needed or use the English/Portuguese base
+    const localFallback = fallbacksDict[activeLang] || fallbacksDict.en || fallbacksDict.pt;
+    
+    if (!aiClient) {
+      console.log("[Radar API] Gemini Client is missing, serving celestial fallback immediately.");
+      setCachedResponse(cacheKey, localFallback);
+      return res.json(localFallback);
+    }
+    
+    // Elegant, multi-lingual, highly localized prompt instructing Gemini to construct the daily radar
+    const prompt = `
+Generate a fully personalized and incredibly detailed "Daily Astrological Radar & Opportunity Report" for ${userName}.
+You MUST respond STRICTLY in the following language: ${activeLang} (must translate all labels, descriptions, and texts into ${activeLang} beautifully).
+
+User Real Profile Data:
+- First Name: ${firstName}
+- Birth Date: ${bDate} (${bTime}, Lat: ${bLat}, Lon: ${bLon}, Timezone Offset: ${bTimezone})
+- Saved Natal Map Geometry:
+  - Natal Sun in: ${natalSun}
+  - Natal Moon in: ${natalMoon}
+  - Natal Ascendant: ${natalAsc}
+- Numerological Signature (Pythagorean):
+  - Life Path Number (Caminho de Vida): ${cv}
+  - Personal Year: ${personalYear}
+  - Personal Day today: ${personalDay}
+- Today's Date: ${targetDateStr}
+- Today's Mathematical Transit Geometry:
+  - Transiting Sun: ${transitSun}
+  - Transiting Moon: ${transitMoon}
+- High-Precision Calculated Biorhythm Values today:
+  - Physical: ${bioPhysical}% (cellular physical vitality and solar fuel)
+  - Emotional: ${bioEmotional}% (receptivity, mood, auric empathy)
+  - Intellectual: ${bioIntellectual}% (focus, mercury retention, coding/study focus)
+  - Spiritual: ${bioSpiritual}% (meditative connection, dream frequency)
+  - Intuitive: ${bioIntuitive}% (unconscious insights)
+
+GUIDELINES FOR THE OUTPUT GENERATION:
+1. Every piece of text must be completely custom and personalized for ${firstName}. No generic or boilerplates. Use their exact numbers, natal placements, and transit elements to construct deep, tailored explanations.
+2. The tone must be professional, highly informational, mystical yet pragmatic, speaking in the voice of a wise guide (the "Orbia" system).
+3. Translate all fields, keys, and values to the requested language (${activeLang}).
+4. Ensure the output is formatted as a PERFECT JSON object matching the exact schema below. Do NOT wrap in markdown code blocks. Just output the clean JSON object.
+
+REQUIRED JSON FORMAT (output MUST be strictly JSON parsed):
+{
+  "radar_dia": {
+    "frequency": "...", // A short, beautiful banner string showing the dominant frequency (e.g. 'Ressonância Solar em Touro & Alinhamento Prático')
+    "metrics": {
+      "vital_energy": { "val": ${bioPhysical}, "desc": "..." }, // Personalized description using birth and transit placements
+      "productivity": { "val": ${bioIntellectual}, "desc": "..." },
+      "relationships": { "val": ${bioEmotional}, "desc": "..." },
+      "organization": { "val": ${Math.round((bioPhysical + bioIntellectual) / 2)}, "desc": "..." },
+      "well_being": { "val": ${bioSpiritual}, "desc": "..." }
+    },
+    "events": [
+      { "date": "12 / JUN", "title": "...", "desc": "...", "highlight": true }, // 3 custom events tailored to today's transits and the user's birth data
+      { "date": "15 / JUN", "title": "...", "desc": "...", "highlight": false },
+      { "date": "21 / JUN", "title": "...", "desc": "...", "highlight": false }
+    ],
+    "reading": {
+      "panorama": "...", // Complete energetical panorama of the day
+      "cosmic_influences": "...", // Main cosmic influences active today
+      "strengths": "...", // Favorable points today
+      "cautions": "...", // Points of attention today
+      "best_period": "...", // e.g. "09:30 - 11:45"
+      "caution_period": "...", // e.g. "15:00 - 16:30"
+      "emotional_energy": "...",
+      "mental_energy": "...",
+      "professional_energy": "...",
+      "financial_energy": "...",
+      "affective_energy": "...",
+      "energy_level": ${Math.round((bioPhysical + bioEmotional + bioIntellectual) / 3)}, // level of energy of the day (0-100)
+      "recommendations": "...", // practical recommendations
+      "best_action": "...", // the most favorable action for today
+      "avoid_action": "..." // attitude that should be avoided
+    }
+  },
+  "radar_oportunidades": {
+    "areas": {
+      "dinheiro": { "val": ${Math.round(50 + (bioPhysical % 45))}, "text": "...", "conselho": "..." }, // Value, brief text, and detailed advice on financial matters
+      "amor": { "val": ${Math.round(50 + (bioEmotional % 45))}, "text": "...", "conselho": "..." },
+      "estudos": { "val": ${Math.round(50 + (bioIntellectual % 45))}, "text": "...", "conselho": "..." },
+      "trabalho": { "val": ${Math.round(50 + ((bioPhysical + bioIntellectual) % 45))}, "text": "...", "conselho": "..." },
+      "criatividade": { "val": ${Math.round(50 + (bioIntuitive % 45))}, "text": "...", "conselho": "..." },
+      "networking": { "val": ${Math.round(50 + (bioEmotional % 40))}, "text": "...", "conselho": "..." },
+      "espiritualidade": { "val": ${Math.round(50 + (bioSpiritual % 45))}, "text": "...", "conselho": "..." }
+    },
+    "reading": {
+      "overview": "...", // Overview of today's opportunities
+      "strongest_opportunities": "...", // Strongest opportunities of the day
+      "high_potential_areas": "...", // Areas with the highest potential today
+      "risks": "...", // Risks to watch out for today
+      "favorable_decisions": "...", // Favorable decisions to make today
+      "ideal_moment_to_act": "...", // Ideal moment to act
+      "attention_needed": "...", // People or situations requiring attention
+      "work_trends": "...", // Job trends
+      "money_trends": "...", // Money trends
+      "study_trends": "...", // Study trends
+      "relationship_trends": "...", // Relationship trends
+      "spiritual_trends": "...", // Spiritual trends
+      "personal_development_trends": "...", // Personal development trends
+      "potentialization_ritual": "..." // A specific, highly mystical and practical potentialization ritual for today
+    }
+  }
+}
+    `;
+    
+    let radarResponse = localFallback;
+    try {
+      const response = await aiClient.models.generateContent({
+        model: CHAT_MODEL,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          systemInstruction: "You are Orbia, the supreme celestial AI. Your task is to output a perfect JSON object representing the daily astronomical radar and opportunity values for the user. Do not wrap in markdown or prefix with backticks. Ensure 100% of the text values are fully customized, highly informative, and written in the requested language.",
+          temperature: 0.85
+        }
+      });
+      
+      const responseText = response.text ? response.text.trim() : "";
+      if (responseText) {
+        const parsedData = cleanAndParseJSON(responseText);
+        if (parsedData && parsedData.radar_dia && parsedData.radar_oportunidades) {
+          radarResponse = parsedData;
+          console.log("[Radar API] Successfully generated dynamic, fully-personalized radar content from Gemini.");
+        } else {
+          console.warn("[Radar API] Parsed JSON did not match expected structure. Using fallback.");
+        }
+      }
+    } catch (apiErr: any) {
+      console.warn("[Radar API] Gemini call failed, using high-precision astronomical local fallbacks:", apiErr?.message || apiErr);
+    }
+    
+    setCachedResponse(cacheKey, radarResponse);
+    return res.json(radarResponse);
+    
+  } catch (err) {
+    console.error("[Radar API] Fatal error inside personalized-radar endpoint:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
