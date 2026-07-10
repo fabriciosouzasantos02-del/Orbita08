@@ -13,6 +13,7 @@ import nodemailer from 'nodemailer';
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, doc, setDoc, addDoc, collection, getDocs, query, where, getDoc } from "firebase/firestore";
 import fs from 'fs';
+import firebaseAppletConfig from './firebase-applet-config.json';
 import { mergedTranslations } from './src/i18n';
 import { translations, Language } from './translations';
 
@@ -1132,19 +1133,44 @@ app.get("/api/cities/search", (req, res) => {
   const cleanStr = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
   const normalizedQuery = cleanStr(query);
 
-  // Lazy load cities into global cache on first request
+  // Lazy load cities into global cache on first request with memory-efficient strategy for serverless
   if (!globalCachedCities) {
-    console.log("[Cities Database] Global caching triggered...");
-    globalCachedCities = City.getAllCities() || [];
+    console.log("[Cities Database] Global caching triggered with memory-efficient strategy...");
+    const popularCountries = ["BR", "PT", "US", "ES", "FR", "IT", "DE", "GB", "CH", "AR", "UY", "CL", "MX", "CO", "IE", "CA", "IN", "JP", "RU"];
+    const citiesList: any[] = [];
+    try {
+      for (const countryCode of popularCountries) {
+        const countryCities = City.getCitiesOfCountry(countryCode) || [];
+        citiesList.push(...countryCities);
+      }
+    } catch (err) {
+      console.error("[Cities Database] Error loading popular country cities:", err);
+    }
+
+    if (citiesList.length === 0) {
+      try {
+        console.warn("[Cities Database] Popular countries returned empty. Loading all cities as fallback...");
+        globalCachedCities = City.getAllCities() || [];
+      } catch (e) {
+        console.error("[Cities Database] Critical error loading all cities:", e);
+        globalCachedCities = [];
+      }
+    } else {
+      globalCachedCities = citiesList;
+    }
     console.log(`[Cities Database] Successfully cached ${globalCachedCities.length} cities.`);
   }
 
   // Lazy load countries map into global cache
   if (!globalCachedCountriesMap) {
     globalCachedCountriesMap = new Map();
-    Country.getAllCountries().forEach(c => {
-      globalCachedCountriesMap!.set(c.isoCode, c.name);
-    });
+    try {
+      Country.getAllCountries().forEach(c => {
+        globalCachedCountriesMap!.set(c.isoCode, c.name);
+      });
+    } catch (err) {
+      console.error("[Cities Database] Error loading countries:", err);
+    }
   }
 
   const allCities = globalCachedCities;
@@ -6139,22 +6165,8 @@ let firebaseBackendDb: any = null;
 function getBackendDb() {
   if (!firebaseBackendDb) {
     try {
-      let config: any = null;
-      const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-      if (fs.existsSync(configPath)) {
-        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      } else {
-        // Fallback to process.env if config file is not physically bundled/available
-        config = {
-          apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
-          authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN,
-          projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
-          storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET,
-          messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID,
-          appId: process.env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID,
-          firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || process.env.FIREBASE_DATABASE_ID || "(default)"
-        };
-      }
+      // Use statically imported firebaseAppletConfig directly to avoid filesystem reads in serverless environment
+      const config = firebaseAppletConfig;
 
       if (config && config.apiKey && config.projectId) {
         if (getApps().length === 0) {
@@ -6162,13 +6174,13 @@ function getBackendDb() {
         } else {
           firebaseBackendApp = getApp();
         }
-        const dbId = config.firestoreDatabaseId || config.databaseId;
+        const dbId = config.firestoreDatabaseId || (config as any).databaseId;
         if (dbId && dbId !== "(default)") {
           firebaseBackendDb = getFirestore(firebaseBackendApp, dbId);
         } else {
           firebaseBackendDb = getFirestore(firebaseBackendApp);
         }
-        console.log("[Firebase Backend] Inicializado com sucesso.");
+        console.log("[Firebase Backend] Inicializado com sucesso usando import estatico.");
       }
     } catch (e) {
       console.error("[Firebase Backend] Erro ao inicializar:", e);
@@ -6662,7 +6674,19 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       return res.status(400).json({ error: (req as any).t('api.stripe.email_plan_required') });
     }
 
-    const origin = req.get('origin') || process.env.APP_URL || 'http://localhost:3000';
+    // Robust origin detection for seamless local vs Vercel redirection
+    const requestOrigin = req.get('origin') || req.get('referer');
+    let origin = 'https://portalorbit.vercel.app';
+    if (requestOrigin) {
+      try {
+        const parsedUrl = new URL(requestOrigin);
+        const host = parsedUrl.host;
+        if (host.includes('localhost') || host.includes('127.0.0.1') || host.includes('run.app') || host.includes('vercel.app')) {
+          origin = `${parsedUrl.protocol}//${host}`;
+        }
+      } catch {}
+    }
+
     const stripe = getStripeClient();
 
     // Determine values
@@ -6785,7 +6809,24 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       checkoutParams.customer_email = email;
     }
 
-    const session = await stripe.checkout.sessions.create(checkoutParams);
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(checkoutParams);
+    } catch (sessionErr: any) {
+      console.warn("[Stripe Checkout] Error creating session with specific Product ID. Trying fallback to inline product_data...", sessionErr.message);
+      
+      // Fallback: Use inline product creation to make it robust against missing Stripe Product IDs
+      if (lineItem.price_data.product) {
+        delete lineItem.price_data.product;
+        lineItem.price_data.product_data = {
+          name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
+          description: `Acesso Premium ao Portal Órbita (${planId})`,
+        };
+        session = await stripe.checkout.sessions.create(checkoutParams);
+      } else {
+        throw sessionErr;
+      }
+    }
 
     return res.json({
       id: session.id,

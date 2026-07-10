@@ -61,7 +61,14 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
       });
 
       if (!response.ok) {
-        throw new Error('Falha ao conectar com o serviço de pagamento');
+        let serverErrorMsg = '';
+        try {
+          const errData = await response.json();
+          if (errData && errData.error) {
+            serverErrorMsg = errData.error;
+          }
+        } catch {}
+        throw new Error(serverErrorMsg || 'Falha ao conectar com o serviço de pagamento');
       }
 
       const data = await response.json();
@@ -93,14 +100,15 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
       }
     } catch (err: any) {
       console.error('[Stripe Checkout Error]', err);
+      const displayMsg = err.message ? `${err.message}` : t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.');
       if (triggerGlobalNotification) {
         triggerGlobalNotification(
           t('Erro de Conexão'),
-          t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.'),
+          displayMsg,
           'alert'
         );
       } else {
-        alert(t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.'));
+        alert(displayMsg);
       }
       setIsRedirecting(false);
     }
