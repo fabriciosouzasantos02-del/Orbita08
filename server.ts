@@ -1118,6 +1118,10 @@ function calculateNumerologyData(name: string, birthDate: string): any {
   };
 }
 
+// Global cached data to avoid parsing huge files on every single keystroke / request (critical for Vercel/production performance & timeout avoidance)
+let globalCachedCities: any[] | null = null;
+let globalCachedCountriesMap: Map<string, string> | null = null;
+
 // API: City offline lookup autocomplete
 app.get("/api/cities/search", (req, res) => {
   const query = (req.query.q || "").toString().trim();
@@ -1128,12 +1132,23 @@ app.get("/api/cities/search", (req, res) => {
   const cleanStr = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
   const normalizedQuery = cleanStr(query);
 
-  const allCities = City.getAllCities();
-  
-  const countriesMap = new Map();
-  Country.getAllCountries().forEach(c => {
-    countriesMap.set(c.isoCode, c.name);
-  });
+  // Lazy load cities into global cache on first request
+  if (!globalCachedCities) {
+    console.log("[Cities Database] Global caching triggered...");
+    globalCachedCities = City.getAllCities() || [];
+    console.log(`[Cities Database] Successfully cached ${globalCachedCities.length} cities.`);
+  }
+
+  // Lazy load countries map into global cache
+  if (!globalCachedCountriesMap) {
+    globalCachedCountriesMap = new Map();
+    Country.getAllCountries().forEach(c => {
+      globalCachedCountriesMap!.set(c.isoCode, c.name);
+    });
+  }
+
+  const allCities = globalCachedCities;
+  const countriesMap = globalCachedCountriesMap;
 
   // Translation helpers for country and state names to Portuguese
   function getPortugueseCountryName(countryCode: string, defaultName: string): string {
@@ -6654,15 +6669,22 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     let amountInCents = 999; // EUR 9.99 default (Orbita Monthly)
     let currency = 'eur';
     let interval: 'month' | 'year' = 'month';
+    let stripeProductId = '';
 
-    if (planId === 'monthly') {
-      amountInCents = 999;
-      currency = 'eur';
-      interval = 'month';
-    } else if (planId === 'annual') {
+    // Check planId - Supports 'monthly', 'annual', and the specific Stripe Price/Product IDs sent by the frontend/user
+    const isAnnual = planId === 'annual' || planId.includes('1TjkNaLy') || planId.includes('UjCnNK2');
+    const isMonthly = planId === 'monthly' || planId.includes('1TjjUdLy') || planId.includes('UjBsyld');
+
+    if (isAnnual) {
       amountInCents = 7999;
       currency = 'eur';
       interval = 'year';
+      stripeProductId = 'prod_UjCnNK2AI2qrvY';
+    } else if (isMonthly) {
+      amountInCents = 999;
+      currency = 'eur';
+      interval = 'month';
+      stripeProductId = 'prod_UjBsyldYBkyYY5';
     } else if (planId === 'basic') {
       amountInCents = 2990;
       currency = 'brl';
@@ -6716,25 +6738,30 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     // Creating actual live or test checkout session in Stripe
     const stripeLocale = lang === 'pt' ? 'pt-BR' : lang === 'es' ? 'es' : lang === 'de' ? 'de' : lang === 'fr' ? 'fr' : 'en';
     
+    const lineItem: any = {
+      price_data: {
+        currency: currency,
+        unit_amount: amountInCents,
+        recurring: {
+          interval: interval,
+        },
+      },
+      quantity: 1,
+    };
+
+    if (stripeProductId) {
+      lineItem.price_data.product = stripeProductId;
+    } else {
+      lineItem.price_data.product_data = {
+        name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
+        description: `Acesso Premium ao Portal Órbita (${planId})`,
+      };
+    }
+
     const checkoutParams: any = {
       payment_method_types: ['card'],
       locale: stripeLocale,
-      line_items: [
-        {
-          price_data: {
-            currency: currency,
-            product_data: {
-              name: planName || `Portal Órbita - ${planId === 'annual' ? 'Anual' : 'Mensal'}`,
-              description: `Acesso Premium ao Portal Órbita (${planId})`,
-            },
-            unit_amount: amountInCents,
-            recurring: {
-              interval: interval,
-            },
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: [lineItem],
       mode: 'subscription',
       subscription_data: {
         metadata: {
