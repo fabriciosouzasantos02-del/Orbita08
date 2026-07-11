@@ -11,7 +11,194 @@ import ephemeris from 'ephemeris';
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, doc, setDoc, addDoc, collection, getDocs, query, where, getDoc } from "firebase/firestore";
+import { 
+  getFirestore, 
+  doc as clientDoc, 
+  setDoc as clientSetDoc, 
+  addDoc as clientAddDoc, 
+  collection as clientCollection, 
+  getDocs as clientGetDocs, 
+  query as clientQuery, 
+  where as clientWhere, 
+  getDoc as clientGetDoc 
+} from "firebase/firestore";
+import { initializeApp as initAdminApp, cert, getApps as getAdminApps } from 'firebase-admin/app';
+import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
+
+// Unified Admin + Client Firestore Helpers to seamlessly bypass security rules when service account is available
+let globalCachedAdminDb: any = null;
+
+function getAdminDb() {
+  if (globalCachedAdminDb) return globalCachedAdminDb;
+  
+  const saEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (saEnv) {
+    try {
+      let serviceAccount;
+      if (saEnv.trim().startsWith('{')) {
+        serviceAccount = JSON.parse(saEnv);
+      } else {
+        serviceAccount = JSON.parse(saEnv);
+      }
+      
+      if (getAdminApps().length === 0) {
+        initAdminApp({
+          credential: cert(serviceAccount)
+        });
+      }
+      globalCachedAdminDb = getAdminFirestore();
+      console.log("[Firebase Admin] Inicializado com sucesso usando Service Account do usuário!");
+      return globalCachedAdminDb;
+    } catch (e: any) {
+      console.error("[Firebase Admin] Erro ao inicializar com Service Account:", e.message);
+    }
+  }
+  return null;
+}
+
+function collection(db: any, path: string, ...pathSegments: string[]): any {
+  const adminDb = getAdminDb();
+  if (adminDb) {
+    const fullPath = [path, ...pathSegments].join('/');
+    return {
+      __isRef: true,
+      isAdmin: true,
+      adminRef: adminDb.collection(fullPath)
+    };
+  } else {
+    const clientRef = clientCollection(db, path, ...pathSegments);
+    return {
+      __isRef: true,
+      isAdmin: false,
+      clientRef
+    };
+  }
+}
+
+function doc(firstArg: any, ...pathSegments: string[]): any {
+  const adminDb = getAdminDb();
+  if (adminDb) {
+    if (firstArg && firstArg.__isRef && firstArg.isAdmin) {
+      const fullPath = pathSegments.join('/');
+      return {
+        __isRef: true,
+        isAdmin: true,
+        adminRef: firstArg.adminRef.doc(fullPath)
+      };
+    } else {
+      const fullPath = pathSegments.join('/');
+      return {
+        __isRef: true,
+        isAdmin: true,
+        adminRef: adminDb.doc(fullPath)
+      };
+    }
+  } else {
+    let clientRef;
+    if (firstArg && firstArg.__isRef && !firstArg.isAdmin) {
+      clientRef = clientDoc(firstArg.clientRef, ...pathSegments);
+    } else {
+      clientRef = clientDoc(firstArg, ...pathSegments);
+    }
+    return {
+      __isRef: true,
+      isAdmin: false,
+      clientRef
+    };
+  }
+}
+
+async function setDoc(docRef: any, data: any, options?: any) {
+  if (docRef && docRef.__isRef && docRef.isAdmin && docRef.adminRef) {
+    if (options && options.merge) {
+      return await docRef.adminRef.set(data, { merge: true });
+    }
+    return await docRef.adminRef.set(data);
+  } else {
+    const actualRef = (docRef && docRef.__isRef) ? docRef.clientRef : docRef;
+    return await clientSetDoc(actualRef, data, options);
+  }
+}
+
+async function addDoc(collectionRef: any, data: any) {
+  if (collectionRef && collectionRef.__isRef && collectionRef.isAdmin && collectionRef.adminRef) {
+    const res = await collectionRef.adminRef.add(data);
+    return { id: res.id };
+  } else {
+    const actualRef = (collectionRef && collectionRef.__isRef) ? collectionRef.clientRef : collectionRef;
+    return await clientAddDoc(actualRef, data);
+  }
+}
+
+async function getDoc(docRef: any) {
+  if (docRef && docRef.__isRef && docRef.isAdmin && docRef.adminRef) {
+    const snap = await docRef.adminRef.get();
+    return {
+      exists: () => snap.exists,
+      data: () => snap.data(),
+      id: snap.id
+    };
+  } else {
+    const actualRef = (docRef && docRef.__isRef) ? docRef.clientRef : docRef;
+    return await clientGetDoc(actualRef);
+  }
+}
+
+function where(field: string, op: any, value: any): any {
+  return {
+    __isWhere: true,
+    field,
+    op,
+    value
+  };
+}
+
+function query(collectionRef: any, ...clauses: any[]): any {
+  if (collectionRef && collectionRef.__isRef && collectionRef.isAdmin) {
+    let q = collectionRef.adminRef;
+    for (const clause of clauses) {
+      if (clause && clause.__isWhere) {
+        q = q.where(clause.field, clause.op, clause.value);
+      }
+    }
+    return {
+      __isRef: true,
+      isAdmin: true,
+      adminQuery: q
+    };
+  } else {
+    const actualRef = (collectionRef && collectionRef.__isRef) ? collectionRef.clientRef : collectionRef;
+    const clientClauses = clauses.map(c => clientWhere(c.field, c.op, c.value));
+    const q = clientQuery(actualRef, ...clientClauses);
+    return {
+      __isRef: true,
+      isAdmin: false,
+      clientQuery: q
+    };
+  }
+}
+
+async function getDocs(queryObj: any) {
+  if (queryObj && queryObj.__isRef && queryObj.isAdmin) {
+    const adminQuery = queryObj.adminQuery || queryObj.adminRef;
+    const snap = await adminQuery.get();
+    const docs = snap.docs.map((docSnap: any) => ({
+      id: docSnap.id,
+      data: () => docSnap.data(),
+      exists: () => docSnap.exists
+    }));
+    return {
+      empty: snap.empty,
+      docs,
+      size: snap.size
+    };
+  } else {
+    const clientQ = (queryObj && queryObj.__isRef) ? (queryObj.clientQuery || queryObj.clientRef) : queryObj;
+    const snap = await clientGetDocs(clientQ);
+    return snap;
+  }
+}
+
 import fs from 'fs';
 import firebaseAppletConfig from './firebase-applet-config.json';
 import { mergedTranslations } from './src/i18n';
