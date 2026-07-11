@@ -411,14 +411,14 @@ export async function migrateLegacyUserSubcollections(db: any, mailKey: string, 
   }
 }
 
-export async function loadProfileFromDatabase(email: string): Promise<UserProfileData | null> {
+export async function loadProfileFromDatabase(email: string, explicitUid?: string): Promise<UserProfileData | null> {
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return null;
   
   const db = getFirestoreDB();
   if (db) {
     const auth = getFirebaseAuth();
-    const uid = auth?.currentUser?.uid;
+    const uid = explicitUid || auth?.currentUser?.uid;
     
     // First try the optimal route via current session's authenticated UID
     if (uid) {

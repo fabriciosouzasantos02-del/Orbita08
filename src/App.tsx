@@ -1000,13 +1000,35 @@ export default function App() {
 
   // Social login and password reset handler integrations
   const handleGoogleLogin = async () => {
+    if (authTab === 'birth_info') {
+      if (!termsConsent) {
+        triggerGlobalNotification(t("Ativação Obrigatória"), t("Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar."), "alert");
+        return;
+      }
+      if (!createMainName.trim()) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite o seu nome completo."), "alert");
+        return;
+      }
+      if (!createMainCity) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite em qual cidade você nasceu."), "alert");
+        return;
+      }
+      if (!createMainDate) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, selecione sua data de nascimento."), "alert");
+        return;
+      }
+      if (!timeIsUnknown && !createMainTime) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário."), "alert");
+        return;
+      }
+    }
     manualAuthActionRef.current = true;
     try {
       const firebaseUser = await loginWithGoogleFirebase();
       if (firebaseUser && firebaseUser.email) {
         const emailLower = firebaseUser.email.toLowerCase().trim();
         const checkStatus = await checkDeviceTrial(emailLower);
-        const existingProfile = await loadProfileFromDatabase(emailLower);
+        const existingProfile = await loadProfileFromDatabase(emailLower, firebaseUser.uid);
         let targetUser: UserProfile;
 
         if (existingProfile) {
@@ -1223,12 +1245,34 @@ export default function App() {
   };
 
   const handleFacebookLogin = async () => {
+    if (authTab === 'birth_info') {
+      if (!termsConsent) {
+        triggerGlobalNotification(t("Ativação Obrigatória"), t("Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar."), "alert");
+        return;
+      }
+      if (!createMainName.trim()) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite o seu nome completo."), "alert");
+        return;
+      }
+      if (!createMainCity) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite em qual cidade você nasceu."), "alert");
+        return;
+      }
+      if (!createMainDate) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, selecione sua data de nascimento."), "alert");
+        return;
+      }
+      if (!timeIsUnknown && !createMainTime) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário."), "alert");
+        return;
+      }
+    }
     try {
       const firebaseUser = await loginWithFacebookFirebase();
       if (firebaseUser && firebaseUser.email) {
         const emailLower = firebaseUser.email.toLowerCase().trim();
         const checkStatus = await checkDeviceTrial(emailLower);
-        const existingProfile = await loadProfileFromDatabase(emailLower);
+        const existingProfile = await loadProfileFromDatabase(emailLower, firebaseUser.uid);
         let targetUser: UserProfile;
 
         if (existingProfile) {
@@ -1654,7 +1698,7 @@ export default function App() {
       // 2. Load latest profile from Firestore DB
       let cloudUser: any = null;
       try {
-        cloudUser = await loadProfileFromDatabase(mailLower);
+        cloudUser = await loadProfileFromDatabase(mailLower, firebaseUser.uid);
       } catch (err) {
         console.warn("[Auth] Failed to retrieve cloud profile on login:", err);
       }
@@ -2281,6 +2325,16 @@ export default function App() {
     numerologyRef.current = numerology;
   }, [numerology]);
 
+  const loggedEmailRef = useRef(loggedEmail);
+  useEffect(() => {
+    loggedEmailRef.current = loggedEmail;
+  }, [loggedEmail]);
+
+  const createMainNameRef = useRef(createMainName);
+  useEffect(() => {
+    createMainNameRef.current = createMainName;
+  }, [createMainName]);
+
   // Firebase Auth session observer hook
   useEffect(() => {
     const unsubAuth = subscribeToAuthChanges((firebaseUser) => {
@@ -2290,7 +2344,7 @@ export default function App() {
         const emailLower = firebaseUser.email.toLowerCase().trim();
         console.log("[Auth Observer] Usuário do Firebase autenticado:", emailLower);
         
-        const isEmailDifferent = emailLower !== loggedEmail.toLowerCase().trim();
+        const isEmailDifferent = emailLower !== loggedEmailRef.current.toLowerCase().trim();
         if (isEmailDifferent) {
           setLoggedEmail(emailLower);
           setIsLoggedIn(true);
@@ -2305,7 +2359,7 @@ export default function App() {
         // Always load on first detection or email change
         if (isEmailDifferent || !profileLoadedRef.current) {
           profileLoadedRef.current = true;
-          loadProfileFromDatabase(emailLower).then(async (cloudProfile) => {
+          loadProfileFromDatabase(emailLower, firebaseUser.uid).then(async (cloudProfile) => {
             const localProfileStr = localStorage.getItem("orbi_user_profile");
             let localProfile: any = null;
             try {
@@ -2409,7 +2463,7 @@ export default function App() {
               const defaultProfile: UserProfile = {
                 userId: firebaseUser.uid,
                 email: emailLower,
-                name: createMainName.trim() || firebaseUser.displayName || "Viajante Estelar",
+                name: createMainNameRef.current.trim() || firebaseUser.displayName || "Viajante Estelar",
                 birthDate: "",
                 birthTime: "",
                 birthCity: "",
@@ -2450,15 +2504,33 @@ export default function App() {
         }
       } else {
         setFirebaseUid("");
-        if (!manualAuthActionRef.current) {
-          setIsLoggedIn(false);
-          setLoggedEmail("");
-        }
+        setIsLoggedIn(false);
+        setLoggedEmail("");
+        setUser({
+          name: "",
+          email: "",
+          birthDate: "",
+          birthTime: "",
+          birthCity: "",
+          isUnknownTime: false,
+          isPremium: false,
+          hasCreatedMap: false
+        });
+        setMapData(null);
+        setNumerology(null);
+        setExtraMaps([]);
+        localStorage.removeItem("orbi_logged_email");
+        localStorage.removeItem("orbi_user_profile");
+        localStorage.removeItem("orbi_map_data");
+        localStorage.removeItem("orbi_numerology_data");
+        profileLoadedRef.current = false;
+        lastGeneratedParamsRef.current = "";
+        setAuthTab('birth_info');
       }
     });
 
     return unsubAuth;
-  }, [loggedEmail]);
+  }, []);
 
   const [isLoadingMain, setIsLoadingMain] = useState<boolean>(false);
 
@@ -5753,19 +5825,12 @@ export default function App() {
               <button 
                 type="button"
                 onClick={async () => {
-                  manualAuthActionRef.current = true;
-                  // Clean attributes and sign out natively
-                  localStorage.removeItem("orbi_logged_email");
-                  localStorage.removeItem("orbi_user_profile");
-                  setLoggedEmail("");
-                  setIsLoggedIn(false);
-                  setVerificationInputCode("");
-                  setLastSimulatedCode("");
-                  await logoutWithFirebase().catch(console.error);
-                  triggerGlobalNotification(t("Sessão Encerrada"), t("Você retornou ao portal."), "success");
-                  setTimeout(() => {
-                    manualAuthActionRef.current = false;
-                  }, 2000);
+                  try {
+                    await logoutWithFirebase();
+                    triggerGlobalNotification(t("Sessão Encerrada"), t("Você retornou ao portal."), "success");
+                  } catch (err) {
+                    console.error(err);
+                  }
                 }}
                 className="text-[11px] font-medium text-slate-500 hover:text-red-400 transition cursor-pointer"
               >
@@ -7560,34 +7625,13 @@ export default function App() {
                   {/* Settings Actions */}
                   <div className="pt-2 space-y-3">
                     <button 
-                      onClick={() => {
-                        manualAuthActionRef.current = true;
-                        logoutWithFirebase().catch(console.warn);
-                        localStorage.removeItem("orbi_logged_email");
-                        localStorage.removeItem("orbi_user_profile");
-                        localStorage.removeItem("orbi_map_data");
-                        localStorage.removeItem("orbi_numerology_data");
-                        profileLoadedRef.current = false;
-                        lastGeneratedParamsRef.current = "";
-                        setLoggedEmail("");
-                        setUser({
-                          name: "",
-                          email: "",
-                          birthDate: "",
-                          birthTime: "",
-                          birthCity: "",
-                          isUnknownTime: false,
-                          isPremium: false,
-                          hasCreatedMap: false
-                        });
-                        setMapData(null);
-                        setNumerology(null);
-                        setExtraMaps([]);
-                        setIsLoggedIn(false);
-                        triggerGlobalNotification(t("Portal Sair"), t("Sessão encerrada com sucesso."), "alert");
-                        setTimeout(() => {
-                          manualAuthActionRef.current = false;
-                        }, 2000);
+                      onClick={async () => {
+                        try {
+                          await logoutWithFirebase();
+                          triggerGlobalNotification(t("Portal Sair"), t("Sessão encerrada com sucesso."), "alert");
+                        } catch (err) {
+                          console.warn(err);
+                        }
                       }}
                       type="button"
                       className="w-full py-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-2xl text-xs font-bold text-slate-350 hover:text-white font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
