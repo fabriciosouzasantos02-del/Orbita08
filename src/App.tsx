@@ -22,25 +22,25 @@ import {
   AstroHouse,
   AstroAspect
 } from './types';
-import CompatibilityView from './components/CompatibilityView';
 import { performAstroCalculation } from './components/astroMath';
 import { calculateNumerology } from './numerology';
 // Lazy load heavy computational views for faster initial loading
 const AstrologyView = React.lazy(() => import('./components/AstrologyView'));
 const NumerologyView = React.lazy(() => import('./components/NumerologyView'));
 const TransitMap = React.lazy(() => import('./components/TransitMap'));
-import TransitHistory from './components/TransitHistory';
+const CompatibilityView = React.lazy(() => import('./components/CompatibilityView'));
+const TransitHistory = React.lazy(() => import('./components/TransitHistory'));
 import MoonTipCard from './components/MoonTipCard';
 import AstroNotifications from './components/AstroNotifications';
 import TarotSystem from './TarotSystem';
-import LunarNodes from './components/LunarNodes';
-import LunarCycle from './components/LunarCycle';
-import BiorhythmView from './components/BiorhythmView';
+const LunarNodes = React.lazy(() => import('./components/LunarNodes'));
+const LunarCycle = React.lazy(() => import('./components/LunarCycle'));
+const BiorhythmView = React.lazy(() => import('./components/BiorhythmView'));
 import UserDashboardPortal from './components/UserDashboardPortal';
-import { PremiumConversionScreen } from './components/PremiumConversionScreen';
-import AdminPanel from './components/AdminPanel';
-import OrbiaAIAndOracle from './components/OrbiaAIAndOracle';
-import OraculoDosSonhosCard from './components/OraculoDosSonhosCard';
+const PremiumConversionScreen = React.lazy(() => import('./components/PremiumConversionScreen').then(m => ({ default: m.PremiumConversionScreen })));
+const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
+const OrbiaAIAndOracle = React.lazy(() => import('./components/OrbiaAIAndOracle'));
+const OraculoDosSonhosCard = React.lazy(() => import('./components/OraculoDosSonhosCard'));
 import { CityAutocomplete } from './components/CityAutocomplete';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST, FAQ_LIST } from './data';
 import { getAvatarUrl, getAvatarsList } from './lib/avatars';
@@ -1209,23 +1209,8 @@ export default function App() {
             triggerGlobalNotification(t("Portal Órbita"), t("Sua Conta Google foi conectada e seu mapa astral foi criado com sucesso!"), "success");
           }
 
-          if (clientMap) localStorage.setItem("orbi_map_data", JSON.stringify(clientMap));
-          if (clientNum) localStorage.setItem("orbi_numerology_data", JSON.stringify(clientNum));
-          if (clientMap) setMapData(clientMap);
-          if (clientNum) setNumerology(clientNum);
         }
-
-        localStorage.setItem("orbi_logged_email", emailLower);
-        localStorage.setItem("orbi_user_profile", JSON.stringify(targetUser));
-        if (targetUser.preferredLanguage) {
-          mudarIdioma(targetUser.preferredLanguage as any);
-          localStorage.setItem('orbi_preferred_language', targetUser.preferredLanguage);
-        }
-        setLoggedEmail(emailLower);
-        setUser(targetUser);
-        setIsLoggedIn(true);
-
-        await migrateLocalDataToCloud(emailLower, firebaseUser.uid, targetUser);
+        await syncUserSession(firebaseUser);
       }
     } catch (err: any) {
       console.error(err);
@@ -1646,22 +1631,7 @@ export default function App() {
       }
       saveRegisteredAccounts(accounts);
 
-      localStorage.setItem("orbi_logged_email", mailLower);
-      localStorage.setItem("orbi_user_profile", JSON.stringify(newUserProfile));
-      if (newUserProfile.preferredLanguage) {
-        mudarIdioma(newUserProfile.preferredLanguage as any);
-        localStorage.setItem('orbi_preferred_language', newUserProfile.preferredLanguage);
-      }
-      if (clientMap) localStorage.setItem("orbi_map_data", JSON.stringify(clientMap));
-      if (clientNum) localStorage.setItem("orbi_numerology_data", JSON.stringify(clientNum));
-      
-      setLoggedEmail(mailLower);
-      setUser(newUserProfile);
-      if (clientMap) setMapData(clientMap);
-      if (clientNum) setNumerology(clientNum);
-      setExtraMaps([]);
-      setIsLoggedIn(true);
-
+      await syncUserSession(firebaseUser);
       triggerGlobalNotification(t("Portal Órbita"), t("Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail."), "success");
     } finally {
       setTimeout(() => {
@@ -1695,179 +1665,35 @@ export default function App() {
         return; // Stop flow immediately!
       }
 
-      // 2. Load latest profile from Firestore DB
-      let cloudUser: any = null;
-      try {
-        cloudUser = await loadProfileFromDatabase(mailLower, firebaseUser.uid);
-      } catch (err) {
-        console.warn("[Auth] Failed to retrieve cloud profile on login:", err);
-      }
+      // 2. Perform the fully blocking sync of profile and subcollections using UID
+      await syncUserSession(firebaseUser);
 
-      // Get current verification states natively
-      const authInstance = getFirebaseAuth();
-      const nativeVerified = authInstance?.currentUser?.emailVerified || false;
-
-      // Check device trial anti-fraud rules
-      let checkStatus = { isAllowed: true, fingerprint: '', deviceId: '' };
-      try {
-        checkStatus = await checkDeviceTrial(mailLower);
-      } catch (err) {
-        console.warn("[Anti Fraud] Check trial status failed:", err);
-      }
-
-      let targetUser: UserProfile;
-
-      if (cloudUser) {
-        const finalBirthCity = loginBirthCity.trim() || cloudUser.birthCity || "";
-        const isVerified = nativeVerified || cloudUser.isEmailVerified || cloudUser.emailVerified || false;
-        const forceTrialUsed = (!checkStatus.isAllowed && !cloudUser.isSubscribed);
-
-        const rawName = cloudUser.name || cloudUser.displayName || cloudUser.profileName || cloudUser.birthName || "Viajante Estelar";
-        const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
-
-        targetUser = {
-          ...cloudUser,
-          userId: firebaseUser ? firebaseUser.uid : (cloudUser.userId || cloudUser.uid || ""),
-          uid: firebaseUser ? firebaseUser.uid : (cloudUser.userId || cloudUser.uid || ""),
-          name: finalName,
-          displayName: (cloudUser.displayName && cloudUser.displayName !== "Viajante Estelar" && cloudUser.displayName !== "Buscador") ? cloudUser.displayName : finalName,
-          birthName: (cloudUser.birthName && cloudUser.birthName !== "Viajante Estelar" && cloudUser.birthName !== "Buscador") ? cloudUser.birthName : finalName,
-          profileName: (cloudUser.profileName && cloudUser.profileName !== "Viajante Estelar" && cloudUser.profileName !== "Buscador") ? cloudUser.profileName : finalName,
-          avatarId: cloudUser.avatarId || cloudUser.profilePhoto || "",
-          profilePhoto: cloudUser.avatarId || cloudUser.profilePhoto || "",
-          preferredLanguage: cloudUser.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
-          birthDate: cloudUser.birthDate || "",
-          birthTime: cloudUser.birthTime || "",
-          birthCity: finalBirthCity,
-          isUnknownTime: cloudUser.isUnknownTime ?? false,
-          isPremium: cloudUser.isPremium ?? false,
-          hasCreatedMap: cloudUser.hasCreatedMap ?? (cloudUser.birthDate ? true : false),
-          email: mailLower,
-          scorePoints: cloudUser.scorePoints ?? 0,
-          emailVerified: isVerified,
-          isEmailVerified: isVerified,
-          provider: 'password',
-          trialUsed: forceTrialUsed ? true : (cloudUser.trialUsed ?? false),
-          trialStartDate: cloudUser.trialStartDate || new Date().toISOString(),
-          trialEndDate: cloudUser.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
-          trialStart: cloudUser.trialStart || cloudUser.trialStartDate || new Date().toISOString(),
-          trialEnds: cloudUser.trialEnds || cloudUser.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
-          plan: cloudUser.plan || "none",
-          subscriptionStatus: cloudUser.subscriptionStatus || (forceTrialUsed ? "ended" : "trialing"),
-          stripeCustomerId: cloudUser.stripeCustomerId || "",
-          stripeSubscriptionId: cloudUser.stripeSubscriptionId || "",
-          subscriptionUpdatedAt: cloudUser.subscriptionUpdatedAt || new Date().toISOString(),
-          deviceId: checkStatus.deviceId,
-          deviceFingerprint: checkStatus.fingerprint,
-          lastLoginAt: new Date().toISOString(),
-          isSubscribed: cloudUser.isSubscribed ?? false,
-          subscriptionEndDate: cloudUser.subscriptionEndDate || "",
-          currentChartId: cloudUser.currentChartId || "",
-          mainMapChangesCount: cloudUser.mainMapChangesCount ?? 0,
-          latitude: cloudUser.latitude,
-          longitude: cloudUser.longitude,
-          createdAt: cloudUser.createdAt || ""
-        };
-
-        if (loginBirthCity.trim() && loginBirthCity.trim() !== cloudUser.birthCity) {
-          try {
-            await saveProfileToDatabase(mailLower, targetUser as any);
-          } catch (err) { console.warn(err); }
-        }
-      } else {
-        // Fallback create profile if missing in Firestore but logged in
-        const forceTrialUsed = !checkStatus.isAllowed;
-        
-        const rawName = user.name || user.displayName || user.profileName || user.birthName || "Viajante Estelar";
-        const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
-
-        targetUser = {
-          userId: firebaseUser ? firebaseUser.uid : "",
-          uid: firebaseUser ? firebaseUser.uid : "",
-          name: finalName,
-          displayName: (user.displayName && user.displayName !== "Viajante Estelar" && user.displayName !== "Buscador") ? user.displayName : finalName,
-          birthName: (user.birthName && user.birthName !== "Viajante Estelar" && user.birthName !== "Buscador") ? user.birthName : finalName,
-          profileName: (user.profileName && user.profileName !== "Viajante Estelar" && user.profileName !== "Buscador") ? user.profileName : finalName,
-          avatarId: user.avatarId || user.profilePhoto || "",
-          profilePhoto: user.avatarId || user.profilePhoto || "",
-          preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
-          birthDate: "",
-          birthTime: "",
-          birthCity: loginBirthCity.trim() || "",
-          isUnknownTime: false,
-          isPremium: false,
-          hasCreatedMap: false,
-          email: mailLower,
-          scorePoints: 0,
-          emailVerified: nativeVerified,
-          isEmailVerified: nativeVerified,
-          provider: 'password',
-          trialUsed: forceTrialUsed ? true : false,
-          trialStartDate: new Date().toISOString(),
-          trialEndDate: forceTrialUsed 
-            ? new Date(Date.now() - 1000).toISOString()
-            : new Date(Date.now() + 60 * 1000).toISOString(),
-          trialStart: new Date().toISOString(),
-          trialEnds: forceTrialUsed
-            ? new Date(Date.now() - 1000).toISOString()
-            : new Date(Date.now() + 60 * 1000).toISOString(),
-          plan: "none",
-          subscriptionStatus: forceTrialUsed ? "ended" : "trialing",
-          stripeCustomerId: "",
-          stripeSubscriptionId: "",
-          subscriptionUpdatedAt: new Date().toISOString(),
-          deviceId: checkStatus.deviceId,
-          deviceFingerprint: checkStatus.fingerprint,
-          lastLoginAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          isSubscribed: false,
-          subscriptionEndDate: ""
-        };
-        try {
-          await saveProfileToDatabase(mailLower, targetUser as any);
-        } catch (err) { console.warn(err); }
-      }
-
-      // Update local list for seamless offline recovery or caches
+      // 3. Update registered accounts password cache for convenient auto-fill offline
       const accounts = getRegisteredAccounts();
       const existingIdx = accounts.findIndex((a: any) => a.email.toLowerCase() === mailLower);
-      const existingAccount = existingIdx !== -1 ? accounts[existingIdx] : null;
-      const newAccount = {
-        email: mailLower,
-        password: authPassword,
-        user: targetUser,
-        mapData: existingAccount?.mapData || null,
-        numerology: existingAccount?.numerology || null,
-        extraMaps: existingAccount?.extraMaps || []
-      };
-      if (existingIdx !== -1) {
-        accounts[existingIdx] = newAccount;
-      } else {
-        accounts.push(newAccount);
-      }
-      saveRegisteredAccounts(accounts);
-
-      localStorage.setItem("orbi_logged_email", mailLower);
-      localStorage.setItem("orbi_user_profile", JSON.stringify(targetUser));
-      if (targetUser.preferredLanguage) {
-        mudarIdioma(targetUser.preferredLanguage as any);
-        localStorage.setItem('orbi_preferred_language', targetUser.preferredLanguage);
-      }
-      
-      setLoggedEmail(mailLower);
-      setUser(targetUser);
-      setIsLoggedIn(true);
-
-      if (!targetUser.isEmailVerified) {
-        // Prompt user to verify using Firebase native email verifier overlay
-        triggerGlobalNotification(t("Portal Órbita"), t("Sessão iniciada, mas o link de e-mail ainda não foi confirmado."), "alert");
+      const updatedUserStr = localStorage.getItem("orbi_user_profile");
+      const updatedUser = updatedUserStr ? JSON.parse(updatedUserStr) : null;
+      if (updatedUser) {
+        const newAccount = {
+          email: mailLower,
+          password: authPassword,
+          user: updatedUser,
+          mapData: null,
+          numerology: null,
+          extraMaps: []
+        };
+        if (existingIdx !== -1) {
+          accounts[existingIdx] = newAccount;
+        } else {
+          accounts.push(newAccount);
+        }
+        saveRegisteredAccounts(accounts);
       }
 
-      await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || targetUser.userId || "", targetUser);
     } finally {
       setTimeout(() => {
         manualAuthActionRef.current = false;
-      }, 2000);
+      }, 500);
     }
   };
 
@@ -2178,6 +2004,9 @@ export default function App() {
             });
           }
         }
+      } else if (user?.hasCreatedMap && !mapDataRef.current) {
+        console.log("[SnapSync] No natal charts found in DB. Triggering automatic background generation...");
+        triggerGenerateMainMap(user);
       }
     }, (error) => {
       console.warn("Falha de sincronização real-time de natalCharts:", error);
@@ -2335,172 +2164,203 @@ export default function App() {
     createMainNameRef.current = createMainName;
   }, [createMainName]);
 
+  // Unified real-time sequential session synchronizer
+  const syncUserSession = async (firebaseUser: any) => {
+    if (!firebaseUser || !firebaseUser.email) return;
+    
+    setIsSyncingSession(true);
+    setSyncMessage(t("Sincronizando sua conta..."));
+    
+    try {
+      const emailLower = firebaseUser.email.toLowerCase().trim();
+      const uid = firebaseUser.uid;
+      
+      // Save UID and email in local storage for instant offline resolution
+      localStorage.setItem("orbi_logged_uid", uid);
+      localStorage.setItem("orbi_logged_email", emailLower);
+      
+      setSyncMessage(t("Sincronizando seu perfil estelar..."));
+      
+      // 1. Fetch profile users/{uid}
+      const cloudProfile = await loadProfileFromDatabase(emailLower, uid);
+      let finalProfile = cloudProfile;
+      
+      // Handle guest migration if there was guest data
+      const localProfileStr = localStorage.getItem("orbi_user_profile");
+      let localProfile: any = null;
+      try {
+        if (localProfileStr) localProfile = JSON.parse(localProfileStr);
+      } catch {}
+      
+      const hasLocalMap = localProfile && localProfile.birthDate && localProfile.birthCity;
+      const hasCloudMap = cloudProfile && cloudProfile.birthDate && cloudProfile.birthCity;
+      
+      if (hasLocalMap && !hasCloudMap) {
+        setSyncMessage(t("Migrando seu mapa local para a nuvem..."));
+        const baseProfile = cloudProfile || {
+          userId: uid,
+          email: emailLower,
+          name: localProfile.name || firebaseUser.displayName || "Viajante Estelar",
+          createdAt: new Date().toISOString()
+        };
+        await migrateLocalDataToCloud(emailLower, uid, baseProfile);
+        finalProfile = await loadProfileFromDatabase(emailLower, uid);
+      }
+      
+      if (!finalProfile) {
+        // Create default profile if not present
+        finalProfile = {
+          userId: uid,
+          uid: uid,
+          email: emailLower,
+          name: createMainNameRef.current.trim() || firebaseUser.displayName || "Viajante Estelar",
+          birthDate: "",
+          birthTime: "",
+          birthCity: "",
+          isUnknownTime: false,
+          isPremium: false,
+          hasCreatedMap: false,
+          createdAt: new Date().toISOString()
+        };
+        await saveProfileToDatabase(emailLower, finalProfile as any);
+      }
+      
+      let rawName = finalProfile.name || finalProfile.displayName || finalProfile.profileName || finalProfile.birthName || firebaseUser.displayName || "";
+      if (!rawName.trim() || rawName === "Viajante Estelar" || rawName === "Buscador") {
+        const emailPrefix = emailLower.split("@")[0];
+        rawName = emailPrefix
+          .replace(/[\._\-]/g, " ")
+          .replace(/\b\w/g, l => l.toUpperCase());
+      }
+      
+      const updatedUser: UserProfile = {
+        userId: finalProfile.userId || uid || "",
+        uid: finalProfile.uid || uid || "",
+        name: rawName || "Buscador",
+        displayName: (finalProfile.displayName && finalProfile.displayName !== "Viajante Estelar" && finalProfile.displayName !== "Buscador") ? finalProfile.displayName : rawName,
+        birthName: (finalProfile.birthName && finalProfile.birthName !== "Viajante Estelar" && finalProfile.birthName !== "Buscador") ? finalProfile.birthName : rawName,
+        profileName: (finalProfile.profileName && finalProfile.profileName !== "Viajante Estelar" && finalProfile.profileName !== "Buscador") ? finalProfile.profileName : rawName,
+        avatarId: finalProfile.avatarId || finalProfile.profilePhoto || "",
+        preferredLanguage: finalProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
+        birthDate: finalProfile.birthDate || "",
+        birthTime: finalProfile.birthTime || "",
+        birthCity: finalProfile.birthCity || "",
+        isUnknownTime: finalProfile.isUnknownTime ?? false,
+        isPremium: finalProfile.isPremium ?? false,
+        hasCreatedMap: finalProfile.hasCreatedMap ?? (finalProfile.birthDate ? true : false),
+        email: emailLower,
+        scorePoints: finalProfile.stellarPoints !== undefined ? finalProfile.stellarPoints : (finalProfile.scorePoints !== undefined ? finalProfile.scorePoints : 0),
+        stellarPoints: finalProfile.stellarPoints !== undefined ? finalProfile.stellarPoints : (finalProfile.scorePoints !== undefined ? finalProfile.scorePoints : 0),
+        profilePhoto: finalProfile.avatarId || finalProfile.profilePhoto || firebaseUser.photoURL || "",
+        isSubscribed: finalProfile.isSubscribed ?? false,
+        subscriptionEndDate: finalProfile.subscriptionEndDate || "",
+        emailVerified: finalProfile.emailVerified ?? finalProfile.isEmailVerified ?? firebaseUser.emailVerified,
+        isEmailVerified: finalProfile.emailVerified ?? finalProfile.isEmailVerified ?? firebaseUser.emailVerified,
+        currentChartId: finalProfile.currentChartId || "",
+        mainMapChangesCount: finalProfile.mainMapChangesCount ?? 0,
+        trialUsed: finalProfile.trialUsed ?? false,
+        trialStartDate: finalProfile.trialStartDate || "",
+        trialEndDate: finalProfile.trialEndDate || "",
+        trialStart: finalProfile.trialStart || finalProfile.trialStartDate || "",
+        trialEnds: finalProfile.trialEnds || finalProfile.trialEndDate || "",
+        plan: finalProfile.plan || "none",
+        subscriptionStatus: finalProfile.subscriptionStatus || "none",
+        stripeCustomerId: finalProfile.stripeCustomerId || "",
+        stripeSubscriptionId: finalProfile.stripeSubscriptionId || "",
+        subscriptionUpdatedAt: finalProfile.subscriptionUpdatedAt || "",
+        deviceId: finalProfile.deviceId || "",
+        deviceFingerprint: finalProfile.deviceFingerprint || "",
+        latitude: finalProfile.latitude,
+        longitude: finalProfile.longitude,
+        createdAt: finalProfile.createdAt || ""
+      };
+      
+      // 2. UNBLOCK INTERFACE IMMEDIATELY & DELEGATE SUBCOLLECTION FETCHING TO REAL-TIME LISTENERS
+      // We set isLoggedIn, setLoggedEmail, and setUser. This triggers the reactive listeners
+      // which will download natal charts, dreams, and extra maps asynchronously in the background.
+      setUser(updatedUser);
+      localStorage.setItem("orbi_user_profile", JSON.stringify(updatedUser));
+      
+      if (updatedUser.preferredLanguage) {
+        mudarIdioma(updatedUser.preferredLanguage as any);
+        localStorage.setItem('orbi_preferred_language', updatedUser.preferredLanguage);
+      }
+      
+      // Sync loaded user to registered accounts local storage
+      const accounts = getRegisteredAccounts();
+      const existingIdx = accounts.findIndex((a: any) => a.email.toLowerCase() === emailLower);
+      if (existingIdx !== -1) {
+        accounts[existingIdx].user = updatedUser;
+      } else {
+        accounts.push({
+          email: emailLower,
+          user: updatedUser,
+          mapData: null,
+          numerology: null,
+          extraMaps: []
+        });
+      }
+      saveRegisteredAccounts(accounts);
+      
+      // Navigate to correct tab
+      if (updatedUser.hasCreatedMap) {
+        setMapSubTab('meu_mapa');
+        setActiveTab('mapa');
+      } else {
+        setMapSubTab('criar_meu_mapa');
+        setActiveTab('mapa');
+      }
+      
+      setLoggedEmail(emailLower);
+      setIsLoggedIn(true);
+      
+    } catch (error: any) {
+      console.error("[Sync] Error syncing session from Firestore:", error);
+      triggerGlobalNotification(
+        t("Erro de Sincronização"),
+        t("Houve um erro ao sintonizar seus dados astronômicos. Carregando dados offline."),
+        "alert"
+      );
+      
+      // Fallback load local map if we have local user profile
+      const activeProfile = localStorage.getItem("orbi_user_profile");
+      if (activeProfile) {
+        try {
+          const parsed = JSON.parse(activeProfile);
+          if (parsed && parsed.hasCreatedMap) {
+            setMapSubTab('meu_mapa');
+            setActiveTab('mapa');
+            triggerGenerateMainMap(parsed);
+          } else {
+            setMapSubTab('criar_meu_mapa');
+            setActiveTab('mapa');
+          }
+        } catch {}
+      }
+    } finally {
+      setIsSyncingSession(false);
+    }
+  };
+
   // Firebase Auth session observer hook
   useEffect(() => {
     const unsubAuth = subscribeToAuthChanges((firebaseUser) => {
       setIsAuthInitialized(true);
       if (firebaseUser && firebaseUser.email) {
         setFirebaseUid(firebaseUser.uid);
-        const emailLower = firebaseUser.email.toLowerCase().trim();
-        console.log("[Auth Observer] Usuário do Firebase autenticado:", emailLower);
+        localStorage.setItem("orbi_logged_uid", firebaseUser.uid);
         
-        const isEmailDifferent = emailLower !== loggedEmailRef.current.toLowerCase().trim();
-        if (isEmailDifferent) {
-          setLoggedEmail(emailLower);
-          setIsLoggedIn(true);
-          localStorage.setItem("orbi_logged_email", emailLower);
-        }
-
         if (manualAuthActionRef.current) {
           console.log("[Auth Observer] Skipping automatic profile loading due to active manual auth action.");
           return;
         }
 
         // Always load on first detection or email change
+        const emailLower = firebaseUser.email.toLowerCase().trim();
+        const isEmailDifferent = emailLower !== loggedEmailRef.current.toLowerCase().trim();
         if (isEmailDifferent || !profileLoadedRef.current) {
           profileLoadedRef.current = true;
-          loadProfileFromDatabase(emailLower, firebaseUser.uid).then(async (cloudProfile) => {
-            const localProfileStr = localStorage.getItem("orbi_user_profile");
-            let localProfile: any = null;
-            try {
-              if (localProfileStr) localProfile = JSON.parse(localProfileStr);
-            } catch {}
-
-            const hasLocalMap = localProfile && localProfile.birthDate && localProfile.birthCity;
-            const hasCloudMap = cloudProfile && cloudProfile.birthDate && cloudProfile.birthCity;
-
-            if (hasLocalMap && !hasCloudMap) {
-              console.log("[Auth Observer] Guest map found, but Cloud is empty. Migrating...");
-              const baseProfile = cloudProfile || {
-                userId: firebaseUser.uid,
-                email: emailLower,
-                name: localProfile.name || firebaseUser.displayName || "Viajante Estelar",
-                createdAt: new Date().toISOString()
-              };
-              await migrateLocalDataToCloud(emailLower, firebaseUser.uid, baseProfile);
-            } else if (cloudProfile) {
-              let rawName = cloudProfile.name || cloudProfile.displayName || cloudProfile.profileName || cloudProfile.birthName || firebaseUser.displayName || "";
-              if (!rawName.trim() || rawName === "Viajante Estelar" || rawName === "Buscador") {
-                const emailPrefix = emailLower.split("@")[0];
-                rawName = emailPrefix
-                  .replace(/[\._\-]/g, " ")
-                  .replace(/\b\w/g, l => l.toUpperCase());
-              }
-              const updatedUser: UserProfile = {
-                userId: cloudProfile.userId || firebaseUser.uid || "",
-                uid: cloudProfile.uid || firebaseUser.uid || "",
-                name: rawName || "Buscador",
-                displayName: (cloudProfile.displayName && cloudProfile.displayName !== "Viajante Estelar" && cloudProfile.displayName !== "Buscador") ? cloudProfile.displayName : rawName,
-                birthName: (cloudProfile.birthName && cloudProfile.birthName !== "Viajante Estelar" && cloudProfile.birthName !== "Buscador") ? cloudProfile.birthName : rawName,
-                profileName: (cloudProfile.profileName && cloudProfile.profileName !== "Viajante Estelar" && cloudProfile.profileName !== "Buscador") ? cloudProfile.profileName : rawName,
-                avatarId: cloudProfile.avatarId || cloudProfile.profilePhoto || "",
-                preferredLanguage: cloudProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
-                birthDate: cloudProfile.birthDate || "",
-                birthTime: cloudProfile.birthTime || "",
-                birthCity: cloudProfile.birthCity || "",
-                isUnknownTime: cloudProfile.isUnknownTime ?? false,
-                isPremium: cloudProfile.isPremium ?? false,
-                hasCreatedMap: cloudProfile.hasCreatedMap ?? (cloudProfile.birthDate ? true : false),
-                email: emailLower,
-                scorePoints: cloudProfile.scorePoints ?? 0,
-                profilePhoto: cloudProfile.avatarId || cloudProfile.profilePhoto || firebaseUser.photoURL || "",
-                isSubscribed: cloudProfile.isSubscribed ?? false,
-                subscriptionEndDate: cloudProfile.subscriptionEndDate || "",
-                emailVerified: cloudProfile.emailVerified ?? cloudProfile.isEmailVerified ?? firebaseUser.emailVerified,
-                isEmailVerified: cloudProfile.emailVerified ?? cloudProfile.isEmailVerified ?? firebaseUser.emailVerified,
-                currentChartId: cloudProfile.currentChartId || "",
-                mainMapChangesCount: cloudProfile.mainMapChangesCount ?? 0,
-                trialUsed: cloudProfile.trialUsed ?? false,
-                trialStartDate: cloudProfile.trialStartDate || "",
-                trialEndDate: cloudProfile.trialEndDate || "",
-                trialStart: cloudProfile.trialStart || cloudProfile.trialStartDate || "",
-                trialEnds: cloudProfile.trialEnds || cloudProfile.trialEndDate || "",
-                plan: cloudProfile.plan || "none",
-                subscriptionStatus: cloudProfile.subscriptionStatus || "none",
-                stripeCustomerId: cloudProfile.stripeCustomerId || "",
-                stripeSubscriptionId: cloudProfile.stripeSubscriptionId || "",
-                subscriptionUpdatedAt: cloudProfile.subscriptionUpdatedAt || "",
-                deviceId: cloudProfile.deviceId || "",
-                deviceFingerprint: cloudProfile.deviceFingerprint || "",
-                latitude: cloudProfile.latitude,
-                longitude: cloudProfile.longitude,
-                createdAt: cloudProfile.createdAt || ""
-              };
-              
-              if (updatedUser.preferredLanguage && updatedUser.preferredLanguage !== lang) {
-                mudarIdioma(updatedUser.preferredLanguage as any);
-                localStorage.setItem('orbi_preferred_language', updatedUser.preferredLanguage);
-              }
-
-              setUser(updatedUser);
-              localStorage.setItem("orbi_user_profile", JSON.stringify(updatedUser));
-
-              // Sync loaded user to registered accounts local storage
-              const accounts = getRegisteredAccounts();
-              const existingIdx = accounts.findIndex((a: any) => a.email.toLowerCase() === emailLower);
-              if (existingIdx !== -1) {
-                accounts[existingIdx].user = updatedUser;
-              } else {
-                accounts.push({
-                  email: emailLower,
-                  user: updatedUser,
-                  mapData: null,
-                  numerology: null,
-                  extraMaps: []
-                });
-              }
-              saveRegisteredAccounts(accounts);
-
-              if (updatedUser.hasCreatedMap) {
-                setMapSubTab('meu_mapa');
-                setActiveTab('mapa');
-                triggerGenerateMainMap(updatedUser);
-              } else {
-                setMapSubTab('criar_meu_mapa');
-                setActiveTab('mapa');
-              }
-            } else {
-              const defaultProfile: UserProfile = {
-                userId: firebaseUser.uid,
-                email: emailLower,
-                name: createMainNameRef.current.trim() || firebaseUser.displayName || "Viajante Estelar",
-                birthDate: "",
-                birthTime: "",
-                birthCity: "",
-                isUnknownTime: false,
-                isPremium: false,
-                hasCreatedMap: false,
-                createdAt: new Date().toISOString()
-              };
-              setUser(defaultProfile);
-              localStorage.setItem("orbi_user_profile", JSON.stringify(defaultProfile));
-              setMapSubTab('criar_meu_mapa');
-              setActiveTab('mapa');
-            }
-          }).catch((err) => {
-            console.warn("[Auth Observer] Failed to load cloud profile:", err);
-            // Fallback load local map if we have local user profile
-            const activeProfile = localStorage.getItem("orbi_user_profile");
-            if (activeProfile) {
-              try {
-                const parsed = JSON.parse(activeProfile);
-                if (parsed && parsed.hasCreatedMap) {
-                  setMapSubTab('meu_mapa');
-                  setActiveTab('mapa');
-                  triggerGenerateMainMap(parsed);
-                } else {
-                  setMapSubTab('criar_meu_mapa');
-                  setActiveTab('mapa');
-                }
-              } catch {
-                setMapSubTab('criar_meu_mapa');
-                setActiveTab('mapa');
-              }
-            } else {
-              setMapSubTab('criar_meu_mapa');
-              setActiveTab('mapa');
-            }
-          });
+          syncUserSession(firebaseUser);
         }
       } else {
         setFirebaseUid("");
@@ -2519,6 +2379,7 @@ export default function App() {
         setMapData(null);
         setNumerology(null);
         setExtraMaps([]);
+        localStorage.removeItem("orbi_logged_uid");
         localStorage.removeItem("orbi_logged_email");
         localStorage.removeItem("orbi_user_profile");
         localStorage.removeItem("orbi_map_data");
@@ -2533,6 +2394,8 @@ export default function App() {
   }, []);
 
   const [isLoadingMain, setIsLoadingMain] = useState<boolean>(false);
+  const [isSyncingSession, setIsSyncingSession] = useState<boolean>(false);
+  const [syncMessage, setSyncMessage] = useState<string>("");
 
   // Sign profiles state for Landing page & Constelações
   const [selectedZodiacSign, setSelectedZodiacSign] = useState<string>("Aquário");
@@ -4269,6 +4132,33 @@ export default function App() {
                 ? 'Conectando aos servidores seguros da Stripe para validar seu alinhamento...'
                 : 'Verifying with secure Stripe servers to synchronize your celestial alignment...'}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Real-time Session Syncing Overlay */}
+      {isSyncingSession && (
+        <div className="fixed inset-0 bg-slate-950 z-[299] flex flex-col items-center justify-center space-y-6">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-[20%] left-[30%] w-[450px] h-[450px] rounded-full bg-amber-500/[0.04] blur-[120px] animate-pulse" />
+            <div className="absolute bottom-[20%] right-[30%] w-[450px] h-[450px] rounded-full bg-indigo-500/[0.03] blur-[120px]" />
+          </div>
+          
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full border-2 border-amber-500/10 border-t-amber-500 border-r-amber-500 animate-spin" style={{ animationDuration: '1.5s' }} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Compass className="w-8 h-8 text-amber-400 animate-pulse" />
+            </div>
+          </div>
+          
+          <div className="text-center space-y-3 max-w-md px-6 z-10">
+            <h3 className="text-base font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200 uppercase font-sans">
+              {t("SINTONIZANDO ÓRBITA")}
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-mono tracking-wide animate-pulse">
+              {syncMessage}
+            </p>
+            <div className="w-32 h-[1px] bg-gradient-to-r from-transparent via-amber-500/40 to-transparent mx-auto mt-4" />
           </div>
         </div>
       )}
@@ -6841,7 +6731,12 @@ export default function App() {
                               <p className="text-xs text-slate-400 font-mono">Descriptografando efemérides e traçando alinhamento de casas...</p>
                             </div>
                           }>
-                            {mapData && (
+                            {!mapData ? (
+                              <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse">
+                                <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                                <p className="text-xs text-slate-400 font-mono">Descriptografando efemérides e traçando alinhamento de casas...</p>
+                              </div>
+                            ) : (
                               <div key={`astrology_view_${user.name}_${user.birthDate}_${user.birthTime || ''}`}>
                                 <AstrologyView 
                                   mapData={mapData} 
@@ -6852,7 +6747,12 @@ export default function App() {
                               </div>
                             )}
 
-                            {numerology && (
+                            {!numerology ? (
+                              <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse">
+                                <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mx-auto" />
+                                <p className="text-xs text-slate-400 font-mono">Calculando ciclos numerológicos e frequências vitais...</p>
+                              </div>
+                            ) : (
                               <div key={`numerology_view_${user.name}_${user.birthDate}`}>
                                 <NumerologyView 
                                   numerology={numerology} 
@@ -6863,7 +6763,15 @@ export default function App() {
                             )}
                           </React.Suspense>
 
-                          {!isPostTrialLocked(user) && <CompatibilityView user={user} lang={currentLang} />}
+                          {!isPostTrialLocked(user) && (
+                            <React.Suspense fallback={
+                              <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 animate-pulse">
+                                <p className="text-xs text-slate-405 font-mono">Sintonizando afinidades e afinadores de energia...</p>
+                              </div>
+                            }>
+                              <CompatibilityView user={user} lang={currentLang} />
+                            </React.Suspense>
+                          )}
 
 
                         </div>
@@ -7069,21 +6977,33 @@ export default function App() {
 
                 {/* THE NEW ADVANCED BIORHYTHM SYSTEM FOR FABRICIO */}
                 <div key={`biorhythm_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
-                  <BiorhythmView 
-                    userName={user?.name} 
-                    birthDate={user?.birthDate} 
-                    lang={currentLang}
-                  />
+                  <React.Suspense fallback={
+                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                      <span className="text-xs text-slate-400 font-mono">Desenhando curvas biológicas vitais...</span>
+                    </div>
+                  }>
+                    <BiorhythmView 
+                      userName={user?.name} 
+                      birthDate={user?.birthDate} 
+                      lang={currentLang}
+                    />
+                  </React.Suspense>
                 </div>
 
                 {/* NEW COMPREHENSIVE LUNAR CYCLE MODULE */}
                 <div key={`lunar_cycle_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
-                  <LunarCycle 
-                    userName={user?.name} 
-                    userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Aquário")} 
-                    userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "Sagitário")}
-                    lang={currentLang}
-                  />
+                  <React.Suspense fallback={
+                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                      <span className="text-xs text-slate-405 font-mono">Calculando fases de lunação astrológica...</span>
+                    </div>
+                  }>
+                    <LunarCycle 
+                      userName={user?.name} 
+                      userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Aquário")} 
+                      userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "Sagitário")}
+                      lang={currentLang}
+                    />
+                  </React.Suspense>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -7309,7 +7229,13 @@ export default function App() {
 
                 {/* NODOS LUNARES - SUA EVOLUÇÃO PESSOAL */}
                 <div key={`lunar_nodes_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
-                  <LunarNodes userName={user?.name} mapData={mapData} lang={currentLang} />
+                  <React.Suspense fallback={
+                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                      <span className="text-xs text-slate-405 font-mono">Calculando nodos lunares de evolução cármica...</span>
+                    </div>
+                  }>
+                    <LunarNodes userName={user?.name} mapData={mapData} lang={currentLang} />
+                  </React.Suspense>
                 </div>
 
               </div>
@@ -7359,47 +7285,65 @@ export default function App() {
 
                 {/* Monthly Celestial Transits History Panel */}
                 <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
-                  <TransitHistory
-                    userName={user?.name}
-                    birthDate={user?.birthDate}
-                    birthTime={user?.birthTime}
-                    latitude={user?.latitude}
-                    longitude={user?.longitude}
-                    lang={currentLang}
-                  />
+                  <React.Suspense fallback={
+                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                      <span className="text-xs text-slate-405 font-mono">Calculando trânsitos astrológicos mensais...</span>
+                    </div>
+                  }>
+                    <TransitHistory
+                      userName={user?.name}
+                      birthDate={user?.birthDate}
+                      birthTime={user?.birthTime}
+                      latitude={user?.latitude}
+                      longitude={user?.longitude}
+                      lang={currentLang}
+                    />
+                  </React.Suspense>
                 </div>
 
                 {/* Orbia AI Chat and Oracle Component */}
                 <div key={`orbia_oracle_chat_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
-                  <OrbiaAIAndOracle
-                    chatMessages={chatMessages}
-                    currentChatInput={currentChatInput}
-                    setCurrentChatInput={setCurrentChatInput}
-                    isSendingChat={isSendingChat}
-                    handleSendChatMessage={handleSendChatMessage}
-                    hasQueriedOracleToday={hasQueriedOracleToday}
-                    oracleQuestion={oracleQuestion}
-                    setOracleQuestion={setOracleQuestion}
-                    oracleResponse={oracleResponse}
-                    setOracleResponse={setOracleResponse}
-                    isQueryingOracle={isQueryingOracle}
-                    handleAskOracle={handleAskOracle}
-                    lang={currentLang}
-                  />
+                  <React.Suspense fallback={
+                    <div className="h-96 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                      <span className="text-xs text-slate-405 font-mono">Iniciando inteligência conselheira Orbia...</span>
+                    </div>
+                  }>
+                    <OrbiaAIAndOracle
+                      chatMessages={chatMessages}
+                      currentChatInput={currentChatInput}
+                      setCurrentChatInput={setCurrentChatInput}
+                      isSendingChat={isSendingChat}
+                      handleSendChatMessage={handleSendChatMessage}
+                      hasQueriedOracleToday={hasQueriedOracleToday}
+                      oracleQuestion={oracleQuestion}
+                      setOracleQuestion={setOracleQuestion}
+                      oracleResponse={oracleResponse}
+                      setOracleResponse={setOracleResponse}
+                      isQueryingOracle={isQueryingOracle}
+                      handleAskOracle={handleAskOracle}
+                      lang={currentLang}
+                    />
+                  </React.Suspense>
                 </div>
 
                 {/* Oráculo dos Sonhos Component */}
                 <div key={`oraculo_sonhos_card_${user?.name}_${user?.birthDate}`}>
-                  <OraculoDosSonhosCard
-                    newDreamDesc={newDreamDesc}
-                    setNewDreamDesc={setNewDreamDesc}
-                    isInterpretingDream={isInterpretingDream}
-                    handleRecordAndInterpretDream={handleRecordAndInterpretDream}
-                    dreamsHistory={dreamsHistory}
-                    selectedDreamDisplay={selectedDreamDisplay}
-                    setSelectedDreamDisplay={setSelectedDreamDisplay}
-                    preferredLanguage={currentLang}
-                  />
+                  <React.Suspense fallback={
+                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                      <span className="text-xs text-slate-405 font-mono">Abrindo Cofre Celestial dos Sonhos...</span>
+                    </div>
+                  }>
+                    <OraculoDosSonhosCard
+                      newDreamDesc={newDreamDesc}
+                      setNewDreamDesc={setNewDreamDesc}
+                      isInterpretingDream={isInterpretingDream}
+                      handleRecordAndInterpretDream={handleRecordAndInterpretDream}
+                      dreamsHistory={dreamsHistory}
+                      selectedDreamDisplay={selectedDreamDisplay}
+                      setSelectedDreamDisplay={setSelectedDreamDisplay}
+                      preferredLanguage={currentLang}
+                    />
+                  </React.Suspense>
                 </div>
 
               </div>
@@ -7652,13 +7596,22 @@ export default function App() {
 
                 {/* Premium Subscription Conversion Screen overlay/modal */}
                 {showPremiumModal && (
-                  <PremiumConversionScreen 
-                    userEmail={user?.email || loggedEmail}
-                    userUid={firebaseUid}
-                    currentLang={currentLang}
-                    onClose={() => setShowPremiumModal(false)}
-                    triggerGlobalNotification={(title, msg, type) => triggerGlobalNotification(title, msg, type as any)}
-                  />
+                  <React.Suspense fallback={
+                    <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                      <div className="text-center space-y-3 animate-pulse">
+                        <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                        <p className="text-xs text-slate-400 font-mono">Iniciando Portal de Assinaturas Estelares...</p>
+                      </div>
+                    </div>
+                  }>
+                    <PremiumConversionScreen 
+                      userEmail={user?.email || loggedEmail}
+                      userUid={firebaseUid}
+                      currentLang={currentLang}
+                      onClose={() => setShowPremiumModal(false)}
+                      triggerGlobalNotification={(title, msg, type) => triggerGlobalNotification(title, msg, type as any)}
+                    />
+                  </React.Suspense>
                 )}
 
                 {/* Substantially realistic Account Deletion confirmation prompt */}
@@ -7920,15 +7873,22 @@ export default function App() {
                 {t("Voltar ao Portal")}
               </button>
             </div>
-            <AdminPanel 
-              userName={user.name}
-              userBirthDate={user.birthDate}
-              userBirthSign={selectedZodiacSign}
-              triggerGlobalNotification={triggerGlobalNotification}
-              firebaseErrors={firebaseErrors}
-              onClearErrors={() => setFirebaseErrors([])}
-              lang={currentLang}
-            />
+            <React.Suspense fallback={
+              <div className="p-8 text-center bg-[#070c17] rounded-3xl border border-slate-800 space-y-3 animate-pulse">
+                <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                <p className="text-xs text-slate-400 font-mono">Sincronizando registros de depuração e auditoria de tráfego...</p>
+              </div>
+            }>
+              <AdminPanel 
+                userName={user.name}
+                userBirthDate={user.birthDate}
+                userBirthSign={selectedZodiacSign}
+                triggerGlobalNotification={triggerGlobalNotification}
+                firebaseErrors={firebaseErrors}
+                onClearErrors={() => setFirebaseErrors([])}
+                lang={currentLang}
+              />
+            </React.Suspense>
           </div>
         </div>
       )}

@@ -7,15 +7,9 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // A user owns a record if the record ID matches their auth UID or their registered email address.
+    // A user owns a record if the record ID matches their auth UID.
     function isOwner(userId) {
-      return isSignedIn() && (
-        request.auth.uid == userId || 
-        (request.auth.token.email != null && (
-          request.auth.token.email == userId || 
-          request.auth.token.email.lower() == userId.lower()
-        ))
-      );
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     // Rules for User Profile documents and their subcollections

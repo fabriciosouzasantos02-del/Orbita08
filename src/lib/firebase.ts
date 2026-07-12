@@ -171,10 +171,6 @@ export function getFirebaseApp() {
 
 export function getFirestoreDB() {
   if (!hasConfig) return null;
-  const auth = getFirebaseAuth();
-  if (!auth?.currentUser) {
-    return null;
-  }
   if (!dbInstance) {
     const app = getFirebaseApp();
     if (app) {
@@ -299,12 +295,23 @@ export interface DreamLogItem {
   language?: string;
 }
 
-// 1. Helper to retrieve current document key (preferring active authenticated UID, falling back to email)
+// 1. Helper to retrieve current document key (strictly preferring active authenticated UID or cached UID, preventing hybrid email keys)
 export function getUserDocKey(email: string): string {
   const mailKey = email.toLowerCase().trim();
+  
+  // If the parameter passed is already a UID (doesn't contain '@' and isn't empty), return it directly
+  if (email && !email.includes("@")) {
+    return email;
+  }
+
   const auth = getFirebaseAuth();
   const uid = auth?.currentUser?.uid;
-  return uid || mailKey;
+  if (uid) return uid;
+
+  const cachedUid = localStorage.getItem("orbi_logged_uid");
+  if (cachedUid) return cachedUid;
+
+  return mailKey;
 }
 
 // Core Profile Real-Time Synchronizers
