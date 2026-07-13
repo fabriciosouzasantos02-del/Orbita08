@@ -160,6 +160,23 @@
       },
       "required": ["id", "userId", "drawnCards", "interpretationText", "createdAt"]
     },
+    "TarotHistory": {
+      "title": "Humanized Tarot History Record",
+      "description": "Durable record of daily and weekly humanized Tarot interpretations with custom aspects.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique record key" },
+        "userId": { "type": "string", "description": "Associated user UID" },
+        "tipo": { "type": "string", "description": "Type of tarot layout (semanal, inteligente, amor, tradicional)" },
+        "data": { "type": "string", "description": "Date formatted as YYYY-MM-DD" },
+        "horário": { "type": "string", "description": "Time formatted as HH:MM" },
+        "idioma": { "type": "string", "description": "User language code (pt, en, es, etc.)" },
+        "cartas": { "type": "array", "description": "List of selected tarot cards with details" },
+        "interpretação": { "type": "object", "description": "Full text of AI interpretation and advice" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Firestore creation date-time" }
+      },
+      "required": ["id", "userId", "tipo", "data", "horário", "idioma", "cartas", "interpretação", "createdAt"]
+    },
     "NumerologyCycle": {
       "title": "Comprehensive Numerological Matrix",
       "description": "Durable record of personal numerology cycles and daily resonance factors.",
@@ -294,6 +311,10 @@
     "/users/{userId}/tarotReadings/{readingId}": {
       "schema": "TarotReading",
       "description": "History of tarot cards drawn and divine explanations."
+    },
+    "/users/{userId}/tarotHistory/{historyId}": {
+      "schema": "TarotHistory",
+      "description": "Durable daily and weekly humanized Tarot readings history."
     },
     "/users/{userId}/numerology/{numerologyId}": {
       "schema": "NumerologyCycle",

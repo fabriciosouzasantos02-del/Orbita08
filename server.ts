@@ -1271,32 +1271,102 @@ function getAscendedAstrologicalSign(dateString: string, offset: number): string
 }
 
 // Calculate Numerology
-function calculateNumerologyData(name: string, birthDate: string): any {
-  // Summing digits
-  const sumDigits = (str: string) => {
-    return str.replace(/\D/g, '').split('').reduce((acc, curr) => acc + parseInt(curr), 0);
-  };
-  
-  const reduceToSingleDigit = (num: number): number => {
-    while (num > 9 && num !== 11 && num !== 22) {
-      num = num.toString().split('').reduce((acc, curr) => acc + parseInt(curr), 0);
+const PythagoreanGrid: Record<string, number> = {
+  a: 1, j: 1, s: 1,
+  b: 2, k: 2, t: 2,
+  c: 3, l: 3, u: 3,
+  d: 4, m: 4, v: 4,
+  e: 5, n: 5, w: 5,
+  f: 6, o: 6, x: 6,
+  g: 7, p: 7, y: 7,
+  h: 8, q: 8, z: 8,
+  i: 9, r: 9,
+};
+
+function reduceNumber(num: number, keepMaster: boolean = true): number {
+  while (num > 9) {
+    if (keepMaster && (num === 11 || num === 22 || num === 33)) {
+      return num;
     }
-    return num;
-  };
+    num = String(num).split("").map(Number).reduce((sum, n) => sum + n, 0);
+  }
+  return num;
+}
 
-  const nameVal = name.length;
-  const birthVal = sumDigits(birthDate);
+function calculateNumerologyData(name: string, birthDate: string): any {
+  let year = 1990;
+  let month = 1;
+  let day = 1;
 
-  const caminhoDeVida = reduceToSingleDigit(birthVal || 25);
-  const expressao = reduceToSingleDigit(nameVal + birthVal || 7);
-  const motivacao = reduceToSingleDigit(nameVal * 2 || 9);
-  const personalidade = reduceToSingleDigit(Math.abs(nameVal - (birthVal % 10)) || 1);
+  if (birthDate.includes("-")) {
+    const parts = birthDate.split("-");
+    if (parts.length === 3) {
+      year = parseInt(parts[0], 10) || 1990;
+      month = parseInt(parts[1], 10) || 1;
+      day = parseInt(parts[2], 10) || 1;
+    }
+  } else if (birthDate.includes("/")) {
+    const parts = birthDate.split("/");
+    if (parts.length === 3) {
+      if (parts[2].length === 4) {
+        year = parseInt(parts[2], 10) || 1990;
+        month = parseInt(parts[1], 10) || 1;
+        day = parseInt(parts[0], 10) || 1;
+      } else {
+        year = parseInt(parts[0], 10) || 1990;
+        month = parseInt(parts[1], 10) || 1;
+        day = parseInt(parts[2], 10) || 1;
+      }
+    }
+  } else {
+    const dateStr = birthDate.replace(/[^0-9]/g, "");
+    if (dateStr.length === 8) {
+      year = parseInt(dateStr.substring(0, 4), 10) || 1990;
+      month = parseInt(dateStr.substring(4, 6), 10) || 1;
+      day = parseInt(dateStr.substring(6, 8), 10) || 1;
+    }
+  }
+
+  const redYear = reduceNumber(year, true);
+  const redMonth = reduceNumber(month, true);
+  const redDay = reduceNumber(day, true);
+
+  const birthSum = reduceNumber(redYear + redMonth + redDay, true);
+
+  const cleanName = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]/g, "");
+
+  let expressionSum = 0;
+  let vowelsSum = 0;
+  let consonantsSum = 0;
+
+  for (const char of cleanName) {
+    const val = PythagoreanGrid[char];
+    if (val) {
+      expressionSum += val;
+      if (["a", "e", "i", "o", "u"].includes(char)) {
+        vowelsSum += val;
+      } else {
+        consonantsSum += val;
+      }
+    }
+  }
+
+  const expression = reduceNumber(expressionSum || 1, true);
+  const soulUrge = reduceNumber(vowelsSum || 1, true);
+  const personality = reduceNumber(consonantsSum || 1, true);
+  const destiny = reduceNumber(expression + birthSum, true);
+
+  const caminhoDeVida = birthSum || 1;
+  const expressao = expression || 3;
+  const motivacao = soulUrge || 5;
+  const personalidade = personality || 7;
 
   return {
     caminhoDeVida,
     expressao,
     motivacao,
     personalidade,
+    destiny: destiny || 9,
     description: `Você é um perfil de vibração ${caminhoDeVida}. Este número denota que seu caminho principal de aprendizado incentiva a independência, curiosidade ativa e forte desenvolvimento pessoal.`,
     ciclos: [
       `Ciclo Formativo (0-28 anos): Vibração ${expressao} - Ênfase nos estudos e compreensão analítica da vida.`,
@@ -1784,7 +1854,8 @@ Responda APENAS com o JSON literal. Não inclua blocos de código adicionais for
 
 // API: Dream Interpretation using Gemini (New Oráculo dos Sonhos)
 app.post("/api/dreams/interpret", async (req, res) => {
-  const { title, description, lang, mapData, userProfile } = req.body;
+  const { title, lang, mapData, userProfile } = req.body;
+  const description = req.body.description || req.body.content;
   if (!description) {
     return res.status(400).json({ error: (req as any).t('api.dreams.content_required') });
   }
@@ -1817,11 +1888,38 @@ Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
 - Ascendente em: ${userAscSign}
 - Distribuição de Elementos: ${elementsSummary}
 `;
+
+    if (userProfile?.birthTime) {
+      chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
+    }
+    if (userProfile?.birthPlace) {
+      chartContext += `- Local de Nascimento: ${userProfile.birthPlace}\n`;
+    }
     
     const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
     if (planets && planets.length > 0) {
       chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
     }
+
+    let numerologySummary = "";
+    if (userProfile?.name && userProfile?.birthDate) {
+      try {
+        const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
+        if (numData) {
+          numerologySummary = `
+Informações de Numerologia Cabalística do Usuário:
+- Número de Destino/Caminho de Vida: ${numData.destiny || numData.birthSum || "N/A"}
+- Número de Expressão: ${numData.expression || "N/A"}
+- Número de Desejo da Alma (Motivação): ${numData.soul || "N/A"}
+- Número de Personalidade: ${numData.personality || "N/A"}
+`;
+        }
+      } catch (e) {
+        console.warn("Could not compute numerology summary for dream interpretation:", e);
+      }
+    }
+    chartContext += numerologySummary;
+
   } else if (userProfile?.birthDate) {
     const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
     userSunSign = zodiac;
@@ -1829,6 +1927,31 @@ Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
 Informações Astrológicas do Usuário:
 - Signo Solar estimado: ${userSunSign}
 `;
+    if (userProfile?.birthTime) {
+      chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
+    }
+    if (userProfile?.birthPlace) {
+      chartContext += `- Local de Nascimento: ${userProfile.birthPlace}\n`;
+    }
+
+    let numerologySummary = "";
+    if (userProfile?.name) {
+      try {
+        const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
+        if (numData) {
+          numerologySummary = `
+Informações de Numerologia Cabalística do Usuário:
+- Número de Destino/Caminho de Vida: ${numData.destiny || numData.birthSum || "N/A"}
+- Número de Expressão: ${numData.expression || "N/A"}
+- Número de Desejo da Alma (Motivação): ${numData.soul || "N/A"}
+- Número de Personalidade: ${numData.personality || "N/A"}
+`;
+        }
+      } catch (e) {
+        console.warn("Could not compute numerology summary for dream interpretation:", e);
+      }
+    }
+    chartContext += numerologySummary;
   }
   const langNames: Record<string, string> = {
     pt: "Português",
@@ -2062,30 +2185,38 @@ Informações Astrológicas do Usuário:
   }
 
   try {
-    const prompt = `Você é o Oráculo dos Sonhos (Oráculo Celestial), assistente espiritual e terapeuta de sonhos profissional.
-Analise a descrição deste sonho e gere uma interpretação mágica, profunda, rica e detalhada baseando-se e correlacionando-a com as energias astrológicas do mapa natal do usuário abaixo, estabelecendo o mapa astral como a única fonte oficial de verdade para todas as leituras personalizadas do usuário.
+    const prompt = `Você é o Oráculo dos Sonhos (Oráculo Celestial), assistente espiritual e terapeuta de sonhos profissional de altíssimo nível.
+Analise a descrição deste sonho e gere uma interpretação mágica, profunda, altamente personalizada, rica e detalhada baseando-se e correlacionando-a rigorosamente com as energias astrológicas do mapa natal e numerologia do usuário abaixo, estabelecendo os dados do usuário como a única fonte oficial de verdade para todas as leituras personalizadas.
 
 ${chartContext}
 
 Descrição do Sonho: "${description}"
 
+REGRAS DE OURO DE PERSONALIZAÇÃO E PROFUNDIDADE:
+1. NUNCA utilize textos genéricos, respostas prontas ou interpretações padronizadas. Cada interpretação deve ser única e sob medida.
+2. O conteúdo NUNCA poderá inventar ou citar signos, planetas, casas, aspectos, números ou características que não pertençam ao mapa natal real do usuário fornecido acima. Use estritamente e com precisão apenas os astros e posicionamentos do usuário.
+3. A interpretação combinada deve ser longa, extremamente rica, madura e detalhada, contendo aproximadamente 1500 caracteres ou mais em todos os campos de texto somados.
+4. Os campos "mainMeaning", "psychological", "spiritual" e "oracleAdvice" devem ser parágrafos longos, poéticos, densos e altamente terapêuticos. Conecte cada aspecto do sonho (como objetos, sensações, medos, animais, cores, cenários) diretamente aos posicionamentos, aos elementos e aos números do usuário.
+5. Em "loveArea", "financeArea" e "careerArea", forneça conselhos práticos e sábios de como o sonhador deve agir em sua vida prática em sintonia com seus astros.
+6. Apresente uma análise equilibrada (avaliando aspectos positivos, potenciais de crescimento, desafios de sombra e avisos de proteção sem causar pânico, terrorismo ou medo, mas sim despertando a sabedoria prática e espiritual).
+
 Você DEVE produzir e retornar EXCLUSIVAMENTE um objeto JSON estruturado exatamente com o seguinte formato, sem nenhum texto adicional ou explicações externas. Todas as chaves e valores textuais de string DEVEM ser escritos 100% no idioma ${targetLangName}:
 
 {
   "title": "Título elegante curto do sonho em ${targetLangName}",
-  "mainMeaning": "Significado geral principal bem rico e detalhado do sonho em ${targetLangName}",
-  "psychological": "Interpretação psicológica detalhada baseada no subconsciente em ${targetLangName}",
-  "spiritual": "Mensagem espiritual em ${targetLangName} (se houver relevância, senão explique brevemente a conexão sutil ou retorne a frase correspondente a 'Transição de alma e conexão elemental')",
-  "attention": "Explicação detalhada do que se atentar nos próximos dias em ${targetLangName} (se houver, senão avise para manter-se em equilíbrio emocional)",
-  "opportunities": "Oportunidades próximas que este sonho indica para sua vida em ${targetLangName}",
-  "protection": "Sinais de proteção e livramentos mostrados no sonho em ${targetLangName}",
-  "loveArea": "Como o sonho ressoa na área amorosa do sonhador em ${targetLangName}",
-  "financeArea": "Impacto e previsões para a área financeira em ${targetLangName}",
+  "mainMeaning": "Significado geral principal bem rico, profundo e detalhado do sonho conectado com as energias do Sol e da Lua do usuário em ${targetLangName} (mínimo 350 caracteres)",
+  "psychological": "Interpretação psicológica e consciencial rica baseada no subconsciente do sonhador e suas tendências comportamentais em ${targetLangName} (mínimo 350 caracteres)",
+  "spiritual": "Mensagem espiritual profunda em ${targetLangName} conectando a jornada evolutiva da alma com o Ascendente do usuário (mínimo 350 caracteres)",
+  "attention": "Explicação detalhada e ponderada sobre o que se atentar nos próximos dias em ${targetLangName} (sem alarmismos, focado em equilíbrio e sabedoria prática, mínimo 200 caracteres)",
+  "opportunities": "Oportunidades próximas que este sonho indica em sintonia com os trânsitos em ${targetLangName} (mínimo 150 caracteres)",
+  "protection": "Sinais de proteção e livramentos mostrados no sonho em ${targetLangName} (mínimo 150 caracteres)",
+  "loveArea": "Como o sonho ressoa na área amorosa do sonhador com base nos astros dele em ${targetLangName}",
+  "financeArea": "Impacto e previsões sábias para a área financeira em ${targetLangName}",
   "careerArea": "Direções do sonho para a área profissional em ${targetLangName}",
-  "luckyNumbers": ["lista com 5 números da sorte de 2 dígitos como strings, ex: '07', '14', '22', '33', '48'"],
+  "luckyNumbers": ["lista com 5 números da sorte de 2 dígitos como strings baseados na numerologia do usuário, ex: '07', '14', '22', '33', '48'"],
   "favorableColors": ["lista com 2 ou 3 cores favoráveis identificadas em ${targetLangName}, ex: 'Gold', 'Blue', 'White'"],
   "positivityLevel": 4.5,
-  "oracleAdvice": "O conselho direto e misterioso do Oráculo para o dia a dia do sonhador em ${targetLangName}",
+  "oracleAdvice": "O conselho direto, misterioso e inspirador do Oráculo para o dia a dia do sonhador em ${targetLangName} (mínimo 200 caracteres)",
   "detectedAnimals": [
     { "animal": "Nome do Animal em ${targetLangName}", "meaning": "Significado individual do animal em ${targetLangName}" }
   ],
@@ -2093,11 +2224,11 @@ Você DEVE produzir e retornar EXCLUSIVAMENTE um objeto JSON estruturado exatame
     { "color": "Nome da Cor em ${targetLangName}", "meaning": "Interpretação da cor em ${targetLangName}" }
   ],
   "detectedNumbers": [
-    { "number": "Número", "meaning": "Interpretação do número no sonho em ${targetLangName}" }
+    { "number": "Número", "meaning": "Interpretação do número no sonho em ${targetLangName} conectando-o misticamente com a numerologia pessoal do usuário" }
   ],
   "predominantEmotion": {
     "emotion": "Uma das seguintes palavras exatas traduzida para ${targetLangName}: Medo, Alegria, Tristeza, Ansiedade ou Paz (ou correspondente em ${targetLangName})",
-    "explanation": "Explicação detalhada em ${targetLangName}"
+    "explanation": "Explicação detalhada da emoção no sonho em ${targetLangName}"
   },
   "dreamEnergyIndex": 82,
   "dreamEnergyType": "Escolha o melhor termo complementar em ${targetLangName}: Energia Espiritual, Vibração Psíquica ou Alinhamento Astral",

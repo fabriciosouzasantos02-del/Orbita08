@@ -96,6 +96,7 @@ interface UserDashboardPortalProps {
   onUpdateCurrentUser?: (updated: any) => void;
   lang?: Language;
   mapData?: any;
+  onInstallPWA?: () => void;
 }
 
 const localPortalTranslations: Record<string, Record<string, string>> = {
@@ -1299,7 +1300,8 @@ export default function UserDashboardPortal({
   setAreaSubTab: propSetAreaSubTab,
   onUpdateCurrentUser,
   lang,
-  mapData
+  mapData,
+  onInstallPWA
 }: UserDashboardPortalProps) {
   const { idioma } = useIdioma();
   const activeLang = idioma || lang || 'pt';
@@ -1690,7 +1692,7 @@ export default function UserDashboardPortal({
             location: locationStr,
             lastDream: dreamsHistory && dreamsHistory.length > 0 ? dreamsHistory[0] : null,
             lang: activeLang,
-            mapData
+            mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null)
           })
         });
         if (res.ok) {
@@ -1737,7 +1739,7 @@ export default function UserDashboardPortal({
           location: locationStr,
           dreams: dreamsHistory,
           lang: activeLang,
-          mapData
+          mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null)
         })
       });
 
@@ -3931,16 +3933,21 @@ export default function UserDashboardPortal({
                     </div>
                   </div>
 
-                  <div className="space-y-2 pt-3">
+                   <div className="space-y-2 pt-3">
                     <button
                       type="button"
                       onClick={() => {
-                        alert(t("Esta aplicação é um PWA completo! Encontre a opção de instalar diretamente no menu de opções do seu navegador (ícone de computador ou adicionar à tela inicial) para rodar como um app nativo."));
+                        if (onInstallPWA) {
+                          onInstallPWA();
+                        } else {
+                          alert(t("Esta aplicação é um PWA completo! Encontre a opção de instalar diretamente no menu de opções do seu navegador (ícone de computador ou adicionar à tela inicial) para rodar como um app nativo."));
+                        }
                       }}
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-amber-500/10"
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-amber-500/10 animate-pulse"
+                      style={{ animationDuration: '3s' }}
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      {t("Ativar Instrução PWA")}
+                      <Smartphone className="w-3.5 h-3.5" />
+                      {t("Instalar App")}
                     </button>
                     <p className="text-[10px] text-slate-500 text-center leading-normal">
                       {t("Não consome memória de armazenamento físico adicional. Atualiza em tempo real.")}

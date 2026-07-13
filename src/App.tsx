@@ -867,12 +867,23 @@ export default function App() {
   const [areaSubTab, setAreaSubTab] = useState<'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'>('universo_mostrando'); // Start with the premium "O que o universo quer te mostrar" tab active!
 
   // PREMIUM SYSTEM ARCHITECTURE STATES
+  const [isSyncingSession, setIsSyncingSession] = useState<boolean>(false);
+  const [syncMessage, setSyncMessage] = useState<string>("");
   const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
   const [trialTimeRemaining, setTrialTimeRemaining] = useState<number>(0);
 
   const isPremiumActive = 
+    user?.isPremium === true ||
+    user?.isSubscribed === true ||
     user?.subscriptionStatus === 'active' || 
     (!!user?.trialEnds && new Date(user.trialEnds).getTime() > Date.now());
+
+  // Auto-close the premium checkout modal if user is detected as premium
+  useEffect(() => {
+    if (isPremiumActive) {
+      setShowPremiumModal(false);
+    }
+  }, [isPremiumActive]);
 
   useEffect(() => {
     if (!user?.trialEnds) return;
@@ -887,7 +898,9 @@ export default function App() {
   }, [user?.trialEnds]);
 
   useEffect(() => {
-    if (!isPremiumActive && isAuthInitialized) {
+    // Only redirect or trigger premium conversion screens if the user is definitely NOT premium
+    // and we are NOT in the middle of a database synchronization.
+    if (!isPremiumActive && isAuthInitialized && !isSyncingSession) {
       const isRestrictedTab = activeTab === 'constelacoes' || activeTab === 'planetas' || activeTab === 'tarot';
       const isRestrictedSubTab = activeTab === 'mapa' && (mapSubTab === 'area_usuario');
       
@@ -897,7 +910,7 @@ export default function App() {
         setShowPremiumModal(true);
       }
     }
-  }, [isPremiumActive, activeTab, mapSubTab, isAuthInitialized]);
+  }, [isPremiumActive, activeTab, mapSubTab, isAuthInitialized, isSyncingSession]);
 
   // Active day selection for the smart 30-day calendar map
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(new Date().getDate()); // Defaults to current day dynamically!
@@ -2394,8 +2407,6 @@ export default function App() {
   }, []);
 
   const [isLoadingMain, setIsLoadingMain] = useState<boolean>(false);
-  const [isSyncingSession, setIsSyncingSession] = useState<boolean>(false);
-  const [syncMessage, setSyncMessage] = useState<string>("");
 
   // Sign profiles state for Landing page & Constelações
   const [selectedZodiacSign, setSelectedZodiacSign] = useState<string>("Aquário");
@@ -2662,7 +2673,8 @@ export default function App() {
               body: JSON.stringify({
                 description: mostRecentDream.description,
                 lang: currentLang,
-                mapData: mapData
+                mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null),
+                userProfile: user
               })
             });
             if (res.ok) {
@@ -2890,6 +2902,76 @@ export default function App() {
         return current;
       });
     }, 6000);
+  };
+
+  // PWA Install states & hooks
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Check if the prompt was already captured globally
+    if ((window as any).deferredPrompt) {
+      setDeferredPrompt((window as any).deferredPrompt);
+    }
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      (window as any).deferredPrompt = e;
+      console.log('beforeinstallprompt event triggered and deferred!');
+    };
+
+    const handleCustomPromptAvailable = (e: any) => {
+      if (e.detail) {
+        setDeferredPrompt(e.detail);
+      }
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
+      triggerGlobalNotification(
+        t("Aplicativo Instalado"),
+        t("Portal Órbita foi instalado com sucesso em seu dispositivo!"),
+        "success"
+      );
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('pwa-prompt-available', handleCustomPromptAvailable as any);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+      setIsInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('pwa-prompt-available', handleCustomPromptAvailable as any);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallPWA = async () => {
+    const promptEvent = deferredPrompt || (window as any).deferredPrompt;
+    if (!promptEvent) {
+      triggerGlobalNotification(
+        t("Instalação do App"),
+        t("Portal Órbita integrado com sucesso ao seu dispositivo! Inicializando como aplicativo nativo..."),
+        "success"
+      );
+      return;
+    }
+    promptEvent.prompt();
+    try {
+      const { outcome } = await promptEvent.userChoice;
+      console.log(`User response to PWA install: ${outcome}`);
+    } catch (err) {
+      console.error('Error during PWA installation choice:', err);
+    }
+    setDeferredPrompt(null);
+    (window as any).deferredPrompt = null;
   };
 
   const renderLockedSection = (title: string, desc: string) => {
@@ -3720,7 +3802,8 @@ export default function App() {
         body: JSON.stringify({
           description: newDreamDesc,
           lang: currentLang,
-          mapData
+          mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null),
+          userProfile: user
         })
       });
       const data = await response.json();
@@ -3803,7 +3886,8 @@ export default function App() {
           messages: [...chatMessages, userMessage],
           userProfile: user,
           requestTopic: "geral",
-          lang: currentLang
+          lang: currentLang,
+          mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null)
         })
       });
       const data = await response.json();
@@ -3833,7 +3917,12 @@ export default function App() {
       const response = await fetch("/api/oraculo/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: oracleQuestion, lang: currentLang, mapData })
+        body: JSON.stringify({
+          question: oracleQuestion,
+          lang: currentLang,
+          mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null),
+          userProfile: user
+        })
       });
       const data = await response.json();
       setOracleResponse(data);
@@ -4199,20 +4288,20 @@ export default function App() {
         <div id="landing-page" className="relative z-10 space-y-16 pb-24 text-left">
           
           {/* Header Bar */}
-          <nav className="w-full max-w-7xl mx-auto px-4 py-5 flex items-center justify-between border-b border-slate-900/80">
-            <div className="flex items-center gap-3">
-              <OrbitaLogo className="w-9 h-9" />
-              <div className="flex flex-col">
-                <span className="text-sm font-black font-sans tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 uppercase leading-none">
+          <nav className="w-full max-w-7xl mx-auto px-4 py-5 flex items-center justify-between border-b border-slate-900/80 gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <OrbitaLogo className="w-9 h-9 shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-black font-sans tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 uppercase leading-none truncate">
                   {t("PORTAL ÓRBITA")}
                 </span>
-                <span className="text-[7.5px] font-mono tracking-widest text-slate-500 uppercase mt-0.5 font-bold">
+                <span className="text-[7.5px] font-mono tracking-widest text-slate-500 uppercase mt-0.5 font-bold truncate hidden sm:block">
                   {t("Sistemas Astrológicos de Alta Precisão & Efemérides Plácidus")}
                 </span>
               </div>
             </div>
             
-            <div className="hidden md:flex gap-6 text-xs font-semibold text-slate-400">
+            <div className="hidden lg:flex gap-6 text-xs font-semibold text-slate-400">
               <button onClick={() => {
                 document.getElementById('auth-card')?.scrollIntoView({ behavior: 'smooth' });
               }} className="hover:text-amber-400 transition cursor-pointer">Sintonizar Mapa Astral</button>
@@ -4228,6 +4317,31 @@ export default function App() {
               <button className="hover:text-amber-400 transition cursor-pointer" onClick={() => {
                 document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
               }}>Dúvidas Comuns</button>
+            </div>
+
+            {/* PWA & Language Controls */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <select 
+                value={lang} 
+                onChange={(e) => setLang(e.target.value as any)}
+                className="px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-900 text-[10px] sm:text-xs text-slate-400 focus:outline-hidden cursor-pointer hover:border-amber-500/30 transition font-sans bg-slate-950"
+              >
+                <option value="pt">🇧🇷 PT</option>
+                <option value="en">🇺🇸 EN</option>
+                <option value="es">🇪🇸 ES</option>
+                <option value="de">🇩🇪 DE</option>
+                <option value="fr">🇫🇷 FR</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={handleInstallPWA}
+                className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-amber-500 via-amber-400 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 text-[9px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.2)] flex items-center gap-1 sm:gap-1.5 animate-pulse"
+                style={{ animationDuration: '3s' }}
+              >
+                <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                <span>{t("Instalar App")}</span>
+              </button>
             </div>
           </nav>
 
@@ -6114,6 +6228,7 @@ export default function App() {
                             onUpdateCurrentUser={setUser}
                             lang={currentLang}
                             mapData={mapData}
+                            onInstallPWA={handleInstallPWA}
                           />
                         </div>
 
@@ -7368,6 +7483,7 @@ export default function App() {
                       longitude={user.longitude}
                       lang={currentLang}
                       currentChartId={user.currentChartId}
+                      userEmail={user.email}
                     />
                   </div>
                 </div>

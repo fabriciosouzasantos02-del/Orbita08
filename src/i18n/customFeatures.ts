@@ -100,7 +100,17 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "Lua Nova",
     "Lua Crescente": "Lua Crescente",
     "Lua Cheia": "Lua Cheia",
-    "Lua Minguante": "Lua Minguante"
+    "Lua Minguante": "Lua Minguante",
+    "Instalar Aplicativo": "Instalar Aplicativo",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!",
+    "Aplicativo Instalado": "Aplicativo Instalado",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "Portal Órbita foi instalado com sucesso em seu dispositivo!",
+    "Instalação do App": "Instalação do App",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!",
+    "Instalar PWA": "Instalar PWA",
+    "Instalar App": "Instalar App",
+    "Visual Nativo & Atalho Direto": "Visual Nativo & Atalho Direto",
+    "Selecione o Idioma": "Selecione o Idioma"
   },
   en: {
     // Elements and Titles
@@ -201,7 +211,17 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "New Moon",
     "Lua Crescente": "Waxing Moon",
     "Lua Cheia": "Full Moon",
-    "Lua Minguante": "Waning Moon"
+    "Lua Minguante": "Waning Moon",
+    "Instalar Aplicativo": "Install Application",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "Install Portal Órbita on your device for quick access and a native app look!",
+    "Aplicativo Instalado": "Application Installed",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "Portal Órbita has been successfully installed on your device!",
+    "Instalação do App": "App Installation",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "Open your browser menu (three dots on Android or Share button on iOS Safari) and select 'Add to Home Screen' to install Portal Órbita!",
+    "Instalar PWA": "Install PWA",
+    "Instalar App": "Install App",
+    "Visual Nativo & Atalho Direto": "Native Look & Direct Shortcut",
+    "Selecione o Idioma": "Select Language"
   },
   es: {
     // Elements and Titles
@@ -302,7 +322,17 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "Luna Nueva",
     "Lua Crescente": "Luna Creciente",
     "Lua Cheia": "Luna Llena",
-    "Lua Minguante": "Luna Menguante"
+    "Lua Minguante": "Luna Menguante",
+    "Instalar Aplicativo": "Instalar Aplicación",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "¡Instale Portal Órbita en su dispositivo para un acceso rápido y apariencia de aplicación nativa!",
+    "Aplicativo Instalado": "Aplicación Instalada",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "¡Portal Órbita se ha instalado correctamente en su dispositivo!",
+    "Instalação do App": "Instalación de la App",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "¡Abra el menú de su navegador (tres puntos en Android o el botón Compartir en iOS Safari) y seleccione 'Agregar a la pantalla de inicio' para instalar Portal Órbita!",
+    "Instalar PWA": "Instalar PWA",
+    "Instalar App": "Instalar App",
+    "Visual Nativo & Atalho Direto": "Aspecto Nativo y Acceso Directo",
+    "Selecione o Idioma": "Seleccione el Idioma"
   },
   de: {
     // Elements and Titles
@@ -403,7 +433,17 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "Neumond",
     "Lua Crescente": "Zunehmender Mond",
     "Lua Cheia": "Vollmond",
-    "Lua Minguante": "Abnehmender Mond"
+    "Lua Minguante": "Abnehmender Mond",
+    "Instalar Aplicativo": "Anwendung installieren",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "Installieren Sie Portal Órbita auf Ihrem Gerät für schnellen Zugriff und das Aussehen einer nativen App!",
+    "Aplicativo Instalado": "Anwendung installiert",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "Portal Órbita wurde erfolgreich auf Ihrem Gerät installiert!",
+    "Instalação do App": "App-Installation",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "Öffnen Sie Ihr Browsermenü (drei Punkte unter Android oder die Schaltfläche 'Teilen' unter iOS Safari) und wählen Sie 'Zum Startbildschirm hinzufügen', um Portal Órbita zu installieren!",
+    "Instalar PWA": "PWA installieren",
+    "Instalar App": "App installieren",
+    "Visual Nativo & Atalho Direto": "Natives Aussehen & direkte Verknüpfung",
+    "Selecione o Idioma": "Sprache auswählen"
   },
   fr: {
     // Elements and Titles
@@ -504,6 +544,16 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "Nouvelle Lune",
     "Lua Crescente": "Lune Croissante",
     "Lua Cheia": "Pleine Lune",
-    "Lua Minguante": "Lune Décroissante"
+    "Lua Minguante": "Lune Décroissante",
+    "Instalar Aplicativo": "Installer l'application",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "Installez Portal Órbita sur votre appareil pour un accès rapide et l'apparence d'une application native!",
+    "Aplicativo Instalado": "Application Installée",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "Portal Órbita a été installé avec succès sur votre appareil !",
+    "Instalação do App": "Installation de l'App",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "Ouvrez le menu de votre navigateur (trois points sur Android ou le bouton Partager sur iOS Safari) et sélectionnez 'Ajouter à l'écran d'accueil' pour installer Portal Órbita !",
+    "Instalar PWA": "Installer la PWA",
+    "Instalar App": "Installer l'App",
+    "Visual Nativo & Atalho Direto": "Look Natif & Raccourci Direct",
+    "Selecione o Idioma": "Choisir la langue"
   }
 };

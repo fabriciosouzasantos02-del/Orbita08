@@ -1341,6 +1341,50 @@ export async function loadTarotReadingsFromDatabase(email: string): Promise<any[
   return [];
 }
 
+export async function saveTarotHistoryToDatabase(email: string, historyId: string, historyData: any) {
+  const docKey = getUserDocKey(email);
+  if (!docKey || !historyId) return;
+
+  localStorage.setItem(`orbi_tarot_history_${docKey}_${historyId}`, JSON.stringify(historyData));
+
+  const db = getFirestoreDB();
+  if (db) {
+    const path = `users/${docKey}/tarotHistory/${historyId}`;
+    try {
+      const docRef = doc(db, "users", docKey, "tarotHistory", historyId);
+      await setDoc(docRef, {
+        id: historyId,
+        userId: docKey,
+        ...historyData,
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, path);
+    }
+  }
+}
+
+export async function loadTarotHistoryFromDatabase(email: string): Promise<any[]> {
+  const docKey = getUserDocKey(email);
+  if (!docKey) return [];
+
+  const db = getFirestoreDB();
+  if (db) {
+    try {
+      const colRef = collection(db, "users", docKey, "tarotHistory");
+      const snap = await getDocs(colRef);
+      const results: any[] = [];
+      snap.forEach((docSnap) => {
+        results.push(docSnap.data());
+      });
+      return results;
+    } catch (e) {
+      console.warn("Falha ao carregar historico de Tarot do Firestore:", e);
+    }
+  }
+  return [];
+}
+
 export async function saveNumerologyToDatabase(email: string, numerologyId: string, numerologyData: any) {
   const docKey = getUserDocKey(email);
   if (!docKey || !numerologyId) return;
