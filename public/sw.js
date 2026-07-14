@@ -1,10 +1,8 @@
-const CACHE_NAME = 'orbita-pwa-cache-v1';
+const CACHE_NAME = 'orbita-pwa-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon.svg',
-  '/icon-maskable.svg',
   '/icon-192.png',
   '/icon-512.png',
   '/icon-maskable-192.png',
@@ -14,7 +12,13 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      // Robust caching: cache assets individually so any single failure does not block PWA installation
+      const cachePromises = ASSETS_TO_CACHE.map((asset) => {
+        return cache.add(asset).catch((err) => {
+          console.warn(`[PWA Service Worker] Could not cache asset during install: ${asset}`, err);
+        });
+      });
+      return Promise.all(cachePromises);
     })
   );
   self.skipWaiting();

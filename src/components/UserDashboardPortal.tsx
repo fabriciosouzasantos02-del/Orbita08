@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { 
   Activity, Award, Calendar, Sparkles, ShieldCheck, BookOpen, 
   DollarSign, Heart, Users, Star, Moon, Home, Eye, Sliders,
-  Compass, AlertCircle, TrendingUp, Sparkle, ArrowRight, Check, 
+  Compass, AlertCircle, TrendingUp, Sparkle, ArrowRight, Check, CheckCircle,
   Clock, Zap, Smile, Flame, Shield, HelpCircle, MessageSquare, Send, Bell, X,
   Search, Smartphone, Download, Share2, Copy, ChevronDown, ChevronRight
 } from 'lucide-react';
@@ -97,6 +97,7 @@ interface UserDashboardPortalProps {
   lang?: Language;
   mapData?: any;
   onInstallPWA?: () => void;
+  isInstalled?: boolean;
 }
 
 const localPortalTranslations: Record<string, Record<string, string>> = {
@@ -1301,7 +1302,8 @@ export default function UserDashboardPortal({
   onUpdateCurrentUser,
   lang,
   mapData,
-  onInstallPWA
+  onInstallPWA,
+  isInstalled
 }: UserDashboardPortalProps) {
   const { idioma } = useIdioma();
   const activeLang = idioma || lang || 'pt';
@@ -3934,21 +3936,35 @@ export default function UserDashboardPortal({
                   </div>
 
                    <div className="space-y-2 pt-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (onInstallPWA) {
-                          onInstallPWA();
-                        } else {
-                          alert(t("Esta aplicação é um PWA completo! Encontre a opção de instalar diretamente no menu de opções do seu navegador (ícone de computador ou adicionar à tela inicial) para rodar como um app nativo."));
-                        }
-                      }}
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-amber-500/10 animate-pulse"
-                      style={{ animationDuration: '3s' }}
-                    >
-                      <Smartphone className="w-3.5 h-3.5" />
-                      {t("Instalar App")}
-                    </button>
+                    {isInstalled ? (
+                      <div className="w-full py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex flex-col items-center justify-center gap-1 text-emerald-400">
+                        <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider">
+                          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                          {t("Portal Órbita Instalado")}
+                        </div>
+                        <span className="text-[9px] text-emerald-500/90 font-medium">
+                          {t("Sessão em execução segura no modo standalone nativo.")}
+                        </span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onInstallPWA) {
+                            onInstallPWA();
+                          } else {
+                            alert(t("Esta aplicação é um PWA completo! Encontre a opção de instalar diretamente no menu de opções do seu navegador (ícone de computador ou adicionar à tela inicial) para rodar como um app nativo."));
+                          }
+                        }}
+                        className="w-full py-2.5 bg-gradient-to-r from-amber-500 via-amber-400 to-rose-500 hover:from-amber-450 hover:to-rose-550 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-amber-500/10 animate-pulse"
+                        style={{ animationDuration: '3s' }}
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                        {typeof navigator !== 'undefined' && /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())
+                          ? t("Clique em Compartilhar e Adicionar à Tela de Início")
+                          : t("Instalar Aplicativo")}
+                      </button>
+                    )}
                     <p className="text-[10px] text-slate-500 text-center leading-normal">
                       {t("Não consome memória de armazenamento físico adicional. Atualiza em tempo real.")}
                     </p>

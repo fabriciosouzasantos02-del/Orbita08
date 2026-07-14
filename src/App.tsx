@@ -757,6 +757,110 @@ const localLangDict: Record<string, Record<string, string>> = {
   }
 };
 
+const pwaGuideTranslations: Record<string, {
+  title: string;
+  subtitle: string;
+  detectedDevice: string;
+  iosTitle: string;
+  iosStep1: string;
+  iosStep2: string;
+  iosStep3: string;
+  androidTitle: string;
+  androidStep1: string;
+  androidStep2: string;
+  desktopTitle: string;
+  desktopStep1: string;
+  desktopStep2: string;
+  generalNote: string;
+  closeBtn: string;
+}> = {
+  pt: {
+    title: "Como Instalar o Aplicativo",
+    subtitle: "Instale o Portal Órbita em seu celular ou computador para uma experiência nativa de alta velocidade e offline.",
+    detectedDevice: "Dispositivo Detectado",
+    iosTitle: "📱 No iPhone ou iPad (Safari)",
+    iosStep1: "1. Toque no ícone de Compartilhar (aquele quadrado com uma seta para cima ↑ na barra inferior).",
+    iosStep2: "2. Role a lista para baixo e toque em 'Adicionar à Tela de Início' (Add to Home Screen).",
+    iosStep3: "3. Confirme clicando em 'Adicionar' no canto superior direito. Pronto!",
+    androidTitle: "🤖 No Android (Google Chrome)",
+    androidStep1: "1. Toque no ícone de três pontinhos (⋮) no canto superior direito do seu navegador.",
+    androidStep2: "2. Toque em 'Instalar aplicativo' ou 'Adicionar à tela inicial' e confirme.",
+    desktopTitle: "💻 No Computador (Chrome / Edge / Opera)",
+    desktopStep1: "1. Clique no ícone de instalação (um monitor com uma seta para baixo ou o ícone '+') localizado no lado direito da barra de endereços do navegador.",
+    desktopStep2: "2. Clique em 'Instalar' na caixa de diálogo que surgir para criar o atalho em sua área de trabalho.",
+    generalNote: "Nota: A tecnologia PWA permite usar o Portal Órbita como um aplicativo real, consumindo menos bateria, inicializando instantaneamente e sem necessidade de baixar um arquivo APK pesado das lojas corporativas.",
+    closeBtn: "Fechar Guia de Instalação"
+  },
+  en: {
+    title: "How to Install the Application",
+    subtitle: "Install Portal Órbita on your mobile phone or computer for a high-speed, native, and offline experience.",
+    detectedDevice: "Detected Device",
+    iosTitle: "📱 On iPhone or iPad (Safari)",
+    iosStep1: "1. Tap the Share icon (the square with an up arrow ↑ at the bottom bar).",
+    iosStep2: "2. Scroll down the list and tap 'Add to Home Screen'.",
+    iosStep3: "3. Confirm by clicking 'Add' in the top right corner. All done!",
+    androidTitle: "🤖 On Android (Google Chrome)",
+    androidStep1: "1. Tap the three-dot icon (⋮) in the top-right corner of your browser.",
+    androidStep2: "2. Tap 'Install app' or 'Add to Home screen' and confirm.",
+    desktopTitle: "💻 On Computer (Chrome / Edge / Opera)",
+    desktopStep1: "1. Click the install icon (a monitor with a down arrow or a '+' icon) located on the right side of the browser's address bar.",
+    desktopStep2: "2. Click 'Install' in the dialog box that appears to create the shortcut on your desktop.",
+    generalNote: "Note: PWA technology allows you to use Portal Órbita like a real application, consuming less battery, starting instantly, and without the need to download a heavy APK file from corporate stores.",
+    closeBtn: "Close Installation Guide"
+  },
+  es: {
+    title: "Cómo Instalar la Aplicación",
+    subtitle: "Instala Portal Órbita en tu teléfono móvil o computadora para una experiencia nativa offline de alta velocidad.",
+    detectedDevice: "Dispositivo Detectado",
+    iosTitle: "📱 En iPhone o iPad (Safari)",
+    iosStep1: "1. Toca el ícono de Compartir (el cuadrado con una flecha hacia arriba ↑ en la barra inferior).",
+    iosStep2: "2. Desplázate hacia abajo en la lista y toca 'Agregar a la pantalla de inicio' (Add to Home Screen).",
+    iosStep3: "3. Confirma haciendo clic en 'Agregar' en la esquina superior derecha. ¡Listo!",
+    androidTitle: "🤖 En Android (Google Chrome)",
+    androidStep1: "1. Toca el ícono de tres puntos (⋮) en la esquina superior derecha de tu navegador.",
+    androidStep2: "2. Toca 'Instalar aplicación' o 'Agregar a la pantalla principal' y confirma.",
+    desktopTitle: "💻 En Computadora (Chrome / Edge / Opera)",
+    desktopStep1: "1. Haz clic en el ícono de instalación (un monitor con una flecha hacia abajo o el ícono '+') ubicado en el lado derecho de la barra de direcciones del navegador.",
+    desktopStep2: "2. Haz clic en 'Instalar' en el cuadro de diálogo que aparece para crear el acceso directo en tu escritorio.",
+    generalNote: "Nota: La tecnología PWA te permite usar Portal Órbita como una aplicación real, consumiendo menos batería, iniciando instantáneamente y sin necesidad de descargar un archivo APK pesado de las tiendas corporativas.",
+    closeBtn: "Cerrar Guía de Instalação"
+  },
+  de: {
+    title: "So installieren Sie die Anwendung",
+    subtitle: "Installieren Sie Portal Órbita auf Ihrem Mobiltelefon oder Computer für ein schnelles, natives Offline-Erlebnis.",
+    detectedDevice: "Erkanntes Gerät",
+    iosTitle: "📱 Auf dem iPhone oder iPad (Safari)",
+    iosStep1: "1. Tippen Sie auf das Teilen-Symbol (das Quadrat mit einem Pfeil nach oben ↑ in der Fußleiste).",
+    iosStep2: "2. Scrollen Sie nach unten und tippen Sie auf 'Zum Home-Bildschirm' (Add to Home Screen).",
+    iosStep3: "3. Bestätigen Sie, indem Sie oben rechts auf 'Hinzufügen' klicken. Fertig!",
+    androidTitle: "🤖 Auf Android (Google Chrome)",
+    androidStep1: "1. Tippen Sie auf das Drei-Punkte-Symbol (⋮) oben rechts in Ihrem Browser.",
+    androidStep2: "2. Tippen Sie auf 'App installieren' oder 'Zum Startbildschirm hinzufügen' und bestätigen Sie.",
+    desktopTitle: "💻 Auf dem Computer (Chrome / Edge / Opera)",
+    desktopStep1: "1. Klicken Sie auf das Installationssymbol (ein Monitor mit einem Pfeil nach unten oder das '+'-Symbol) auf der rechten Seite der Adressleiste des Browsers.",
+    desktopStep2: "2. Klicken Sie im angezeigten Dialogfeld auf 'Installieren', um die Verknüpfung auf Ihrem Desktop zu erstellen.",
+    generalNote: "Hinweis: Die PWA-Technologie ermöglicht es Ihnen, Portal Órbita wie eine echte Anwendung zu nutzen, was weniger Akku verbraucht, sofort startet und den Download einer schweren APK-Datei überflüssig macht.",
+    closeBtn: "Installationsanleitung schließen"
+  },
+  fr: {
+    title: "Comment Installer l'Application",
+    subtitle: "Installez Portal Órbita sur votre téléphone portable ou votre ordinateur pour une expérience native, rapide et hors ligne.",
+    detectedDevice: "Appareil Détecté",
+    iosTitle: "📱 Sur iPhone ou iPad (Safari)",
+    iosStep1: "1. Appuyez sur l'icône de partage (le carré avec une flèche vers le haut ↑ dans la barre inférieure).",
+    iosStep2: "2. Faites défiler la liste vers le bas et appuyez sur 'Sur l'écran d'accueil' (Add to Home Screen).",
+    iosStep3: "3. Confirmez en cliquant sur 'Ajouter' dans le coin supérieur droit. C'est fait !",
+    androidTitle: "🤖 Sur Android (Google Chrome)",
+    androidStep1: "1. Appuyez sur l'icône à trois points (⋮) dans le coin supérieur droit de votre navigateur.",
+    androidStep2: "2. Appuyez sur 'Installer l'application' ou 'Ajouter à l'écran d'accueil' et confirmez.",
+    desktopTitle: "💻 Sur Ordinateur (Chrome / Edge / Opera)",
+    desktopStep1: "1. Cliquez sur l'icône d'installation (un écran avec une flèche vers le haut ou l'icône '+') située à droite de la barre d'adresse du navigateur.",
+    desktopStep2: "2. Cliquez sur 'Installer' dans la boîte de dialogue qui s'affiche pour créer le raccourci sur votre bureau.",
+    generalNote: "Remarque : La technologie PWA vous permet d'utiliser Portal Órbita comme une véritable application, consommant moins de batterie, démarrant instantanément et sans avoir besoin de télécharger un fichier APK lourd depuis les magasins d'applications.",
+    closeBtn: "Fermer le guide d'installation"
+  }
+};
+
 export default function App() {
   const { idioma, mudarIdioma, t: tContext } = useIdioma();
   const { t: i18nT } = useTranslation();
@@ -2907,6 +3011,7 @@ export default function App() {
   // PWA Install states & hooks
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
+  const [showPWAInstallGuide, setShowPWAInstallGuide] = useState<boolean>(false);
 
   useEffect(() => {
     // Check if the prompt was already captured globally
@@ -2942,36 +3047,107 @@ export default function App() {
     window.addEventListener('pwa-prompt-available', handleCustomPromptAvailable as any);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+    let mediaQuery: MediaQueryList | null = null;
+    try {
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        mediaQuery = window.matchMedia('(display-mode: standalone)');
+      }
+    } catch (e) {
+      console.warn("matchMedia support is restricted in this environment:", e);
+    }
+
+    if (mediaQuery && mediaQuery.matches) {
       setIsInstalled(true);
+    } else if (typeof navigator !== 'undefined' && (navigator as any).standalone) {
+      setIsInstalled(true);
+    }
+
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      if (e && e.matches) {
+        setIsInstalled(true);
+      }
+    };
+
+    if (mediaQuery) {
+      try {
+        mediaQuery.addEventListener('change', handleMediaChange);
+      } catch (err) {
+        try {
+          mediaQuery.addListener(handleMediaChange);
+        } catch (e) {}
+      }
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('pwa-prompt-available', handleCustomPromptAvailable as any);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      if (mediaQuery) {
+        try {
+          mediaQuery.removeEventListener('change', handleMediaChange);
+        } catch (err) {
+          try {
+            mediaQuery.removeListener(handleMediaChange);
+          } catch (e) {}
+        }
+      }
     };
   }, []);
 
   const handleInstallPWA = async () => {
-    const promptEvent = deferredPrompt || (window as any).deferredPrompt;
-    if (!promptEvent) {
+    // Detect if running inside an iframe
+    const isIframe = window.self !== window.top;
+    if (isIframe) {
       triggerGlobalNotification(
-        t("Instalação do App"),
-        t("Portal Órbita integrado com sucesso ao seu dispositivo! Inicializando como aplicativo nativo..."),
+        t("Abrindo Portal Órbita"),
+        t("Redirecionando para aba externa para permitir instalação nativa imediata!"),
         "success"
       );
+      window.open(window.location.href, '_blank');
       return;
     }
-    promptEvent.prompt();
+
+    const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
+    const isIos = /iphone|ipad|ipod/.test(ua);
+
+    const promptEvent = deferredPrompt || (window as any).deferredPrompt;
+    if (!promptEvent) {
+      if (isIos) {
+        // Show PWA guide modal only for iOS (where native prompt is impossible)
+        setShowPWAInstallGuide(true);
+      } else {
+        // Android or Desktop - Rule: NEVER show any modal. Only show a clean toast notification.
+        triggerGlobalNotification(
+          t("Instalação do Portal"),
+          t("O aplicativo está pronto para ser instalado! Caso o prompt não tenha surgido ainda, você pode tocar no menu de opções (três pontinhos) do seu navegador e escolher 'Instalar aplicativo' ou 'Adicionar à tela de início'."),
+          "info"
+        );
+      }
+      return;
+    }
+
     try {
-      const { outcome } = await promptEvent.userChoice;
-      console.log(`User response to PWA install: ${outcome}`);
+      // Trigger the native install prompt
+      await promptEvent.prompt();
+      
+      // Clear the deferred prompt immediately as it can only be prompted once
+      setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
+
+      const choiceResult = await promptEvent.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        setIsInstalled(true);
+        triggerGlobalNotification(
+          t("Instalação Iniciada"),
+          t("Portal Órbita está sendo instalado em seu dispositivo!"),
+          "success"
+        );
+      }
     } catch (err) {
       console.error('Error during PWA installation choice:', err);
+      setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
     }
-    setDeferredPrompt(null);
-    (window as any).deferredPrompt = null;
   };
 
   const renderLockedSection = (title: string, desc: string) => {
@@ -4333,15 +4509,26 @@ export default function App() {
                 <option value="fr">🇫🇷 FR</option>
               </select>
 
-              <button
-                type="button"
-                onClick={handleInstallPWA}
-                className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-amber-500 via-amber-400 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 text-[9px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.2)] flex items-center gap-1 sm:gap-1.5 animate-pulse"
-                style={{ animationDuration: '3s' }}
-              >
-                <Smartphone className="w-3.5 h-3.5 shrink-0" />
-                <span>{t("Instalar App")}</span>
-              </button>
+              {isInstalled ? (
+                <div className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] sm:text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-1 sm:gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                  <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{t("Instalado")}</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleInstallPWA}
+                  className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-amber-500 via-amber-400 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 text-[9px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.2)] flex items-center gap-1 sm:gap-1.5 animate-pulse"
+                  style={{ animationDuration: '3s' }}
+                >
+                  <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    {typeof navigator !== 'undefined' && /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())
+                      ? t("Clique em Compartilhar e Adicionar à Tela de Início")
+                      : t("Instalar Aplicativo")}
+                  </span>
+                </button>
+              )}
             </div>
           </nav>
 
@@ -6229,6 +6416,7 @@ export default function App() {
                             lang={currentLang}
                             mapData={mapData}
                             onInstallPWA={handleInstallPWA}
+                            isInstalled={isInstalled}
                           />
                         </div>
 
@@ -7976,6 +8164,94 @@ export default function App() {
 
         </div>
       )}
+
+      {showPWAInstallGuide && (() => {
+        const guide = pwaGuideTranslations[idioma] || pwaGuideTranslations.pt;
+        const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
+        const isIos = /iphone|ipad|ipod/.test(ua);
+        const isAndroid = /android/.test(ua);
+        const isDesktop = !isIos && !isAndroid;
+
+        return (
+          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[500] flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-300">
+            <div className="bg-slate-900/95 border border-amber-500/30 p-6 rounded-3xl max-w-lg w-full shadow-[0_20px_50px_rgba(245,158,11,0.15)] relative space-y-6 text-slate-100 max-h-[90vh] overflow-y-auto text-left font-sans">
+              <button 
+                onClick={() => setShowPWAInstallGuide(false)}
+                className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded-full transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-2">
+                <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400">
+                  <Smartphone className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold tracking-tight text-slate-100">{guide.title}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">{guide.subtitle}</p>
+              </div>
+
+              {/* Detected Device Banner */}
+              <div className="px-3 py-1.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between text-[11px]">
+                <span className="text-slate-400 font-medium">{guide.detectedDevice}:</span>
+                <span className="font-mono font-bold text-amber-400 uppercase">
+                  {isIos ? "iOS / iPhone" : isAndroid ? "Android" : "Desktop / Computer"}
+                </span>
+              </div>
+
+              {/* Guide Accordions or Blocks */}
+              <div className="space-y-4">
+                {/* iOS section */}
+                <div className={`p-4 rounded-2xl border ${isIos ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                  <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    {guide.iosTitle}
+                    {isIos && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                  </h4>
+                  <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
+                    <li>{guide.iosStep1}</li>
+                    <li>{guide.iosStep2}</li>
+                    <li>{guide.iosStep3}</li>
+                  </ul>
+                </div>
+
+                {/* Android section */}
+                <div className={`p-4 rounded-2xl border ${isAndroid ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                  <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    {guide.androidTitle}
+                    {isAndroid && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                  </h4>
+                  <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
+                    <li>{guide.androidStep1}</li>
+                    <li>{guide.androidStep2}</li>
+                  </ul>
+                </div>
+
+                {/* Desktop section */}
+                <div className={`p-4 rounded-2xl border ${isDesktop ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                  <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    {guide.desktopTitle}
+                    {isDesktop && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                  </h4>
+                  <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
+                    <li>{guide.desktopStep1}</li>
+                    <li>{guide.desktopStep2}</li>
+                  </ul>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-500 leading-relaxed italic border-t border-slate-850 pt-3">
+                {guide.generalNote}
+              </p>
+
+              <button 
+                onClick={() => setShowPWAInstallGuide(false)}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold uppercase rounded-xl transition cursor-pointer"
+              >
+                {guide.closeBtn}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {showAdminPanel && (
         <div className="fixed inset-0 bg-[#02050b] z-50 overflow-y-auto p-4 md:p-8 animate-in fade-in zoom-in-95 duration-200">
