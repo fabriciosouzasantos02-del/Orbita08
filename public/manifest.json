@@ -1,7 +1,7 @@
 {
-  "name": "Portal Orbit",
-  "short_name": "Portal Orbit",
-  "description": "Portal Orbit - Sabedoria Celestial, Astrologia, Tarot de Precisão e Inteligência Artificial Orbia",
+  "name": "Portal Órbita",
+  "short_name": "Portal Órbita",
+  "description": "Portal Órbita - Sabedoria Celestial, Astrologia, Tarot de Precisão e Inteligência Artificial Orbia",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#030712",
