@@ -135,6 +135,20 @@ export function sanitizeFirestoreData(data: any): any {
   return data;
 }
 
+export function mergeProfileData(local: any, remote: any): any {
+  if (!local) return remote;
+  if (!remote) return local;
+
+  const localTime = new Date(local.updatedAt || 0).getTime();
+  const remoteTime = new Date(remote.updatedAt || 0).getTime();
+
+  if (localTime > remoteTime) {
+    return { ...remote, ...local, updatedAt: local.updatedAt };
+  } else {
+    return { ...local, ...remote, updatedAt: remote.updatedAt };
+  }
+}
+
 // Lazy-loaded or optionally fallback firebase configuration
 import firebaseAppletConfig from "../../firebase-applet-config.json";
 
@@ -225,6 +239,7 @@ validateFirestoreConnection();
 export interface UserProfileData {
   userId?: string;
   uid?: string;
+  updatedAt?: string;
   name: string;
   email: string;
   photoURL?: string;
@@ -436,9 +451,26 @@ export async function loadProfileFromDatabase(email: string, explicitUid?: strin
         const userRef = doc(db, "users", uid);
         const snap = await getDocWithTimeout(userRef);
         if (snap.exists()) {
-          const raw = snap.data() as UserProfileData;
-          localStorage.setItem("orbi_user_profile", JSON.stringify(raw));
-          return raw;
+          const remote = snap.data() as UserProfileData;
+          
+          let local: UserProfileData | null = null;
+          try {
+            const saved = localStorage.getItem("orbi_user_profile");
+            if (saved) local = JSON.parse(saved);
+          } catch (_) {}
+          
+          const merged = mergeProfileData(local, remote);
+          localStorage.setItem("orbi_user_profile", JSON.stringify(merged));
+          
+          // If local was newer, upload merged to Firestore
+          const localTime = local && local.updatedAt ? new Date(local.updatedAt).getTime() : 0;
+          const remoteTime = remote && remote.updatedAt ? new Date(remote.updatedAt).getTime() : 0;
+          if (localTime > remoteTime) {
+            console.log("[Sync Engine] Local profile is newer, uploading merged profile to Firestore...");
+            await setDoc(userRef, sanitizeFirestoreData(merged), { merge: true });
+          }
+          
+          return merged;
         }
       } catch (e) {
         console.warn("[Sync] Leitura por UID falhou.");
@@ -451,14 +483,14 @@ export async function loadProfileFromDatabase(email: string, explicitUid?: strin
       const userRef = doc(db, "users", mailKey);
       const snap = await getDocWithTimeout(userRef);
       if (snap.exists()) {
-        const raw = snap.data() as UserProfileData;
+        const remote = snap.data() as UserProfileData;
         
         // If we have an active Firebase Auth user, migrate the legacy document to users/{uid}
         if (uid) {
           console.log("[Migration] Migrando perfil legado de e-mail para nova estrutura users/{uid}:", uid);
           const newDocRef = doc(db, "users", uid);
           const migratedProfile = {
-            ...raw,
+            ...remote,
             uid: uid,
             userId: uid,
             updatedAt: new Date().toISOString()
@@ -477,8 +509,15 @@ export async function loadProfileFromDatabase(email: string, explicitUid?: strin
           return migratedProfile;
         }
         
-        localStorage.setItem("orbi_user_profile", JSON.stringify(raw));
-        return raw;
+        let local: UserProfileData | null = null;
+        try {
+          const saved = localStorage.getItem("orbi_user_profile");
+          if (saved) local = JSON.parse(saved);
+        } catch (_) {}
+        
+        const merged = mergeProfileData(local, remote);
+        localStorage.setItem("orbi_user_profile", JSON.stringify(merged));
+        return merged;
       }
     } catch (e) {
       console.warn("[Sync] Leitura por e-mail falhou.");
