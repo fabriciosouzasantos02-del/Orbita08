@@ -21,6 +21,12 @@ const makeSvg = (hasBackground: boolean) => `
       <stop offset="100%" stop-color="#d946ef" /> <!-- Neon Magenta/Pink -->
     </linearGradient>
 
+    <!-- Planet 3D Shadow Gradient -->
+    <linearGradient id="planet-shadow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0" />
+      <stop offset="100%" stop-color="#020208" stop-opacity="0.7" />
+    </linearGradient>
+
     <!-- Main Ring Gradient -->
     <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#e879f9" /> <!-- Pink -->
@@ -95,11 +101,11 @@ const makeSvg = (hasBackground: boolean) => `
     <!-- Outer thin ring (back) -->
     <path d="M 112 512 A 400 96 0 0 1 912 512" fill="none" stroke="url(#ring-grad)" stroke-width="6" stroke-opacity="0.4" stroke-linecap="round" />
 
-    <!-- 2. CENTRAL PLANET SPHERE -->
+     <!-- 2. CENTRAL PLANET SPHERE -->
     <circle cx="512" cy="512" r="215" fill="url(#planet-grad)" />
 
     <!-- Spherical shadow overlay to give 3D depth -->
-    <circle cx="512" cy="512" r="215" fill="black" opacity="0.25" mask="url(#planet-shadow-mask)" />
+    <circle cx="512" cy="512" r="215" fill="url(#planet-shadow-grad)" />
     
     <!-- Soft inner crescent glow to give volume -->
     <path d="M 330 380 A 215 215 0 0 1 680 620 A 205 205 0 0 0 330 380 Z" fill="#ffffff" opacity="0.15" />
@@ -178,6 +184,11 @@ async function generate() {
       .png()
       .toFile(destPath);
   }
+
+  // Write master vector SVGs
+  fs.writeFileSync(path.join(publicDir, 'icon.svg'), makeSvg(false));
+  fs.writeFileSync(path.join(publicDir, 'icon-maskable.svg'), makeSvg(true));
+  console.log("✨ Master vector SVGs written to /public/icon.svg and /public/icon-maskable.svg...");
 
   console.log("✅ All planetary PWA icons generated and optimized successfully in /public!");
 }
