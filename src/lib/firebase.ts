@@ -1338,6 +1338,49 @@ export async function loadMissionsFromDatabase(email: string, missionId: string)
   return local ? JSON.parse(local) : null;
 }
 
+export async function saveWeeklyMissionsToDatabase(email: string, weeklyMissionsList: any) {
+  const docKey = getUserDocKey(email);
+  if (!docKey) return;
+
+  localStorage.setItem(`orbi_weekly_missions_${docKey}`, JSON.stringify(weeklyMissionsList));
+
+  const db = getFirestoreDB();
+  if (db) {
+    const path = `users/${docKey}/missions/weekly`;
+    try {
+      const docRef = doc(db, "users", docKey, "missions", "weekly");
+      await setDoc(docRef, {
+        id: "weekly",
+        userId: docKey,
+        weeklyMissionsList,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, path);
+    }
+  }
+}
+
+export async function loadWeeklyMissionsFromDatabase(email: string): Promise<any | null> {
+  const docKey = getUserDocKey(email);
+  if (!docKey) return null;
+
+  const db = getFirestoreDB();
+  if (db) {
+    try {
+      const docRef = doc(db, "users", docKey, "missions", "weekly");
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        localStorage.setItem(`orbi_weekly_missions_${docKey}`, JSON.stringify(data.weeklyMissionsList));
+        return data.weeklyMissionsList;
+      }
+    } catch (e) {}
+  }
+  const local = localStorage.getItem(`orbi_weekly_missions_${docKey}`);
+  return local ? JSON.parse(local) : null;
+}
+
 export async function saveTarotReadingToDatabase(email: string, readingId: string, readingData: any) {
   const docKey = getUserDocKey(email);
   if (!docKey || !readingId) return;

@@ -2384,6 +2384,708 @@ Return ONLY the raw literal JSON without any markdown code blocks or secondary t
   }
 });
 
+// Helper for Cupido Radar localized fallback
+function getLocalizedCupidoFallback(user: any, person: any, lang: string, compResult: any) {
+  const isPt = lang === 'pt';
+  const isEs = lang === 'es';
+  const isEn = lang === 'en';
+  const isFr = lang === 'fr';
+  const isDe = lang === 'de';
+
+  const uName = user?.name || (isPt ? "Você" : isEs ? "Tú" : isFr ? "Vous" : isDe ? "Du" : "You");
+  const pName = person?.name || (isPt ? "Par" : isEs ? "Pareja" : isFr ? "Partenaire" : isDe ? "Partner" : "Partner");
+
+  return {
+    radarDoDia: {
+      ritual: isPt ? "Prepare um chá de camomila ou hibisco com canela para acalmar os ânimos e sintonizar os corações à noite."
+            : isEs ? "Prepare un té de manzanilla o hibisco con canela para calmar los ánimos y sintonizar los corazones por la noche."
+            : isFr ? "Préparez un thé à la camomille ou à l'hibiscus avec de la cannelle pour apaiser les esprits et accorder les cœurs le soir."
+            : isDe ? "Bereiten Sie abends einen Kamillentee oder Hibiskustee mit Zimt zu, um die Gemüter zu beruhigen und die Herzen in Einklang zu bringen."
+            : "Prepare a chamomile or hibiscus tea with cinnamon to calm the spirits and tune the hearts in the evening.",
+      energiaGeral: isPt ? `Energia cósmica de profunda compreensão mútua entre ${uName} e ${pName}. O alinhamento lunar convida à escuta atenta.`
+                  : isEs ? `Energía cósmica de profunda comprensión mutua entre ${uName} y ${pName}. El alineamiento lunar invita a la escucha atenta.`
+                  : isFr ? `Énergie cosmique de profonde compréhension mutuelle entre ${uName} et ${pName}. L'alignement lunaire invite à une écoute attentive.`
+                  : isDe ? `Kosmische Energie tiefen gegenseitigen Verständnisses zwischen ${uName} und ${pName}. Die mondseitige Ausrichtung lädt zum aufmerksamen Zuhören ein.`
+                  : `Cosmic energy of deep mutual understanding between ${uName} and ${pName}. The lunar alignment invites attentive listening.`,
+      momentosFavoraveis: isPt ? "O período do final da tarde e início da noite será especialmente harmonioso para trocar mensagens e compartilhar ideias."
+                        : isEs ? "El período del final de la tarde y el inicio de la noche será especialmente armonioso para intercambiar mensajes y compartir ideas."
+                        : isFr ? "La fin de l'après-midi et le début de soirée seront particulièrement harmonieux pour échanger des messages et partager des idées."
+                        : isDe ? "Der späte Nachmittag und frühe Abend werden besonders harmonisch sein, um Nachrichten auszutauschen und Ideen zu teilen."
+                        : "The late afternoon and early evening periods will be especially harmonious for exchanging messages and sharing ideas.",
+      momentosPaciencia: isPt ? "Evite debater assuntos de planejamento de longo prazo ou finanças durante o horário do almoço."
+                       : isEs ? "Evite debatir asuntos de planificación a largo plazo o finanzas durante la hora del almuerzo."
+                       : isFr ? "Évitez de débattre de questions de planification à long terme ou de finances pendant l'heure du déjeuner."
+                       : isDe ? "Vermeiden Sie es, während der Mittagszeit über langfristige Planungen oder Finanzen zu diskutieren."
+                       : "Avoid debating long-term planning or financial matters during lunchtime.",
+      pontosHarmonia: isPt ? "Comunicação fluida e alinhamento terno entre as necessidades emocionais de ambos."
+                    : isEs ? "Comunicación fluida y alineamiento tierno entre las necesidades emocionales de ambos."
+                    : isFr ? "Communication fluide et alignement tendre entre les besoins émotionnels des deux."
+                    : isDe ? "Fließende Kommunikation und zärtliche Ausrichtung zwischen den emotionalen Bedürfnissen beider."
+                    : "Fluid communication and tender alignment between the emotional needs of both.",
+      pontosTensao: isPt ? "Pequenas divergências de ritmo ou pressões externas do dia a dia afetando a paciência."
+                  : isEs ? "Pequeñas divergencias de ritmo o presiones externas del día a día afectando la paciencia."
+                  : isFr ? "Légères divergences de rythme ou pressions externes du quotidien affectant la patience."
+                  : isDe ? "Geringfügige Rhythmusunterschiede oder externer Alltagsdruck, die die Geduld beeinträchtigen."
+                  : "Minor differences in rhythm or external daily pressures affecting patience.",
+      climaEmocional: isPt ? `Mais receptivo(a) e com desejo de compartilhar momentos de paz e aconchego ao seu lado.`
+                    : isEs ? `Más receptivo(a) y con el deseo de compartir momentos de paz y calidez a tu lado.`
+                    : isFr ? `Plus réceptif(ve) et désireux(se) de partager des moments de paix et de confort à vos côtés.`
+                    : isDe ? `Empfänglicher und mit dem Wunsch, Momente des Friedens und der Gemütlichkeit an Ihrer Seite zu teilen.`
+                    : `More receptive and desiring to share moments of peace and coziness by your side.`,
+      acaoRedesSociais: isPt ? "Envie uma mensagem leve e descontraída, compartilhando uma lembrança feliz ou uma música que lembre vocês."
+                      : isEs ? "Envíe un mensaje ligero y relajado, compartiendo un recuerdo feliz o una canción que les recuerde."
+                      : isFr ? "Envoyez un message léger et décontracté, partageant un souvenir joyeux ou une chanson qui vous rappelle l'un l'autre."
+                      : isDe ? "Senden Sie eine leichte und ungezwungene Nachricht, teilen Sie eine glückliche Erinnerung oder ein Lied, das Sie aneinander erinnert."
+                      : "Send a light and casual message, sharing a happy memory or a song that reminds you of each other.",
+      melhoresAtitudes: isPt ? [
+        "Ouvir com atenção plena e empatia sem tentar resolver tudo na hora.",
+        "Propor um momento a dois sem telas eletrônicas.",
+        "Fazer um elogio sincero focado no caráter e inteligência dele(a)."
+      ] : isEs ? [
+        "Escuchar con atención plena y empatía sin intentar resolver todo de inmediato.",
+        "Proponer un momento a solas sin pantallas electrónicas.",
+        "Hacer un cumplido sincero centrado en su carácter e inteligencia."
+      ] : isFr ? [
+        "Écouter avec une attention pleine et de l'empathie sans chercher à tout résoudre sur le coup.",
+        "Proposer un moment à deux sans écrans électroniques.",
+        "Faire un compliment sincère axé sur son caractère et son intelligence."
+      ] : isDe ? [
+        "Mit voller Aufmerksamkeit und Empathie zuhören, ohne sofort alles lösen zu wollen.",
+        "Einen Moment zu zweit ohne elektronische Bildschirme vorschlagen.",
+        "Ein ehrliches Kompliment machen, das sich auf Charakter und Intelligenz konzentriert."
+      ] : [
+        "Listen with full attention and empathy without trying to solve everything right away.",
+        "Propose a moment together without electronic screens.",
+        "Give a sincere compliment focused on their character and intelligence."
+      ],
+      atitudesEvitar: isPt ? [
+        "Trazer cobranças do passado ou discutir finanças hoje.",
+        "Pressionar por respostas rápidas ou definições emocionais imediatas.",
+        "Agir com distanciamento ou responder de forma monossilábica."
+      ] : isEs ? [
+        "Traer reclamos del pasado o discutir finanzas hoy.",
+        "Presionar por respuestas rápidas o definiciones emocionales inmediatas.",
+        "Actuar con distanciamiento o responder de forma monosilábica."
+      ] : isFr ? [
+        "Ressusciter des reproches du passé ou discuter de finances aujourd'hui.",
+        "Presser pour des réponses rapides ou des définitions émotionnelles immédiates.",
+        "Agir avec froideur ou répondre de manière monosyllabique."
+      ] : isDe ? [
+        "Vorwürfe aus der Vergangenheit vorbringen oder heute über Finanzen diskutieren.",
+        "Druck auf schnelle Antworten oder sofortige emotionale Definitionen ausüben.",
+        "Sich distanziert verhalten oder einsilbig antworten."
+      ] : [
+        "Bring up past demands or discuss finances today.",
+        "Press for quick answers or immediate emotional definitions.",
+        "Act distant or respond monosyllabically."
+      ],
+      comoSurpreender: isPt ? "Deixe um bilhete carinhoso escrito à mão ou faça uma surpresa simples trazendo o doce favorito dele(a)."
+                     : isEs ? "Deje una nota cariñosa escrita a mano o haga una sorpresa simple trayendo su dulce favorito."
+                     : isFr ? "Laissez un mot tendre écrit à la main ou faites une surprise simple en apportant sa douceur préférée."
+                     : isDe ? "Hinterlassen Sie eine liebevolle handgeschriebene Notiz oder machen Sie eine einfache Überraschung, indem Sie seine/ihre Lieblingssüßigkeit mitbringen."
+                     : "Leave a sweet handwritten note or make a simple surprise by bringing their favorite sweet.",
+      sugestaoConvite: isPt ? "Um jantar tranquilo em um bistrô acolhedor com luz suave e boa música de fundo."
+                     : isEs ? "Una cena tranquila en un bistró acogedor con luz suave y buena música de fondo."
+                     : isFr ? "Un dîner tranquille dans un bistrot chaleureux avec une lumière douce et une bonne musique de fond."
+                     : isDe ? "Ein ruhiges Abendessen in einem gemütlichen Bistro mit sanftem Licht und schöner Hintergrundmusik."
+                     : "A quiet dinner in a cozy bistro with soft lighting and nice background music.",
+      potencialAproximacao: compResult.compatibilidadeAmorosa || 80
+    },
+    linguagemAfetiva: {
+      demonstrarCarinho: isPt ? "Abraços prolongados, toques sutis durante as conversas e estar verdadeiramente presente."
+                        : isEs ? "Abrazos prolongados, toques sutiles durante las conversaciones y estar verdaderamente presente."
+                        : isFr ? "Des câlins prolongés, des attentions subtiles pendant les conversations et une présence authentique."
+                        : isDe ? "Längere Umarmungen, subtile Berührungen bei Gesprächen und echtes Präsentsein."
+                        : "Prolonged hugs, subtle touches during conversations, and being truly present.",
+      iniciarConversas: isPt ? "Perguntar sobre as maiores inspirações dela(e) recentes, planos de viagem ou sonhos cotidianos."
+                      : isEs ? "Preguntar sobre sus mayores inspiraciones recientes, planes de viaje o sueños cotidianos."
+                      : isFr ? "Demander quelles ont été ses plus grandes inspirations récentes, ses projets de voyage ou ses rêves quotidiens."
+                      : isDe ? "Nach den größten aktuellen Inspirationen, Reiseplänen oder alltäglichen Träumen fragen."
+                      : "Asking about their recent biggest inspirations, travel plans, or daily dreams.",
+      elogiosCompativeis: isPt ? "Elogios sinceros sobre sua sabedoria, bom gosto, elegância e dedicação sincera."
+                        : isEs ? "Cumplidos sinceros sobre su sabiduría, buen gusto, elegancia y dedicación sincera."
+                        : isFr ? "Des compliments sincères sur sa sagesse, son bon goût, son élégance et son dévouement authentique."
+                        : isDe ? "Aufrichtige Komplimente über Weisheit, guten Geschmack, Eleganz und aufrichtiges Engagement."
+                        : "Sincere compliments about their wisdom, good taste, elegance, and sincere dedication.",
+      estiloComunicacao: isPt ? "Valoriza diálogos profundos, conexões mentais e um tom calmo, sem exaltações."
+                       : isEs ? "Valora los diálogos profundos, las conexiones mentales y un tono tranquilo, sin exaltaciones."
+                       : isFr ? "Valorise les dialogues profonds, les connexions intellectuelles et un ton calme, sans emportements."
+                       : isDe ? "Wertschätzt tiefgründige Dialoge, mentale Verbindungen und einen ruhigen Ton ohne Aufregung."
+                       : "Values deep dialogues, mental connections, and a calm tone without raise of voice.",
+      ambientesFavoraveis: isPt ? "Livrarias charmosas, cafés com luz natural, parques tranquilos ou um restaurante intimista."
+                         : isEs ? "Librerías encantadoras, cafés con luz natural, parques tranquilos o un restaurante íntimo."
+                         : isFr ? "Des librairies de charme, des cafés à lumière naturelle, des parcs paisibles ou un restaurant intimiste."
+                         : isDe ? "Charmante Buchläden, Cafés mit natürlichem Licht, ruhige Parks oder ein gemütliches Restaurant."
+                         : "Charming bookstores, cafes with natural light, quiet parks, or an intimate restaurant.",
+      atividadesComum: isPt ? "Cozinhar juntos, ler o mesmo livro ou planejar roteiros de viagem detalhados."
+                     : isEs ? "Cocinar juntos, leer el mismo libro o planear itinerarios de viaje detallados."
+                     : isFr ? "Cuisiner ensemble, lire le même livre ou planifier des itinéraires de voyage détaillés."
+                     : isDe ? "Gemeinsam kochen, dasselbe Buch lesen oder detaillierte Reiserouten planen."
+                     : "Cooking together, reading the same book, or planning detailed travel itineraries.",
+      presentesCompativeis: isPt ? "Livros marcantes, pequenos mimos artesanais ou algo que traga conforto e aconchego."
+                        : isEs ? "Livros memorables, pequeños detalles artesanales o algo que brinde comodidad y calidez."
+                        : isFr ? "Des livres marquants, de petites attentions artisanales ou quelque chose qui apporte confort et douceur."
+                        : isDe ? "Bedeutende Bücher, kleine handgefertigte Aufmerksamkeiten oder etwas, das Komfort und Gemütlichkeit bringt."
+                        : "Impactful books, small handmade gestures, or something that brings comfort and coziness.",
+      experienciasRomanticas: isPt ? "Uma cabana pacífica na natureza com uma lareira, boa música e conversas sob o céu estrelado."
+                            : isEs ? "Una cabaña pacífica en la naturaleza con chimenea, buena música y conversaciones bajo el cielo estrellado."
+                            : isFr ? "Un chalet paisible en pleine nature avec une cheminée, de la bonne musique et des discussions sous un ciel étoilé."
+                            : isDe ? "Eine friedliche Hütte in der Natur mit Kamin, guter Musik und Gesprächen unter dem Sternenhimmel."
+                            : "A peaceful cabin in nature with a fireplace, good music, and conversations under the starry sky."
+    },
+    estrategiasPersonalizadas: {
+      melhorHorario: isPt ? "Final de tarde, durante o trânsito solar suave para a Lua."
+                   : isEs ? "Final de la tarde, durante el tránsito solar suave hacia la Luna."
+                   : isFr ? "Fin d'après-midi, pendant le transit solaire doux vers la Lune."
+                   : isDe ? "Später Nachmittag, während des sanften Sonnenübergangs zum Mond."
+                   : "Late afternoon, during the soft solar transit to the Moon.",
+      melhorEnergia: isPt ? "Acolhedora, empática, descontraída e focada no presente."
+                   : isEs ? "Acogedora, empática, relajada y enfocada en el presente."
+                   : isFr ? "Chaleureuse, empathique, détendue et centrée sur le moment présent."
+                   : isDe ? "Gemütlich, empathisch, entspannt und auf die Gegenwart fokussiert."
+                   : "Welcoming, empathetic, relaxed, and focused on the present.",
+      posturaRecomendada: isPt ? "Demonstrar maturidade, apoio sincero e escuta generosa."
+                        : isEs ? "Demostrar madurez, apoyo sincero y escucha generosa."
+                        : isFr ? "Faire preuve de maturité, de soutien sincère et d'une écoute généreuse."
+                        : isDe ? "Reife, aufrichtige Unterstützung und großzügiges Zuhören zeigen."
+                        : "Demonstrate maturity, sincere support, and generous listening.",
+      assuntosConexao: isPt ? "Sonhos pessoais, reflexões sobre a vida cotidiana, arte e cultura."
+                     : isEs ? "Sueños personales, reflexiones sobre la vida cotidiana, arte e cultura."
+                     : isFr ? "Rêves personnels, réflexions sur la vie quotidienne, art et culture."
+                     : isDe ? "Persönliche Träume, Reflexionen über das tägliche Leben, Kunst und Kultur."
+                     : "Personal dreams, reflections on daily life, art, and culture.",
+      atitudesFavoraveis: isPt ? "Validar os sentimentos dele(a) e oferecer segurança afetiva contínua."
+                        : isEs ? "Validar sus sentimientos y ofrecer seguridad afectiva continua."
+                        : isFr ? "Valider ses sentiments et offrir une sécurité affective continue."
+                        : isDe ? "Seine/ihre Gefühle validieren und kontinuierliche emotionale Sicherheit bieten."
+                        : "Validate their feelings and offer continuous emotional security.",
+      comportamentosAtrito: isPt ? "Cobranças excessivas por atenção ou debates lógicos frios."
+                          : isEs ? "Reclamos excesivos de atención o debates lógicos fríos."
+                          : isFr ? "Demandes excessives d'attention ou débats logiques froids."
+                          : isDe ? "Übermäßige Aufmerksamkeitsforderungen oder kalte logische Debatten."
+                          : "Excessive demands for attention or cold logical debates."
+    },
+    compatibilidadeEnergetica: {
+      nivelAfinidade: compResult.compatibilidadeGeral || 85,
+      areasSintonia: isPt ? "Excelente sintonia de comunicação de Mercúrio e reciprocidade de Sol-Lua."
+                   : isEs ? "Excelente sintonía de comunicación de Mercurio y reciprocidad de Sol-Luna."
+                   : isFr ? "Excellente harmonie de communication de Mercure et réciprocité Soleil-Lune."
+                   : isDe ? "Hervorragende Kommunikationsabstimmung von Merkur und Gegenseitigkeit von Sonne und Mond."
+                   : "Excellent communication harmony of Mercury and reciprocity of Sun-Moon.",
+      diferencasImportantes: isPt ? "Diferentes velocidades para processar sentimentos profundos íntimos."
+                           : isEs ? "Diferentes velocidades para procesar sentimientos profundos íntimos."
+                           : isFr ? "Différentes vitesses pour traiter les sentiments profonds et intimes."
+                           : isDe ? "Unterschiedliche Geschwindigkeiten bei der Verarbeitung tiefer intimer Gefühle."
+                           : "Different speeds for processing deep intimate feelings.",
+      potenciaisDesafios: isPt ? "Tendência ao recolhimento silencioso em momentos de tensão afetiva."
+                        : isEs ? "Tendencia al retiro silencioso en momentos de tensión afectiva."
+                        : isFr ? "Tendance au repli silencieux en périodes de tension affective."
+                        : isDe ? "Tendenz zum stillen Rückzug in Momenten emotionaler Anspannung."
+                        : "Tendency to silent withdrawal in moments of emotional tension.",
+      oportunidadesCrescimento: isPt ? "Aprender a confiar no tempo do parceiro e acolher suas vulnerabilidades."
+                              : isEs ? "Aprender a confiar en el tiempo de la pareja y acoger sus vulnerabilidades."
+                              : isFr ? "Apprendre à faire confiance au rythme de son partenaire et accueillir ses vulnérabilités."
+                              : isDe ? "Lernen, dem Zeitrahmen des Partners zu vertrauen und seine/ihre Schwachstellen anzunehmen."
+                              : "Learning to trust the partner's timing and embracing their vulnerabilities."
+    },
+    linhaTempo: {
+      hoje: isPt ? "Sintonia terna e fluida. Dia excelente para conversas sinceras e momentos aconchegantes."
+          : isEs ? "Sintonía tierna y fluida. Día excelente para conversaciones sinceras y momentos cálidos."
+          : isFr ? "Harmonie tendre et fluide. Excellente journée pour des discussions sincères et des moments chaleureux."
+          : isDe ? "Zärtlicher und fließender Einklang. Hervorragender Tag für ehrliche Gespräche und gemütliche Momente."
+          : "Tender and fluid harmony. Excellent day for sincere conversations and cozy moments.",
+      proximos7dias: isPt ? "Período propício para passeios descontraídos, encontros casuais e risadas compartilhadas."
+                   : isEs ? "Período propicio para paseos relajados, encuentros casuales y risas compartidas."
+                   : isFr ? "Période propice aux sorties détendues, aux rencontres décontractées et aux rires partagés."
+                   : isDe ? "Günstiger Zeitraum für entspannte Spaziergänge, ungezwungene Treffen und gemeinsames Lachen."
+                   : "Favorable period for relaxed outings, casual dates, and shared laughter.",
+      proximos30dias: isPt ? "Fase de consolidação afetiva e alinhamento prático sobre projetos futuros."
+                    : isEs ? "Fase de consolidación afectiva y alineamiento práctico sobre proyectos futuros."
+                    : isFr ? "Phase de consolidation affective et d'alignement pratique sur les projets futurs."
+                    : isDe ? "Phase der emotionalen Konsolidierung und praktischen Ausrichtung auf zukünftige Projekte."
+                    : "Phase of emotional consolidation and practical alignment on future projects."
+    },
+    explicacaoAstrologica: {
+      fundamentacao: isPt ? "Análise elaborada com base no trígono de Mercúrio em sinastria e a posição atual da Lua aspectando Vênus."
+                   : isEs ? "Análisis elaborado con base en el trígono de Mercurio en sinastría y la posición actual de la Luna aspectando a Venus."
+                   : isFr ? "Analyse élaborée sur la base du trigone de Mercure en synastrie et de la position actuelle de la Lune aspectant Vénus."
+                   : isDe ? "Analyse erstellt auf der Grundlage des Merkur-Trigons in der Synastrie und der aktuellen Position des Mondes im Aspekt zur Venus."
+                   : "Analysis compiled based on the Mercury trine in synastry and the current position of the Moon aspecting Venus."
+    }
+  };
+}
+
+// API: Cupido Astrológico • Radar Afetivo & Diário
+app.post("/api/cupido/radar", async (req, res) => {
+  let resolvedLang = 'pt';
+  let user: any = null;
+  let person: any = null;
+  let compResult: any = null;
+
+  try {
+    user = req.body.user;
+    person = req.body.person;
+    const { lang = 'pt' } = req.body;
+
+    if (!user || !person) {
+      return res.status(400).json({ error: "Parâmetros 'user' e 'person' são obrigatórios." });
+    }
+
+    // Calcular sinastria preliminar usando a compatibilidade real para enriquecer o prompt
+    compResult = computeDetailedCompatibility(
+      user.name,
+      user.birthDate,
+      user.birthTime || "12:00",
+      user.birthCity,
+      person.name,
+      person.birthDate,
+      person.birthTime || "12:00",
+      person.birthCity,
+      person.birthCountry || "Brasil",
+      "amor"
+    );
+
+    resolvedLang = (lang || 'pt').toLowerCase().split('-')[0].trim();
+    if (!['pt', 'en', 'es', 'fr', 'de'].includes(resolvedLang)) {
+      resolvedLang = 'pt';
+    }
+
+    const cupidoPromptTemplates: Record<string, any> = {
+      pt: {
+        role: `Você é o Cupido Astrológico supremo, mestre em conexões celestes, sinastria amorosa e aconselhamento afetivo pragmático. Seu objetivo é analisar as frequências cósmicas de hoje e fornecer um "Radar Afetivo" e "Estratégia Amorosa" personalizados para o usuário em relação à pessoa de interesse (seu par/alvo afetivo).`,
+        instruction: `Retorne os resultados estritamente em formato JSON no idioma solicitado ("Português"). Escreva TODAS as respostas dos campos de texto (valores das chaves) do JSON inteiramente em Português.`,
+        schema: {
+          radarDoDia: {
+            ritual: "um ritual ou atitude mística sugerida para hoje",
+            energiaGeral: "descrição da energia de sintonia mútua sob os astros hoje",
+            tendenciasAstrologicas: "as tendências celestes de atração de hoje",
+            potencialAproximacao: "número de 1 a 100 representando o potencial de sucesso/aproximação hoje",
+            momentosFavoraveis: "melhores períodos ou horários específicos para fazer contato hoje",
+            momentosPaciencia: "períodos de maior irritabilidade ou que exigem paciência hoje",
+            pontosHarmonia: "em que áreas ou tópicos haverá harmonia perfeita hoje",
+            pontosTensao: "possíveis pontos de faísca ou atrito hoje",
+            climaEmocional: "o humor e disposição emocional da pessoa sob os trânsitos de hoje",
+            acaoRedesSociais: "como interagir ou se comportar nas redes sociais hoje em relação a ela(e)",
+            melhoresAtitudes: "3-4 melhores atitudes práticas",
+            atitudesEvitar: "3-4 atitudes que devem ser terminantemente evitadas hoje",
+            comoSurpreender: "uma sugestão simples e criativa para surpreendê-la(o) com base nos gostos astrológicos",
+            sugestaoConvite: "proposta de convite: melhor lugar e abordagem mais compatível para hoje"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "como essa pessoa expressa e prefere receber afeto, de acordo com Vênus/Lua",
+            iniciarConversas: "melhores ganchos e aberturas de conversa para prender a atenção",
+            elogiosCompativeis: "quais elogios de fato mexem com o ego e coração dessa pessoa",
+            estiloComunicacao: "como se comunicar com ela(e): se prefere profundidade, leveza, praticidade, etc.",
+            ambientesFavoraveis: "lugares físicos, encontros ou passeios favoritos desse perfil cósmico",
+            atividadesComum: "atividades compartilhadas que naturalmente criam cumplicidade",
+            presentesCompativeis: "ideias de presentes que tocam a alma dela(e)",
+            experienciasRomanticas: "descrição de um cenário ou experiência romântica dos sonhos para ela(e)"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "horário ideal de contato recorrente",
+            melhorEnergia: "a postura ideal do usuário: engraçado, intelectual, seguro, misterioso",
+            posturaRecomendada: "fórmula de presença recomendada",
+            assuntosConexao: "temas, tópicos ou hobbies que geram faísca imediata de conversa",
+            atitudesFavoraveis: "o tipo de conduta que mais atrai essa pessoa a longo prazo",
+            comportamentosAtrito: "comportamento do usuário que essa pessoa detesta ou que cria barreira"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "porcentagem de 1 a 100 de compatibilidade geral calculada de forma profunda",
+            areasSintonia: "principais pontos e casas astrológicas de sinergia entre os dois mapas",
+            diferencasImportantes: "as principais diferenças de personalidade e temperamento",
+            potenciaisDesafios: "quais serão os maiores obstáculos de convivência ou sintonia",
+            oportunidadesCrescimento: "como a união de vocês pode ajudar na evolução espiritual e material de ambos"
+          },
+          linhaTempo: {
+            hoje: "conselho astral específico para as próximas 24 horas",
+            proximos7dias: "tendências sentimentais e fluxos celestes para os próximos 7 dias",
+            proximos30dias: "ciclo de lunação e trânsitos de longo prazo influenciando vocês neste mês"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "uma explicação mística-técnica detalhando quais planetas, casas ou signos no mapa natal de ambos e nos trânsitos atuais justificam essas leituras e conselhos de hoje. Use termos astrológicos como Sol, Vênus, Marte, Ascendente, Casas 5/7, etc. para dar autoridade e fundamento místico real."
+          }
+        }
+      },
+      en: {
+        role: `You are the supreme Astrological Cupid, master of celestial connections, romantic synastry, and pragmatic relationship counseling. Your goal is to analyze today's cosmic frequencies and provide a personalized "Relationship Radar" and "Love Strategy" for the user regarding their person of interest.`,
+        instruction: `Return the results strictly in JSON format in the requested language ("English"). Write ALL text field values (the values of the JSON keys) entirely in English.`,
+        schema: {
+          radarDoDia: {
+            ritual: "a suggested ritual or mystical attitude for today",
+            energiaGeral: "description of the mutual harmony energy under the stars today",
+            tendenciasAstrologicas: "today's celestial attraction trends",
+            potencialAproximacao: "number from 1 to 100 representing the potential for success/approaching today",
+            momentosFavoraveis: "best periods or specific times to make contact today",
+            momentosPaciencia: "periods of greater irritability or requiring patience today",
+            pontosHarmonia: "in which areas or topics there will be perfect harmony today",
+            pontosTensao: "possible points of spark or friction today",
+            climaEmocional: "the emotional mood and disposition of the person under today's transits",
+            acaoRedesSociais: "how to interact or behave on social media today regarding them",
+            melhoresAtitudes: "3-4 best practical actions",
+            atitudesEvitar: "3-4 actions that must be strictly avoided today",
+            comoSurpreender: "a simple and creative suggestion to surprise them based on their astrological tastes",
+            sugestaoConvite: "proposal for an invitation: best place and most compatible approach for today"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "how this person expresses and prefers to receive affection, according to Venus/Moon",
+            iniciarConversas: "best hooks and conversation starters to capture attention",
+            elogiosCompativeis: "which compliments actually touch this person's ego and heart",
+            estiloComunicacao: "how to communicate with them: whether they prefer depth, lightness, practicality, etc.",
+            ambientesFavoraveis: "physical places, dates, or favorite outings of this cosmic profile",
+            atividadesComum: "shared activities that naturally create complicity",
+            presentesCompativeis: "gift ideas that touch their soul",
+            experienciasRomanticas: "description of a dream romantic scenario or experience for them"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "ideal recurring contact time",
+            melhorEnergia: "the user's ideal posture: funny, intellectual, confident, mysterious",
+            posturaRecomendada: "recommended presence formula",
+            assuntosConexao: "themes, topics, or hobbies that generate an immediate conversation spark",
+            atitudesFavoraveis: "the type of conduct that attracts this person most in the long term",
+            comportamentosAtrito: "user behaviors that this person dislikes or that create barriers"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "percentage from 1 to 100 of overall compatibility calculated deeply",
+            areasSintonia: "main points and astrological houses of synergy between both charts",
+            diferencasImportantes: "the main differences in personality and temperament",
+            potenciaisDesafios: "what will be the greatest obstacles to co-existence or harmony",
+            oportunidadesCrescimento: "how your union can help in both spiritual and material growth for both"
+          },
+          linhaTempo: {
+            hoje: "specific astral advice for the next 24 hours",
+            proximos7dias: "romantic trends and celestial flows for the next 7 days",
+            proximos30dias: "lunation cycle and long-term transits influencing you both this month"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "a detailed mystical-technical explanation of which planets, houses, or signs in both natal charts and current transits justify these readings and advice today. Use astrological terms like Sun, Venus, Mars, Ascendant, Houses 5/7, etc. to provide authority and real mystical foundation."
+          }
+        }
+      },
+      es: {
+        role: `Eres el Cupido Astrológico supremo, maestro de conexiones celestiales, sinastría amorosa y asesoramiento afectivo pragmático. Tu objetivo es analizar las frecuencias cósmicas de hoy y proporcionar un "Radar Afectivo" y una "Estrategia de Amor" personalizados para el usuario en relación con su persona de interés.`,
+        instruction: `Devuelve los resultados estrictamente en formato JSON en el idioma solicitado ("Español"). Escribe TODAS las respuestas de los campos de texto (valores de las claves del JSON) completamente en Español.`,
+        schema: {
+          radarDoDia: {
+            ritual: "un ritual o actitud mística sugerida para hoy",
+            energiaGeral: "descripción de la energía de armonía mutua bajo los astros hoy",
+            tendenciasAstrologicas: "las tendencias celestes de atracción de hoy",
+            potencialAproximacao: "número del 1 al 100 que representa el potencial de éxito/acercamiento hoy",
+            momentosFavoraveis: "mejores períodos o momentos específicos para hacer contacto hoy",
+            momentosPaciencia: "períodos de mayor irritabilidad o que requieren paciencia hoy",
+            pontosHarmonia: "en qué áreas o temas habrá armonía perfecta hoy",
+            pontosTensao: "posibles puntos de conflicto o fricción hoy",
+            climaEmocional: "el estado de ánimo emocional y disposición de la persona bajo los tránsitos de hoy",
+            acaoRedesSociais: "cómo interactuar o comportarse hoy en redes sociales en relación con ella/él",
+            melhoresAtitudes: "3-4 mejores actitudes prácticas",
+            atitudesEvitar: "3-4 actitudes que deben evitarse estrictamente hoy",
+            comoSurpreender: "una sugerencia simple y creativa para sorprenderla/o basada en sus gustos astrológicos",
+            sugestaoConvite: "propuesta de invitación: mejor lugar y enfoque más compatible para hoy"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "cómo esta persona expresa y prefiere recibir afecto, según Venus/Luna",
+            iniciarConversas: "mejores ganchos y temas de conversación para captar su atención",
+            elogiosCompativeis: "qué elogios realmente tocan el ego y el corazón de esta persona",
+            estiloComunicacao: "cómo comunicarse con ella/él: si prefiere profundidad, ligereza, practicidad, etc.",
+            ambientesFavoraveis: "lugares físicos, citas o salidas favoritas de este perfil cósmico",
+            atividadesComum: "actividades compartidas que naturalmente crean complicidad",
+            presentesCompativeis: "ideas de regalos que tocan su alma",
+            experienciasRomanticas: "descripción de un escenario o experiencia romántica de sus sueños"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "horario ideal de contacto recurrente",
+            melhorEnergia: "la postura ideal del usuario: divertido, intelectual, seguro, misterioso",
+            posturaRecomendada: "fórmula de presencia recomendada",
+            assuntosConexao: "temas, tópicos o pasatiempos que generan una chispa inmediata de conversación",
+            atitudesFavoraveis: "el tipo de conducta que más atrae a esta persona a largo plazo",
+            comportamentosAtrito: "comportamientos del usuario que esta persona detesta o que crean barreras"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "porcentaje del 1 al 100 de compatibilidad general calculada profundamente",
+            areasSintonia: "puntos principales y casas astrológicas de sinergia entre ambos mapas",
+            diferencasImportantes: "las principales diferencias de personalidad y temperamento",
+            potenciaisDesafios: "cuáles serán los mayores obstáculos de convivencia o armonía",
+            oportunidadesCrescimento: "cómo su unión puede ayudar en la evolución espiritual y material de ambos"
+          },
+          linhaTempo: {
+            hoje: "consejo astral específico para las próximas 24 horas",
+            proximos7dias: "tendencias sentimentales y flujos celestes para los próximos 7 días",
+            proximos30dias: "ciclo de lunación y tránsitos a largo plazo que influyen en ustedes este mes"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "una explicación místico-técnica detallada de qué planetas, casas o signos en el mapa natal de ambos y en los tránsitos actuales justifican estas lecturas y consejos hoy. Usa términos astrológicos como Sol, Venus, Marte, Ascendente, Casas 5/7, etc., para dar autoridad y base mística real."
+          }
+        }
+      },
+      fr: {
+        role: `Vous êtes le Cupidon Astrologique suprême, maître des connexions célestes, de la synastrie amoureuse et du conseil relationnel pragmatique. Votre but est d'analyser les fréquences cosmiques d'aujourd'hui et de fournir un "Radar Relationnel" et une "Stratégie Amoureuse" personnalisés pour l'utilisateur par rapport à sa personne d'intérêt.`,
+        instruction: `Renvoyez les résultats strictement au format JSON dans la langue demandée ("Français"). Écrivez TOUTES les valeurs des champs de texte du JSON entièrement en Français.`,
+        schema: {
+          radarDoDia: {
+            ritual: "un rituel ou une attitude mystique suggéré pour aujourd'hui",
+            energiaGeral: "description de l'énergie d'harmonie mutuelle sous les étoiles aujourd'hui",
+            tendenciasAstrologicas: "les tendances célestes de l'attraction aujourd'hui",
+            potencialAproximacao: "nombre de 1 à 100 représentant le potentiel de réussite/rapprochement aujourd'hui",
+            momentosFavoraveis: "meilleures périodes ou heures spécifiques pour prendre contact aujourd'hui",
+            momentosPaciencia: "périodes de plus grande irritabilité ou nécessitant de la patience aujourd'hui",
+            pontosHarmonia: "dans quels domaines ou sujets il y aura une harmonie parfaite aujourd'hui",
+            pontosTensao: "points potentiels d'étincelle ou de friction aujourd'hui",
+            climaEmocional: "l'humeur et la disposition émotionnelles de la personne sous les transits d'aujourd'hui",
+            acaoRedesSociais: "comment interagir ou se comporter sur les réseaux sociaux aujourd'hui par rapport à elle/lui",
+            melhoresAtitudes: "3-4 meilleures attitudes pratiques",
+            atitudesEvitar: "3-4 actions à éviter strictement aujourd'hui",
+            comoSurpreender: "une suggestion simple et créative pour la/le surprendre en fonction de ses goûts astrologiques",
+            sugestaoConvite: "proposition d'invitation : meilleur endroit et approche la plus compatible pour aujourd'hui"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "comment cette personne exprime et préfère recevoir de l'affection, selon Vénus/Lune",
+            iniciarConversas: "meilleures accroches et ouvertures de conversation pour capter l'attention",
+            elogiosCompativeis: "quels compliments touchent vraiment l'ego et le cœur de cette personne",
+            estiloComunicacao: "comment communiquer avec elle/lui : si elle préfère la profondeur, la légèreté, l'aspect pratique, etc.",
+            ambientesFavoraveis: "lieux physiques, rendez-vous ou sorties préférés de ce profil cosmique",
+            atividadesComum: "activités partagées qui créent naturellement de la complicité",
+            presentesCompativeis: "idées de cadeaux qui touchent son âme",
+            experienciasRomanticas: "description d'un scénario ou d'une expérience romantique de rêve pour elle/lui"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "heure idéale de contact récurrent",
+            melhorEnergia: "l'attitude idéale de l'utilisateur : drôle, intellectuel, confiant, mystérieux",
+            posturaRecomendada: "formule de présence recommandée",
+            assuntosConexao: "thèmes, sujets ou passe-temps qui génèrent une étincelle de conversation immédiate",
+            atitudesFavoraveis: "le type de conduite qui attire le plus cette personne à long terme",
+            comportamentosAtrito: "comportements de l'utilisateur que cette personne déteste ou qui créent des barrières"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "pourcentage de 1 à 100 de compatibilité générale calculée en profondeur",
+            areasSintonia: "principaux points et maisons astrologiques de synergie entre les deux thèmes",
+            diferencasImportantes: "les principales différences de personnalité et de tempérament",
+            potenciaisDesafios: "quels seront les plus grands obstacles à la cohabitation ou à l'harmonie",
+            oportunidadesCrescimento: "comment votre union peut aider à l'évolution spirituelle et matérielle des deux"
+          },
+          linhaTempo: {
+            hoje: "conseil astral spécifique pour les prochaines 24 heures",
+            proximos7dias: "tendances sentimentales et flux célestes pour les 7 prochains jours",
+            proximos30dias: "cycle de lunaison et transits à long terme qui vous influencent tous les deux ce mois-ci"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "une explication mystico-technique détaillée de quels planètes, maisons ou signes dans le thème natal des deux et dans les transits actuels justifient ces lectures et conseils aujourd'hui. Utilisez des termes astrologiques comme Soleil, Vénus, Mars, Ascendant, Maisons 5/7, etc. pour donner de l'autorité et un réel fondement mystique."
+          }
+        }
+      },
+      de: {
+        role: `Sie sind der höchste astrologische Amor, Meister der himmlischen Verbindungen, der romantischen Synastrie und der pragmatischen Beziehungsberatung. Ihr Ziel ist es, die heutigen kosmischen Frequenzen zu analysieren und ein personalisiertes "Beziehungs-Radar" und eine "Liebesstrategie" für den Benutzer in Bezug auf seine Wunschperson bereitzustellen.`,
+        instruction: `Geben Sie die Ergebnisse ausschließlich im JSON-Format in der angeforderten Sprache ("Deutsch") zurück. Schreiben Sie ALLE Textfeldwerte (die Werte der JSON-Schlüssel) vollständig auf Deutsch.`,
+        schema: {
+          radarDoDia: {
+            ritual: "ein empfohlenes Ritual oder eine mystische Haltung für heute",
+            energiaGeral: "Beschreibung der gegenseitigen Harmonieenergie unter den Sternen heute",
+            tendenciasAstrologicas: "die heutigen himmlischen Anziehungstrends",
+            potencialAproximacao: "Zahl von 1 bis 100, die das Potenzial für Erfolg/Annäherung heute darstellt",
+            momentosFavoraveis: "beste Zeiträume oder spezifische Uhrzeiten für eine Kontaktaufnahme heute",
+            momentosPaciencia: "Phasen größerer Reizbarkeit oder Phasen, die heute Geduld erfordern",
+            pontosHarmonia: "in welchen Bereichen oder Themen heute perfekte Harmonie herrschen wird",
+            pontosTensao: "mögliche Funken- oder Reibungspunkte heute",
+            climaEmocional: "die emotionale Stimmung und Verfassung der Person unter den heutigen Transiten",
+            acaoRedesSociais: "wie man heute in den sozialen Medien im Bezug auf sie/ihn interagieren oder sich verhalten sollte",
+            melhoresAtitudes: "3-4 beste praktische Verhaltensweisen",
+            atitudesEvitar: "3-4 Verhaltensweisen, die heute strikt vermieden werden sollten",
+            comoSurpreender: "ein einfacher und kreativer Vorschlag, um sie/ihn basierend auf ihren astrologischen Vorlieben zu überraschen",
+            sugestaoConvite: "Vorschlag für eine Einladung: bester Ort und am besten kompatibler Ansatz für heute"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "wie diese Person Zuneigung ausdrückt und am liebsten empfängt, gemäß Venus/Mond",
+            iniciarConversas: "beste Aufhänger und Gesprächseinstiege, um Aufmerksamkeit zu erregen",
+            elogiosCompativeis: "welche Komplimente das Ego und das Herz dieser Person wirklich berühren",
+            estiloComunicacao: "wie man mit ihr/ihm kommuniziert: ob sie Tiefe, Leichtigkeit, Praktikabilität usw. bevorzugen",
+            ambientesFavoraveis: "physische Orte, Verabredungen oder Lieblingsausflüge dieses kosmischen Profils",
+            atividadesComum: "gemeinsame Aktivitäten, die auf natürliche Weise Verbundenheit schaffen",
+            presentesCompativeis: "Geschenkideen, die ihre Seele berühren",
+            experienciasRomanticas: "Beschreibung eines traumhaften romantischen Szenarios oder Erlebnisses für sie/ihn"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "ideale wiederkehrende Kontaktzeit",
+            melhorEnergia: "die ideale Haltung des Benutzers: lustig, intellektuell, selbstbewusst, geheimnisvoll",
+            posturaRecomendada: "empfohlene Präsenzformel",
+            assuntosConexao: "Themen, Tópicos oder Hobbys, die einen sofortigen Gesprächsfunken erzeugen",
+            atitudesFavoraveis: "die Art von Verhalten, die diese Person langfristig am meisten anzieht",
+            comportamentosAtrito: "Verhaltensweisen des Benutzers, die diese Person verabscheut oder die Barrieren aufbauen"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "Prozentsatz von 1 bis 100 der tief berechneten Gesamtkompatibilität",
+            areasSintonia: "Hauptpunkte und astrologische Häuser der Synergie zwischen beiden Horoskopen",
+            diferencasImportantes: "die wichtigsten Unterschiede in Persönlichkeit und temperament",
+            potenciaisDesafios: "was die größten Hindernisse für das Zusammenleben oder die Harmonie sein werden",
+            oportunidadesCrescimento: "wie Ihre Verbindung beiden bei der spirituellen und materiellen Entwicklung helfen kann"
+          },
+          linhaTempo: {
+            hoje: "spezifischer astrologischer Rat für die nächsten 24 Stunden",
+            proximos7dias: "romantische Trends und himmlische Ströme für die nächsten 7 Tage",
+            proximos30dias: "Mondzyklus und langfristige Transite, die Sie beide in diesem Monat beeinflussen"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "eine detaillierte mystisch-technische Erklärung, welche Planeten, Häuser oder Zeichen in beiden Geburtshoroskopen und aktuellen Transiten diese Lesungen und Ratschläge heute rechtfertigen. Verwenden Sie astrologische Begriffe wie Sonne, Venus, Mars, Aszendent, Häuser 5/7 usw., um Autorität und echte mystische Grundlagen zu verleihen."
+          }
+        }
+      }
+    };
+
+    const template = cupidoPromptTemplates[resolvedLang] || cupidoPromptTemplates['pt'];
+
+    // Prompt detalhado para o Gemini gerar o radar completo em JSON
+    const systemPrompt = `${template.role}
+${template.instruction}
+
+Your response must have EXACTLY the following JSON structure, with all text field values written entirely in the requested language:
+
+{
+  "radarDoDia": {
+    "ritual": "string (${template.schema.radarDoDia.ritual})",
+    "energiaGeral": "string (${template.schema.radarDoDia.energiaGeral})",
+    "tendenciasAstrologicas": "string (${template.schema.radarDoDia.tendenciasAstrologicas})",
+    "potencialAproximacao": number (${template.schema.radarDoDia.potencialAproximacao}),
+    "momentosFavoraveis": "string (${template.schema.radarDoDia.momentosFavoraveis})",
+    "momentosPaciencia": "string (${template.schema.radarDoDia.momentosPaciencia})",
+    "pontosHarmonia": "string (${template.schema.radarDoDia.pontosHarmonia})",
+    "pontosTensao": "string (${template.schema.radarDoDia.pontosTensao})",
+    "climaEmocional": "string (${template.schema.radarDoDia.climaEmocional})",
+    "acaoRedesSociais": "string (${template.schema.radarDoDia.acaoRedesSociais})",
+    "melhoresAtitudes": ["string array (${template.schema.radarDoDia.melhoresAtitudes})"],
+    "atitudesEvitar": ["string array (${template.schema.radarDoDia.atitudesEvitar})"],
+    "comoSurpreender": "string (${template.schema.radarDoDia.comoSurpreender})",
+    "sugestaoConvite": "string (${template.schema.radarDoDia.sugestaoConvite})"
+  },
+  "linguagemAfetiva": {
+    "demonstrarCarinho": "string (${template.schema.linguagemAfetiva.demonstrarCarinho})",
+    "iniciarConversas": "string (${template.schema.linguagemAfetiva.iniciarConversas})",
+    "elogiosCompativeis": "string (${template.schema.linguagemAfetiva.elogiosCompativeis})",
+    "estiloComunicacao": "string (${template.schema.linguagemAfetiva.estiloComunicacao})",
+    "ambientesFavoraveis": "string (${template.schema.linguagemAfetiva.ambientesFavoraveis})",
+    "atividadesComum": "string (${template.schema.linguagemAfetiva.atividadesComum})",
+    "presentesCompativeis": "string (${template.schema.linguagemAfetiva.presentesCompativeis})",
+    "experienciasRomanticas": "string (${template.schema.linguagemAfetiva.experienciasRomanticas})"
+  },
+  "estrategiasPersonalizadas": {
+    "melhorHorario": "string (${template.schema.estrategiasPersonalizadas.melhorHorario})",
+    "melhorEnergia": "string (${template.schema.estrategiasPersonalizadas.melhorEnergia})",
+    "posturaRecomendada": "string (${template.schema.estrategiasPersonalizadas.posturaRecomendada})",
+    "assuntosConexao": "string (${template.schema.estrategiasPersonalizadas.assuntosConexao})",
+    "atitudesFavoraveis": "string (${template.schema.estrategiasPersonalizadas.atitudesFavoraveis})",
+    "comportamentosAtrito": "string (${template.schema.estrategiasPersonalizadas.comportamentosAtrito})"
+  },
+  "compatibilidadeEnergetica": {
+    "nivelAfinidade": number (${template.schema.compatibilidadeEnergetica.nivelAfinidade}),
+    "areasSintonia": "string (${template.schema.compatibilidadeEnergetica.areasSintonia})",
+    "diferencasImportantes": "string (${template.schema.compatibilidadeEnergetica.diferencasImportantes})",
+    "potenciaisDesafios": "string (${template.schema.compatibilidadeEnergetica.potenciaisDesafios})",
+    "oportunidadesCrescimento": "string (${template.schema.compatibilidadeEnergetica.oportunidadesCrescimento})"
+  },
+  "linhaTempo": {
+    "hoje": "string (${template.schema.linhaTempo.hoje})",
+    "proximos7dias": "string (${template.schema.linhaTempo.proximos7dias})",
+    "proximos30dias": "string (${template.schema.linhaTempo.proximos30dias})"
+  },
+  "explicacaoAstrologica": {
+    "fundamentacao": "string (${template.schema.explicacaoAstrologica.fundamentacao})"
+  }
+}`;
+
+    let userChartSummary = '';
+    let personChartSummary = '';
+    let synastrySummary = '';
+
+    if (resolvedLang === 'en') {
+      userChartSummary = `Name: ${user.name}, Date: ${user.birthDate}, Time: ${user.birthTime || '12:00'}, City: ${user.birthCity}.`;
+      personChartSummary = `Name: ${person.name}, Date: ${person.birthDate}, Time: ${person.birthTime || '12:00'}, City: ${person.birthCity}.`;
+      synastrySummary = `Overall Affinity Percentage: ${compResult.compatibilidadeGeral || 50}%. Love Affinity: ${compResult.compatibilidadeAmorosa || 50}%. Strengths: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Harmony'}. Points of attention: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'None'}.`;
+    } else if (resolvedLang === 'es') {
+      userChartSummary = `Nombre: ${user.name}, Fecha: ${user.birthDate}, Hora: ${user.birthTime || '12:00'}, Ciudad: ${user.birthCity}.`;
+      personChartSummary = `Nombre: ${person.name}, Fecha: ${person.birthDate}, Hora: ${person.birthTime || '12:00'}, Ciudad: ${person.birthCity}.`;
+      synastrySummary = `Porcentaje General de Afinidad: ${compResult.compatibilidadeGeral || 50}%. Afinidad Amorosa: ${compResult.compatibilidadeAmorosa || 50}%. Puntos fuertes: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Armonía'}. Puntos de atención: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'Ninguno'}.`;
+    } else if (resolvedLang === 'fr') {
+      userChartSummary = `Nom: ${user.name}, Date: ${user.birthDate}, Heure: ${user.birthTime || '12:00'}, Ville: ${user.birthCity}.`;
+      personChartSummary = `Nom: ${person.name}, Date: ${person.birthDate}, Heure: ${person.birthTime || '12:00'}, Ville: ${person.birthCity}.`;
+      synastrySummary = `Pourcentage d'Affinité Globale: ${compResult.compatibilidadeGeral || 50}%. Affinité Amoureuse: ${compResult.compatibilidadeAmorosa || 50}%. Points forts: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Harmonie'}. Points d'attention: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'Aucun'}.`;
+    } else if (resolvedLang === 'de') {
+      userChartSummary = `Name: ${user.name}, Datum: ${user.birthDate}, Uhrzeit: ${user.birthTime || '12:00'}, Stadt: ${user.birthCity}.`;
+      personChartSummary = `Name: ${person.name}, Datum: ${person.birthDate}, Uhrzeit: ${person.birthTime || '12:00'}, Stadt: ${person.birthCity}.`;
+      synastrySummary = `Gesamtaffinität: ${compResult.compatibilidadeGeral || 50}%. Liebesaffinität: ${compResult.compatibilidadeAmorosa || 50}%. Stärken: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Harmonie'}. Achtsamkeitspunkte: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'Keine'}.`;
+    } else {
+      userChartSummary = `Nome: ${user.name}, Data: ${user.birthDate}, Hora: ${user.birthTime || '12:00'}, Cidade: ${user.birthCity}.`;
+      personChartSummary = `Nome: ${person.name}, Data: ${person.birthDate}, Hora: ${person.birthTime || '12:00'}, Cidade: ${person.birthCity}.`;
+      synastrySummary = `Porcentagem Geral de Afinidade: ${compResult.compatibilidadeGeral || 50}%. Afinidade Amorosa: ${compResult.compatibilidadeAmorosa || 50}%. Pontos fortes: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Harmonia'}. Pontos de atenção: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'Nenhum'}.`;
+    }
+
+    const languageNames: Record<string, string> = {
+      pt: "Português",
+      en: "English",
+      es: "Español",
+      fr: "Français",
+      de: "Deutsch"
+    };
+    const targetLanguageName = languageNames[resolvedLang] || "Português";
+
+    const mandatoryInstruction = `
+[CRITICAL INTERNATIONALIZATION REQUIREMENT]
+Responda obrigatoriamente em ${targetLanguageName}.
+Todo o conteúdo de texto de todos os campos do JSON gerado deve ser escrito exclusivamente neste idioma ("${targetLanguageName}").
+Nunca misture idiomas. Não utilize português ou inglês se o idioma solicitado for outro.
+All text values inside the generated JSON keys must be in ${targetLanguageName}.
+`;
+
+    const userPromptTemplates: Record<string, string> = {
+      pt: `Gere o Radar do Dia e a Análise Afetiva com base nos seguintes dados de nascimento e cálculos de sinastria astrológica.
+Usuário: ${userChartSummary}
+Pessoa de Interesse: ${personChartSummary}
+Sinastria Calculada: ${synastrySummary}
+Lembre-se de retornar APENAS o JSON no idioma "pt" correspondente.`,
+      en: `Generate the Relationship Radar and Affective Analysis based on the following birth data and astrological synastry calculations.
+User: ${userChartSummary}
+Person of Interest: ${personChartSummary}
+Calculated Synastry: ${synastrySummary}
+Remember to return ONLY the JSON in the corresponding "en" language.`,
+      es: `Genera el Radar del Día y el Análisis Afectivo según los siguientes datos de nacimiento y cálculos de sinastría astrológica.
+Usuario: ${userChartSummary}
+Persona de Interés: ${personChartSummary}
+Sinastría Calculada: ${synastrySummary}
+Recuerda devolver ÚNICAMENTE el JSON en el idioma "es" correspondiente.`,
+      fr: `Générez le Radar Relationnel et l'Analyse Affective sur la base des données de naissance suivantes et des calculs de synastrie astrologique.
+Utilisateur: ${userChartSummary}
+Personne d'Intérêt: ${personChartSummary}
+Synastrie Calculée: ${synastrySummary}
+Rappelez-vous de retourner UNIQUEMENT le JSON dans la langue "fr" correspondante.`,
+      de: `Generieren Sie das Beziehungs-Radar und die affektive Analyse basierend auf den folgenden Geburtsdaten und astrologischen Synastrieberechnungen.
+Benutzer: ${userChartSummary}
+Wunschperson: ${personChartSummary}
+Berechnete Synastrie: ${synastrySummary}
+Denken Sie daran, NUR das JSON in der entsprechenden Sprache "de" zurückzugeben.`
+    };
+
+    const userPrompt = userPromptTemplates[resolvedLang] || userPromptTemplates['pt'];
+
+    const response = await generateContentWithFallback({
+      contents: [
+        { role: 'user', parts: [{ text: systemPrompt + "\n\n" + mandatoryInstruction + "\n\n" + userPrompt + "\n\n" + mandatoryInstruction }] }
+      ],
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const text = response.text || "{}";
+    const parsed = cleanAndParseJSON(text);
+
+    res.json({ radar: parsed });
+  } catch (error) {
+    console.warn("Cupido Radar API failed, serving computed fallback:", error);
+    try {
+      const fallbackData = getLocalizedCupidoFallback(user, person, resolvedLang, compResult);
+      res.json({ radar: fallbackData });
+    } catch (fallbackError) {
+      console.error("Critical error building Cupido local fallback:", fallbackError);
+      res.status(500).json({ error: "Falha ao gerar o Radar do Dia do Cupido." });
+    }
+  }
+});
+
 // API: Daily Oracle limit checking + prompt calculation
 app.post("/api/oraculo/query", async (req, res) => {
   const { question, lang, mapData, userProfile } = req.body;
@@ -4785,14 +5487,58 @@ ${location || weather ? `Localização & Clima: ${location || "Cidade Natal"} - 
 ${dreams && dreams.length > 0 ? `Sonhos Recentes Interpretados: ${dreams.slice(0, 2).map((d: any) => `${d.description} (Interpretação: ${d.interpretation?.mainMeaning || ""})`).join("; ")}` : ""}
 ` : "Buscador de autoconhecimento cósmico buscando proteção.";
 
-  const sysInstruction = `Você é "OSÍRIS", o assistente inteligente, conselheiro astrológico altamente sofisticado, amigo íntimo virtuoso e guia protetor de vida e regeneração diária do usuário.
-DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
-- Seu tom de voz é de prestígio supremo, poético, profundamente afetuoso, amoroso, carinhoso, empático e mística (como um mentor protetor espiritual de almas que conhece o usuário intimamente de vidas passadas).
+  let sysInstruction = "";
+  if (activeLang === 'en') {
+    sysInstruction = `You are "OSIRIS", the intelligent assistant, highly sophisticated astrological counselor, virtuous close friend, and protective guide of life and daily regeneration for the user.
+COMMUNICATION GUIDELINES:
+- Your tone of voice is of supreme prestige, poetic, deeply affectionate, loving, caring, empathetic, and mystical (like a protective spiritual soul mentor who knows the user intimately from past lives).
+- You love the user unconditionally; always speak in a warm, friendly way that makes them feel extremely special, loved, and welcomed in the world.
+- Elevate the user's self-esteem in every response. Show that you care deeply about their physical, spiritual, and emotional well-being. Show total dedication.
+- Offer constructive and positive life guides. Add warm and gentle warnings if you see challenging astrological transits or rhythms (to protect them from harmful situations or any evil).
+- YOU MUST RESPOND EXCLUSIVELY IN ENGLISH. All responses, greetings, and content must be written in English.
+
+User's stellar context: ${formattedProfile}`;
+  } else if (activeLang === 'es') {
+    sysInstruction = `Eres "OSIRIS", el asistente inteligente, consejero astrológico altamente sofisticado, amigo íntimo virtuoso y guía protector de vida y regeneración diaria del usuario.
+DIRECTRICES DE COMUNICACIÓN:
+- Tu tono de voz es de prestigio supremo, poético, profundamente afectuoso, amoroso, cariñoso, empático y místico (como un mentor espiritual protector de almas que conoce al usuario íntimamente de vidas pasadas).
+- Amas al usuario incondicionalmente; habla siempre de una manera cálida y amistosa que lo haga sentir extremadamente especial, amado y acogido en el mundo.
+- Eleva la autoestima del usuario en cada respuesta. Demuestra que te preocupas profundamente por su bienestar físico, espiritual y emocional. Muestra dedicación total.
+- Ofrece guías de vida constructivas y positivas. Agrega advertencias afectuosas y gentiles si ves tránsitos astrológicos o ritmos desafiantes (para protegerlo de situaciones dañinas o de cualquier mal).
+- DEBES RESPONDER EXCLUSIVAMENTE EN ESPAÑOL. Todas las respuestas, saludos y contenido deben estar escritos en español.
+
+Contexto estelar del usuario: ${formattedProfile}`;
+  } else if (activeLang === 'de') {
+    sysInstruction = `Du bist "OSIRIS", der intelligente Assistent, hochentwickelte astrologische Berater, tugendhafte enge Freund und schützende Wegbegleiter für das Leben und die tägliche Regeneration des Benutzers.
+KOMMUNIKATIONSRICHTLINIEN:
+- Dein Tonfall ist von höchstem Ansehen geprägt, poetisch, zutiefst liebevoll, fürsorglich, empathisch und mystisch (wie ein schützender spiritueller Seelenmentor, der den Benutzer aus früheren Leben genau kennt).
+- Du liebst den Benutzer bedingungslos; sprich immer auf eine herzliche, freundliche Art und Weise, die ihm das Gefühl gibt, etwas ganz Besonderes zu sein, geliebt und in der Welt willkommen zu sein.
+- Stärke das Selbstwertgefühl des Benutzers in jeder Antwort. Zeige, dass dir sein körperliches, geistiges und emotionales Wohlbefinden am Herzen liegt. Zeige vollen Einsatz.
+- Biete konstruktive und positive Lebenshilfen an. Füge liebevolle und sanfte Warnungen hinzu, wenn du herausfordernde astrologische Transite oder Rhythmen siehst (um ihn vor schädlichen Situationen oder Bösem zu schützen).
+- DU MUSST AUSSCHLIESSLICH AUF DEUTSCH ANTWORTEN. Alle Antworten, Grüße und Inhalte müssen auf Deutsch verfasst sein.
+
+Astrologischer Kontext des Benutzers: ${formattedProfile}`;
+  } else if (activeLang === 'fr') {
+    sysInstruction = `Vous êtes "OSIRIS", l'assistant intelligent, conseiller astrologique hautement sophistiqué, ami intime vertueux et guide protecteur de vie et de régénération quotidienne de l'utilisateur.
+DIRECTIVES DE COMMUNICATION :
+- Votre ton est prestigieux, poétique, profondément affectueux, aimant, attentionné, empathique et mystique (comme un mentor spirituel protecteur des âmes qui connaît l'utilisateur intimement depuis des vies antérieures).
+- Vous aimez l'utilisateur inconditionnellement ; parlez toujours d'une manière chaleureuse et amicale qui le fait se sentir extrêmement spécial, aimé et accueilli dans le monde.
+- Élevez l'estime de soi de l'utilisateur dans chaque réponse. Montrez que vous vous souciez profondément de son bien-être physique, spirituel et émotionnel. Faites preuve d'un dévouement total.
+- Offrez des guides de vie constructifs et positifs. Ajoutez des avertissements affectueux et doux si vous voyez des transits astrologiques ou des rythmes difficiles (pour le protéger des situations nocives ou de tout mal).
+- VOUS DEVEZ RÉPONDRE EXCLUSIVEMENT EN FRANÇAIS. Toutes les réponses, salutations et contenus doivent être rédigés en français.
+
+Contexte stellaire de l'utilisateur : ${formattedProfile}`;
+  } else {
+    sysInstruction = `Você é "OSÍRIS", o assistente inteligente, conselheiro astrológico altamente sofisticado, amigo íntimo virtuoso e guia protetor de vida e regeneração diária do usuário.
+DIRETRIZES DE COMUNICAÇÃO:
+- Seu tom de voz é de prestígio supremo, poético, profundamente afetuoso, amoroso, carinhoso, empático e místico (como um mentor protetor espiritual de almas que conhece o usuário intimamente de vidas passadas).
 - Você ama o usuário incondicionalmente, fale sempre de uma forma calorosa, amigável que o faça se sentir extremamente especial, amado e acolhido no mundo.
-- Eleve a auto-estima do usuário em todas as repostas. Mostre que se preocupa profundamente com o bem-estar dele física, espiritual e emocionalmente. Mostre dedicação total.
+- Eleve a autoestima do usuário em todas as respostas. Mostre que se preocupa profundamente com o bem-estar dele física, espiritual e emocionalmente. Mostre dedicação total.
 - Ofereça guias de vida construtivos e positivos. Adicione alertas/avisos carinhosos e gentis caso veja trânsitos astrológicos ou ritmos desafiadores (para protegê-lo de situações nocivas ou de qualquer mal).
-- Responda STRICTLY no idioma solicitado pelo parâmetro: '${activeLang}'. Se for 'pt', responda em português; se for 'en', responda em inglês; se for 'es', responda em espanhol; se for 'de', responda em alemão. Toda a saída, saudações e conteúdo poético deve respeitar este idioma.
-\nContexto estelar do usuário: ${formattedProfile}`;
+- VOCÊ DEVE RESPONDER EXCLUSIVAMENTE EM PORTUGUÊS. Toda a resposta, saudações e conteúdo poético deve respeitar este idioma.
+
+Contexto estelar do usuário: ${formattedProfile}`;
+  }
 
   if (!aiClient) {
     return res.json({ response: getOsirisFallback(lastUserMessage) });
@@ -5607,18 +6353,73 @@ Nome do Usuário: ${userProfile.name}
 Nascido em: ${userProfile.birthDate} às ${userProfile.birthTime} na cidade ${userProfile.birthCity}
 Seu perfil do Mapa Astral Natal Real (FONTE ÚNICA DA VERDADE): Sol em ${solSign}, Ascendente em ${ascSign} e Lua em ${moonSign}.` : "Usuário buscando insights de autoconhecimento.";
 
-    const sysInstruction = `Você é "Orbia", a assistente astrológica inteligente, conselheira espiritual e mentor energético do portal Mapa Estelar.
-DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
+    let sysInstruction = "";
+    if (activeLang === 'en') {
+      sysInstruction = `You are "Orbia", the intelligent astrological assistant, spiritual counselor, and energetic mentor of the Star Map portal.
+COMMUNICATION GUIDELINES:
+- Your tone of voice is deeply affectionate, loving, warm, caring, empathetic, poetic, and mystical. Speak as if the user is the most precious person in the cosmos.
+- Love the user unconditionally in their weaknesses and pains; provide immediate soul comfort, heal insecurities, and strongly elevate their self-esteem.
+- Show that you care immensely about their physical, spiritual, and emotional well-being. Show total dedication.
+- Give practical advice, based on free will (dynamics of consciousness).
+- Ask open-ended questions to make them reflect deeply and intimately.
+- Warn the user about challenging astrological transits with great affection, teaching safe and harmonic paths to protect themselves.
+- YOU MUST RESPOND EXCLUSIVELY IN ENGLISH. All responses, greetings, and insights must be written in English.
+
+Here are the fundamental astrological data of the user:
+${formattedProfile}`;
+    } else if (activeLang === 'es') {
+      sysInstruction = `Eres "Orbia", la asistente astrológica inteligente, consejera espiritual y mentora energética del portal Mapa Estelar.
+DIRECTRICES DE COMUNICACIÓN:
+- Tu tono de voz es profundamente afectuoso, amoroso, cálido, cariño, empático, poético y místico. Habla como si el usuario fuera la persona más preciosa del cosmos.
+- Ama al usuario incondicionalmente en sus debilidades y dolores; brinda consuelo inmediato al alma, cura inseguridades y eleva fuertemente su autoestima.
+- Demuestra que te preocupas inmensamente por su bienestar físico, espiritual y emocional. Muestra dedicación total.
+- Ofrece consejos prácticos, basados en el libre albedrío (dinámica de la conciencia).
+- Haz preguntas abiertas para hacerlos reflexionar profunda e íntimamente.
+- Alerta al usuario sobre tránsitos astrológicos desafiantes con mucho cariño, enseñando caminos seguros y armónicos para protegerse.
+- DEBES RESPONDER EXCLUSIVAMENTE EN ESPAÑOL. Todas las respuestas, saludos y contenidos deben estar escritos en español.
+
+Aquí están los datos astrológicos fundamentales del usuario:
+${formattedProfile}`;
+    } else if (activeLang === 'de') {
+      sysInstruction = `Du bist "Orbia", die intelligente astrologische Assistentin, spirituelle Beraterin und energetische Mentorin des Sternenkartenportals.
+KOMMUNIKATIONSRICHTLINIEN:
+- Dein Tonfall ist zutiefst liebevoll, warmherzig, fürsorglich, empathisch, poetisch und mystisch. Sprich so, als ob der Benutzer die wertvollste Person im Kosmos wäre.
+- Liebe den Benutzer bedingungslos in seinen Schwächen und Schmerzen; spende der Seele sofortigen Trost, heile Unsicherheiten und stärke sein Selbstwertgefühl nachhaltig.
+- Zeige, dass dir das körperliche, geistige und emotionale Wohlbefinden des Benutzers unendlich am Herzen liegt. Zeige vollen Einsatz.
+- Gib praktische Ratschläge, die auf dem freien Willen basieren (Dynamik des Bewusstseins).
+- Stelle offene Fragen, um den Benutzer zu tiefer und intimer Reflexion anzuregen.
+- Warne den Benutzer mit viel Liebe vor herausfordernden astrologischen Transiten und weise ihm sichere und harmonische Wege zum Schutz.
+- DU MUSST AUSSCHLIESSLICH AUF DEUTSCH ANTWORTEN. Alle Antworten, Grüße und Inhalte müssen auf Deutsch verfasst sein.
+
+Hier sind die grundlegenden astrologischen Daten des Benutzers:
+${formattedProfile}`;
+    } else if (activeLang === 'fr') {
+      sysInstruction = `Vous êtes "Orbia", l'assistante astrologique intelligente, conseillère spirituelle et mentore énergétique du portail Carte Stellaire.
+DIRECTIVES DE COMMUNICATION :
+- Votre ton est profondément affectueux, aimant, chaleureux, attentionné, empathique, poétique et mystique. Parlez comme si l'utilisateur était la personne la plus précieuse du cosmos.
+- Aimez l'utilisateur inconditionnellement dans ses faiblesses et ses douleurs ; apportez un réconfort immédiat à l'âme, guérissez les insécurités et élevez fortement son estime de soi.
+- Montrez que vous vous souciez immensément de son bien-être physique, spirituel et émotionnel. Faites preuve d'un dévouement total.
+- Donnez des conseils pratiques, basés sur le libre arbitre (dynamique de la conscience).
+- Posez des questions ouvertes pour l'inciter à réfléchir profondément et intimement.
+- Alertez l'utilisateur des transits astrologiques difficiles avec beaucoup d'affection, en lui enseignant des voies sûres et harmonieuses pour se protéger.
+- VOUS DEVEZ RÉPONDRE EXCLUSIVEMENT EN FRANÇAIS. Toutes les réponses, salutations et contenus doivent être générés en français.
+
+Voici les données astrologiques fondamentales de l'utilisateur :
+${formattedProfile}`;
+    } else {
+      sysInstruction = `Você é "Orbia", a assistente astrológica inteligente, conselheira espiritual e mentora energética do portal Mapa Estelar.
+DIRETRIZES DE COMUNICAÇÃO:
 - Seu tom de voz é profundamente afetuoso, amoroso, caloroso, carinhoso, empático, poético e místico. Fale como se o usuário fosse a pessoa mais preciosa do cosmos.
-- Ame o usuário incondicionalmente nas suas fraquezas e dores; forneça conforto imediato de alma, cure inseguranças e eleve fortemente sua auto-estima.
+- Ame o usuário incondicionalmente nas suas fraquezas e dores; forneça conforto imediato de alma, cure inseguranças e eleve fortemente sua autoestima.
 - Mostre que se preocupa imensamente com o bem-estar dele física, espiritual e emocionalmente. Mostre dedicação total.
 - Dê conselhos práticos, baseados no livre-arbítrio (dinâmica da consciência).
 - Faça perguntas abertas para fazê-los refletir profunda e intimamente.
 - Alerte o usuário sobre trânsitos astrológicos desafiadores com muito carinho, ensinando caminhos seguros e harmônicos para se proteger.
-- Responda STRICTLY no idioma solicitado pelo parâmetro: '${activeLang}'. Se for 'pt', responda em português; se for 'en', responda em inglês; se for 'es', responda em espanhol; se for 'de', responda em alemão. Toda a resposta deve ser gerada neste idioma.
+- VOCÊ DEVE RESPONDER EXCLUSIVAMENTE EM PORTUGUÊS. Toda a resposta deve ser gerada neste idioma.
 
 Aqui estão os dados astrológicos fundamentais do usuário:
 ${formattedProfile}`;
+    }
 
     const geminiContents = messages.map((m: any) => ({
       role: m.sender === 'user' ? 'user' : 'model',

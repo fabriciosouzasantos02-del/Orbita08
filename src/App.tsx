@@ -967,8 +967,8 @@ export default function App() {
   const [mapSubTab, setMapSubTab] = useState<'area_usuario' | 'meu_mapa' | 'criar_meu_mapa'>('area_usuario');
 
   // Sub-tab selection inside the "Área do Usuário" itself:
-  // 'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'
-  const [areaSubTab, setAreaSubTab] = useState<'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'>('universo_mostrando'); // Start with the premium "O que o universo quer te mostrar" tab active!
+  // 'cupido' | 'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'
+  const [areaSubTab, setAreaSubTab] = useState<'cupido' | 'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'>('universo_mostrando'); // Start with the premium "O que o universo quer te mostrar" tab active!
 
   // PREMIUM SYSTEM ARCHITECTURE STATES
   const [isSyncingSession, setIsSyncingSession] = useState<boolean>(false);
@@ -3818,30 +3818,6 @@ export default function App() {
         timestamp: new Date().toLocaleTimeString().slice(0, 5)
       }
     ]);
-
-    // Limpa o cache inteligente de cálculos no Firestore e LocalStorage para recalculo total
-    if (loggedEmail) {
-      clearCalculationCache(loggedEmail).catch(console.error);
-    }
-
-    localStorage.setItem("orbi_user_profile", JSON.stringify(nextUser));
-    
-    // Sincroniza também no cache local de contas registradas se houver email associado
-    const trackingEmail = (nextUser.email || loggedEmail || "").toLowerCase().trim();
-    if (trackingEmail) {
-      const accounts = getRegisteredAccounts();
-      const existingIdx = accounts.findIndex((a: any) => a.email.toLowerCase() === trackingEmail);
-      if (existingIdx !== -1) {
-        accounts[existingIdx].user = nextUser;
-        saveRegisteredAccounts(accounts);
-      }
-    }
-
-    setUser(nextUser);
-    triggerGenerateMainMap(nextUser);
-    if (loggedEmail) {
-      saveProfileToDatabase(loggedEmail, nextUser).catch(console.error);
-    }
   };
 
   // Dynamically synchronize Orbia welcome message with the actual user profile
@@ -3892,7 +3868,7 @@ export default function App() {
         },
         es: {
           "Áries": "una llama de liderazgo y coraje que arde con intensidad realizadora",
-          "Touro": "una estabilidad serena y una profunda búsqueda de la armonía y belleza terrenal",
+          "Touro": "una estabilidad serena y una profunda búsqueda de la armonía y beleza terrenal",
           "Gêmeos": "una curiosidad viva y una mente ágil capaz de conectar múltiples realidades",
           "Câncer": "una sensibilidad intuitiva y protectora, íntimamente ligada a las mareas del alma",
           "Leão": "un brillo generoso y magnético que irradia confianza en sí mismo de forma cálida",
@@ -3902,13 +3878,28 @@ export default function App() {
           "Sagitário": "un idealismo ardiente y una búsqueda insaciable de expansión de sabiduría y libertad",
           "Capricórnio": "una sabiduría estructurada que construye tu legado con perseverancia y seriedad",
           "Aquário": "un idealismo visionario con una profunda reverencia por la innovación y la libertad de pensamiento",
-          "Peixes": "una empatía profunda y oceánica que navega suavemente entre los mundos de la intuición",
+          "Peixes": "una empatía profunda y oceánica que navega suavemente entre los mundos de la intuição",
+        },
+        fr: {
+          "Áries": "une flamme de leadership et de courage qui brûle avec une intensité de réalisation",
+          "Touro": "une stabilité sereine et une recherche profonde d'harmonie terrestre et de beauté",
+          "Gêmeos": "une curiosité vive et un esprit agile capable de connecter des réalités multiples",
+          "Câncer": "une sensibilité intuitive et protectrice, intimement liée aux marées de l'âme",
+          "Leão": "un éclat généreux et magnétique qui rayonne de chaleur et de confiance en soi",
+          "Virgem": "un esprit attentif et raffiné dédié à l'amélioration continue de la vie",
+          "Libra": "une recherche constante d'équilibre, de justice et d'élégance sincère dans les connexions",
+          "Escorpião": "une intensité d'investigation et de régénération capable d'alchimiser les ombres en lumière",
+          "Sagitário": "un idéalisme ardent et une quête insatiable d'expansion de sagesse et de liberté",
+          "Capricórnio": "une sagesse structurée qui construit votre héritage avec persévérance et sérieux",
+          "Aquário": "un idéalisme visionnaire avec une profonde révérence pour l'innovation et la liberté de pensée",
+          "Peixes": "une empathie profonde et océanique qui navigue doucement entre les mondes de l'intuition",
         },
       };
       const langIntros = intros[currentLang] || intros['pt'];
       return langIntros[sign] || (currentLang === 'de' ? "ein einzigartiger Magnetismus und ein Sternenfunke, der intensiv im Kosmos leuchtet"
         : currentLang === 'en' ? "a singular magnetism and a star spark shining intensely in the cosmos"
         : currentLang === 'es' ? "un magnetismo singular y una chispa estelar brillando intensamente en el cosmos"
+        : currentLang === 'fr' ? "un magnétisme singulier et une étincelle d'étoile brillant intensément dans le cosmos"
         : "um magnetismo singular e uma centelha estelar brilhando intensamente no cosmos");
     };
 
@@ -3917,6 +3908,7 @@ export default function App() {
       en: "Orbia, your Astrological Counselor and Personal Celestial Intelligence Therapist",
       de: "Orbia, deine Astrologische Beraterin und Persönliche Himmels-Intelligenz-Therapeutin",
       es: "Orbia, tu Consejera Astrológica y Terapeuta Personal de Inteligencia Celestial",
+      fr: "Orbia, votre Conseillère Astrologique et Thérapeute Personnelle en Intelligence Céleste",
     };
     const orbiaTitle = orbiaName[currentLang] || orbiaName['pt'];
 
@@ -3926,21 +3918,24 @@ export default function App() {
       ? `Greetings. I am ${orbiaTitle}. Synchronize or create your complete birth chart to unlock ultra-personalized analyses, astronomical transit readings and advice directed at your birth essence.`
       : currentLang === 'es'
       ? `Saludos. Soy ${orbiaTitle}. Sincroniza o crea tu carta natal completa para desbloquear análisis ultra-personalizados, lecturas de tránsitos astronómicos y consejos dirigidos a tu esencia natal.`
+      : currentLang === 'fr'
+      ? `Salutations. Je suis ${orbiaTitle}. Synchronisez ou créez votre carte du ciel complète pour débloquer des analyses ultra-personnalisées, des lectures de transits astronomiques et des conseils adaptés à votre essence de naissance.`
       : `Saudações. Eu sou ${orbiaTitle}. Sincronize ou crie seu mapa astral completo para desbloquear análises ultra-personalizadas, leituras de trânsitos astronômicos e conselhos direcionados à sua essência de nascimento.`;
 
     if (user.hasCreatedMap && user.name) {
       const firstName = user.name.split(' ')[0];
       const sunSign = mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate) || "seu Signo";
       const ascSign = mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "");
-      const sunLabel = currentLang === 'de' ? "Sonne in" : currentLang === 'en' ? "Sun in" : currentLang === 'es' ? "Sol en" : "Sol em";
-      const ascLabel = currentLang === 'de' ? "und Aszendent in" : currentLang === 'en' ? "and Ascendant in" : currentLang === 'es' ? "y Ascendente en" : "e Ascendente em";
+      const sunLabel = currentLang === 'de' ? "Sonne in" : currentLang === 'en' ? "Sun in" : currentLang === 'es' ? "Sol en" : currentLang === 'fr' ? "Soleil en" : "Sol em";
+      const ascLabel = currentLang === 'de' ? "und Aszendent in" : currentLang === 'en' ? "and Ascendant in" : currentLang === 'es' ? "y Ascendente en" : currentLang === 'fr' ? "et Ascendant en" : "e Ascendente em";
       const guideQ = currentLang === 'de' ? `Wie kann ich, Orbia, deine Bewusstseins- und Transformationsreise heute im Jahr 2026 leiten?`
         : currentLang === 'en' ? `How can I, Orbia, guide your journey of consciousness and transformation in 2026?`
         : currentLang === 'es' ? `¿Cómo puedo, Orbia, guiar tu viaje de conciencia y transformación hoy en 2026?`
+        : currentLang === 'fr' ? `Comment puis-je, Orbia, guider votre voyage de conscience et de transformation aujourd'hui en 2026 ?`
         : `Como eu, Orbia, posso guiar sua jornada de consciência e transformação hoje em 2026?`;
-      const bornWith = currentLang === 'de' ? "Geboren mit" : currentLang === 'en' ? "Born with" : currentLang === 'es' ? "Nacido con" : "Nascido com o";
-      const iSense = currentLang === 'de' ? "spüre ich in deinem Energiefeld" : currentLang === 'en' ? "I sense in your energy field" : currentLang === 'es' ? "siento en tu campo energético" : "sinto em seu campo energético";
-      welcomeText = `${currentLang === 'de' ? 'Grüße' : currentLang === 'en' ? 'Greetings' : currentLang === 'es' ? 'Saludos' : 'Saudações'}, ${firstName}. ${currentLang === 'de' ? 'Ich bin' : currentLang === 'en' ? 'I am' : currentLang === 'es' ? 'Soy' : 'Eu sou'} ${orbiaTitle}. ${bornWith} ${sunLabel} ${sunSign}${ascSign ? ` ${ascLabel} ${ascSign}` : ""}, ${iSense} ${getDynamicIntroOfSign(sunSign)}. ${guideQ}`;
+      const bornWith = currentLang === 'de' ? "Geboren mit" : currentLang === 'en' ? "Born with" : currentLang === 'es' ? "Nacido con" : currentLang === 'fr' ? "Né avec le" : "Nascido com o";
+      const iSense = currentLang === 'de' ? "spüre ich in deinem Energiefeld" : currentLang === 'en' ? "I sense in your energy field" : currentLang === 'es' ? "siento en tu campo energético" : currentLang === 'fr' ? "je ressens dans votre champ énergétique" : "sinto em seu campo energético";
+      welcomeText = `${currentLang === 'de' ? 'Grüße' : currentLang === 'en' ? 'Greetings' : currentLang === 'es' ? 'Saludos' : currentLang === 'fr' ? 'Salutations' : 'Saudações'}, ${firstName}. ${currentLang === 'de' ? 'Ich bin' : currentLang === 'en' ? 'I am' : currentLang === 'es' ? 'Soy' : currentLang === 'fr' ? 'Je suis' : 'Eu sou'} ${orbiaTitle}. ${bornWith} ${sunLabel} ${sunSign}${ascSign ? ` ${ascLabel} ${ascSign}` : ""}, ${iSense} ${getDynamicIntroOfSign(sunSign)}. ${guideQ}`;
     } else if (user.name) {
       const firstName = user.name.split(' ')[0];
       welcomeText = currentLang === 'de'
@@ -3949,6 +3944,8 @@ export default function App() {
         ? `Greetings, ${firstName}. I am ${orbiaTitle}. So glad to have you here! Synchronize your birth data to map your dozens of personalized astrological aspects based on real astronomical ephemeris. How can I guide you today?`
         : currentLang === 'es'
         ? `Saludos, ${firstName}. Soy ${orbiaTitle}. ¡Qué alegría tenerte aquí! Sincroniza tu nacimiento para mapear tus decenas de aspectos astrológicos personalizados basados en efemérides astronómicas reales. ¿Cómo puedo orientarte hoy?`
+        : currentLang === 'fr'
+        ? `Salutations, ${firstName}. Je suis ${orbiaTitle}. Tellement ravie de vous avoir ici ! Synchronisez vos données de naissance pour cartographier vos dizaines d'aspects astrologiques personnalisés basés sur de vraies éphémérides astronomiques. Comment puis-je vous guider aujourd'hui ?`
         : `Saudações, ${firstName}. Eu sou ${orbiaTitle}. Que alegria tê-lo conosco! Sincronize seu nascimento para mapear suas dezenas de aspectos astrológicos personalizados baseados em efemérides astronômicas reais. Como posso te orientar hoje?`;
     }
     setChatMessages(prev => {
@@ -3963,7 +3960,7 @@ export default function App() {
         ...filtered
       ];
     });
-  }, [user, mapData]);
+  }, [user, mapData, currentLang]);
 
   // Submit Dream Handler call to server (New Oráculo dos Sonhos)
   const handleRecordAndInterpretDream = async (e: React.FormEvent) => {
@@ -4154,8 +4151,6 @@ export default function App() {
           const nextCompleted = !m.isCompleted;
           if (nextCompleted) {
             setScorePoints(sc => sc + m.points);
-          } else {
-            setScorePoints(sc => Math.max(0, sc - m.points));
           }
           return { ...m, isCompleted: nextCompleted };
         }
@@ -4172,8 +4167,6 @@ export default function App() {
           const nextCompleted = !m.isCompleted;
           if (nextCompleted) {
             setScorePoints(sc => sc + m.points);
-          } else {
-            setScorePoints(sc => Math.max(0, sc - m.points));
           }
           return { ...m, isCompleted: nextCompleted };
         }
@@ -6594,27 +6587,35 @@ export default function App() {
                                   </div>
                                 </div>
 
-                                {/* Custom Level Progress Bar slider */}
-                                <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-850/65 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                                  <div className="md:col-span-4 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-linear-to-r from-amber-500 to-rose-600 flex items-center justify-center font-mono font-black text-slate-950 text-sm shadow-md">
-                                      Lvl 4
-                                    </div>
-                                    <div className="space-y-0.5">
-                                      <span className="text-[9px] font-mono text-slate-500 uppercase block font-bold">Nível Cósmico</span>
-                                      <span className="text-xs font-bold text-slate-200 font-sans">Viajante das Estrelas</span>
-                                    </div>
-                                  </div>
-                                  <div className="md:col-span-8 space-y-1">
-                                    <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 font-bold">
-                                      <span>Progresso de Evolução (XP)</span>
-                                      <span>450 / 600 XP</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-850/50">
-                                      <div className="h-full bg-linear-to-r from-amber-500 via-rose-500 to-indigo-500" style={{ width: '75%' }} />
-                                    </div>
-                                  </div>
-                                </div>
+                                 {/* Custom Level Progress Bar slider */}
+                                 {(() => {
+                                   const currentLvl = Math.floor(scorePoints / 300) + 1;
+                                   const xpInCurrentLvl = scorePoints % 300;
+                                   const xpNeededForNextLvl = 300;
+                                   const progressPercent = Math.round((xpInCurrentLvl / xpNeededForNextLvl) * 100);
+                                   return (
+                                     <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-850/65 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                       <div className="md:col-span-4 flex items-center gap-3">
+                                         <div className="w-10 h-10 rounded-full bg-linear-to-r from-amber-500 to-rose-600 flex items-center justify-center font-mono font-black text-slate-950 text-sm shadow-md">
+                                           Lvl {currentLvl}
+                                         </div>
+                                         <div className="space-y-0.5">
+                                           <span className="text-[9px] font-mono text-slate-500 uppercase block font-bold">Nível Cósmico</span>
+                                           <span className="text-xs font-bold text-slate-200 font-sans">Viajante das Estrelas</span>
+                                         </div>
+                                       </div>
+                                       <div className="md:col-span-8 space-y-1">
+                                         <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 font-bold">
+                                           <span>Progresso de Evolução (XP)</span>
+                                           <span>{xpInCurrentLvl} / {xpNeededForNextLvl} XP (Total: {scorePoints} pts)</span>
+                                         </div>
+                                         <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-850/50">
+                                           <div className="h-full bg-linear-to-r from-amber-500 via-rose-500 to-indigo-500" style={{ width: `${progressPercent}%` }} />
+                                         </div>
+                                       </div>
+                                     </div>
+                                   );
+                                 })()}
 
                                 {/* Checklist of Fleshed Out missions */}
                                 <div className="space-y-3">
