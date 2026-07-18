@@ -7517,7 +7517,7 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
         let uid = sub.metadata?.uid;
         
         const priceId = sub.items?.data?.[0]?.price?.id || "";
-        const planId = sub.metadata?.planId || (priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' ? 'annual' : 'monthly');
+        const planId = sub.metadata?.planId || ((priceId === 'price_1Tu3HmLy2FLlsgZ1jlfKwPQT' || priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB') ? 'annual' : 'monthly');
         
         if (!email && stripeCustomerId) {
           try {
@@ -7661,7 +7661,7 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
               const sub = await stripe!.subscriptions.retrieve(subscriptionId);
               subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
               const priceId = sub.items?.data?.[0]?.price?.id || "";
-              planId = sub.metadata?.planId || (priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' ? 'annual' : 'monthly');
+              planId = sub.metadata?.planId || ((priceId === 'price_1Tu3HmLy2FLlsgZ1jlfKwPQT' || priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB') ? 'annual' : 'monthly');
               if (!uid) uid = sub.metadata?.uid;
               if (!email) email = sub.metadata?.email;
               if (sub.trial_start) trialStart = new Date(sub.trial_start * 1000).toISOString();
@@ -7815,19 +7815,19 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     let stripeProductId = '';
 
     // Check planId - Supports 'monthly', 'annual', and the specific Stripe Price/Product IDs sent by the frontend/user
-    const isAnnual = planId === 'annual' || planId.includes('1TjkNaLy') || planId.includes('UjCnNK2');
-    const isMonthly = planId === 'monthly' || planId.includes('1TjjUdLy') || planId.includes('UjBsyld');
+    const isAnnual = planId === 'annual' || planId.includes('1Tu3HmLy') || planId.includes('Utqzzo7') || planId.includes('1TjkNaLy') || planId.includes('UjCnNK2');
+    const isMonthly = planId === 'monthly' || planId.includes('1TjSCjLy') || planId.includes('Uiu0EoL') || planId.includes('1TjjUdLy') || planId.includes('UjBsyld');
 
     if (isAnnual) {
       amountInCents = 7999;
       currency = 'eur';
       interval = 'year';
-      stripeProductId = 'prod_UjCnNK2AI2qrvY';
+      stripeProductId = 'prod_Utqzzo7Bx7V78U';
     } else if (isMonthly) {
       amountInCents = 999;
       currency = 'eur';
       interval = 'month';
-      stripeProductId = 'prod_UjBsyldYBkyYY5';
+      stripeProductId = 'prod_Uiu0EoLDK4YSFr';
     } else if (planId === 'basic') {
       amountInCents = 2990;
       currency = 'brl';
@@ -7881,24 +7881,27 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     // Creating actual live or test checkout session in Stripe
     const stripeLocale = lang === 'pt' ? 'pt-BR' : lang === 'es' ? 'es' : lang === 'de' ? 'de' : lang === 'fr' ? 'fr' : 'en';
     
-    const lineItem: any = {
-      price_data: {
+    const lineItem: any = {};
+    if (planId && planId.startsWith('price_')) {
+      lineItem.price = planId;
+      lineItem.quantity = 1;
+    } else {
+      lineItem.price_data = {
         currency: currency,
         unit_amount: amountInCents,
         recurring: {
           interval: interval,
         },
-      },
-      quantity: 1,
-    };
-
-    if (stripeProductId) {
-      lineItem.price_data.product = stripeProductId;
-    } else {
-      lineItem.price_data.product_data = {
-        name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
-        description: `Acesso Premium ao Portal Órbita (${planId})`,
       };
+      if (stripeProductId) {
+        lineItem.price_data.product = stripeProductId;
+      } else {
+        lineItem.price_data.product_data = {
+          name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
+          description: `Acesso Premium ao Portal Órbita (${planId})`,
+        };
+      }
+      lineItem.quantity = 1;
     }
 
     const checkoutParams: any = {
@@ -7932,18 +7935,49 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     try {
       session = await stripe.checkout.sessions.create(checkoutParams);
     } catch (sessionErr: any) {
-      console.warn("[Stripe Checkout] Error creating session with specific Product ID. Trying fallback to inline product_data...", sessionErr.message);
+      console.warn("[Stripe Checkout] Primary checkout creation failed:", sessionErr.message);
       
-      // Fallback: Use inline product creation to make it robust against missing Stripe Product IDs
-      if (lineItem.price_data.product) {
-        delete lineItem.price_data.product;
-        lineItem.price_data.product_data = {
-          name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
-          description: `Acesso Premium ao Portal Órbita (${planId})`,
+      // Fallback 1: If we tried with a direct Price ID, try dynamically creating the price linked to product ID
+      if (lineItem.price) {
+        console.log("[Stripe Checkout] Fallback 1: Retrying using price_data with specific Product ID...");
+        delete lineItem.price;
+        lineItem.price_data = {
+          currency: currency,
+          unit_amount: amountInCents,
+          recurring: {
+            interval: interval,
+          },
         };
-        session = await stripe.checkout.sessions.create(checkoutParams);
-      } else {
-        throw sessionErr;
+        if (stripeProductId) {
+          lineItem.price_data.product = stripeProductId;
+        } else {
+          lineItem.price_data.product_data = {
+            name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
+            description: `Acesso Premium ao Portal Órbita (${planId})`,
+          };
+        }
+        try {
+          session = await stripe.checkout.sessions.create(checkoutParams);
+        } catch (fallback1Err: any) {
+          console.warn("[Stripe Checkout] Fallback 1 failed:", fallback1Err.message);
+          // Trigger Fallback 2 (below)
+          sessionErr = fallback1Err;
+        }
+      }
+      
+      // Fallback 2: Try creating inline dynamic product_data
+      if (!session) {
+        if (lineItem.price_data && lineItem.price_data.product) {
+          console.log("[Stripe Checkout] Fallback 2: Retrying with inline product_data...");
+          delete lineItem.price_data.product;
+          lineItem.price_data.product_data = {
+            name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
+            description: `Acesso Premium ao Portal Órbita (${planId})`,
+          };
+          session = await stripe.checkout.sessions.create(checkoutParams);
+        } else {
+          throw sessionErr;
+        }
       }
     }
 

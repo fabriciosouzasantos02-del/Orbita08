@@ -269,6 +269,50 @@
         "amountPaid": { "type": "integer", "description": "Simulated or actual price paid" }
       },
       "required": ["id", "userId", "planId", "status", "startDate"]
+    },
+    "StripeCustomer": {
+      "title": "Stripe Customer Info",
+      "description": "User linked to Stripe Customer details",
+      "type": "object",
+      "properties": {
+        "stripeId": { "type": "string" }
+      }
+    },
+    "StripeCheckoutSession": {
+      "title": "Stripe Checkout Session",
+      "description": "Information about a checkout session",
+      "type": "object",
+      "properties": {}
+    },
+    "StripeSubscription": {
+      "title": "Stripe Subscription details",
+      "description": "Detailed Stripe subscription data synced by the extension",
+      "type": "object",
+      "properties": {}
+    },
+    "StripePayment": {
+      "title": "Stripe Payment history",
+      "description": "Stripe payment data synced by the extension",
+      "type": "object",
+      "properties": {}
+    },
+    "StripeProduct": {
+      "title": "Stripe Product Info",
+      "description": "Stripe product details synced by the extension",
+      "type": "object",
+      "properties": {}
+    },
+    "StripePrice": {
+      "title": "Stripe Price Details",
+      "description": "Stripe price info synced by the extension",
+      "type": "object",
+      "properties": {}
+    },
+    "StripeTaxRate": {
+      "title": "Stripe Tax Rate",
+      "description": "Stripe tax rate synced by the extension",
+      "type": "object",
+      "properties": {}
     }
   },
   "firestore": {
@@ -339,6 +383,34 @@
     "/users/{userId}/subscriptions/{subscriptionId}": {
       "schema": "Subscription",
       "description": "Ledger of plan subscriptions, payments verification, and plans metadata log."
+    },
+    "/customers/{uid}": {
+      "schema": "StripeCustomer",
+      "description": "Stripe Customer documents containing Stripe Customer IDs synced by the extension."
+    },
+    "/customers/{uid}/checkout_sessions/{id}": {
+      "schema": "StripeCheckoutSession",
+      "description": "Checkout sessions linked to a user."
+    },
+    "/customers/{uid}/subscriptions/{id}": {
+      "schema": "StripeSubscription",
+      "description": "Subscriptions details synced from Stripe."
+    },
+    "/customers/{uid}/payments/{id}": {
+      "schema": "StripePayment",
+      "description": "Payments list synced from Stripe."
+    },
+    "/products/{id}": {
+      "schema": "StripeProduct",
+      "description": "Synced products from Stripe Catalog."
+    },
+    "/products/{id}/prices/{id}": {
+      "schema": "StripePrice",
+      "description": "Synced prices for products from Stripe Catalog."
+    },
+    "/products/{id}/tax_rates/{id}": {
+      "schema": "StripeTaxRate",
+      "description": "Synced tax rates from Stripe."
     }
   }
 }

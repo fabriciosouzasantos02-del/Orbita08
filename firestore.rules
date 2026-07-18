@@ -113,5 +113,32 @@ service cloud.firestore {
     match /device_trials/{deviceId} {
       allow read, write: if isSignedIn();
     }
+
+    // Stripe Extension rules (invertase/firestore-stripe-payments)
+    match /customers/{uid} {
+      allow read: if isOwner(uid);
+
+      match /checkout_sessions/{id} {
+        allow read, write: if isOwner(uid);
+      }
+      match /subscriptions/{id} {
+        allow read: if isOwner(uid);
+      }
+      match /payments/{id} {
+        allow read: if isOwner(uid);
+      }
+    }
+
+    match /products/{id} {
+      allow read: if true;
+
+      match /prices/{id} {
+        allow read: if true;
+      }
+
+      match /tax_rates/{id} {
+        allow read: if true;
+      }
+    }
   }
 }

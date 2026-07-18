@@ -2003,7 +2003,7 @@ export default function UserDashboardPortal({
           // Sync with Firestore immediately
           if (user?.email || email) {
             const nextUser = { ...user, scorePoints: nextScore, stellarPoints: nextScore };
-            saveProfileToDatabase(user?.email || email || "", nextUser).catch(console.error);
+            saveProfileToDatabase(user?.email || email || "", nextUser as any).catch(console.error);
           }
           return nextScore;
         });
@@ -2048,7 +2048,7 @@ export default function UserDashboardPortal({
           // Sync with Firestore immediately
           if (user?.email || email) {
             const nextUser = { ...user, scorePoints: nextScore, stellarPoints: nextScore };
-            saveProfileToDatabase(user?.email || email || "", nextUser).catch(console.error);
+            saveProfileToDatabase(user?.email || email || "", nextUser as any).catch(console.error);
           }
           return nextScore;
         });
