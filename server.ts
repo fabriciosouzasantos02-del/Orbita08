@@ -2277,6 +2277,33 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     return res.status(400).json({ error: (req as any).t('api.compatibility.both_names_required') });
   }
 
+  // Resolve timezone & coordinates for user
+  let coords1;
+  if (typeof req.body.latitude === 'number' && typeof req.body.longitude === 'number') {
+    const tzs = findTz(req.body.latitude, req.body.longitude);
+    const tz = tzs[0] || "America/Sao_Paulo";
+    coords1 = { latitude: req.body.latitude, longitude: req.body.longitude, timezone: tz };
+  } else {
+    coords1 = await resolveCityCoordinatesAndTimezone(birthCity || "São Paulo");
+  }
+
+  // Resolve timezone & coordinates for companion
+  let coords2;
+  if (typeof req.body.companionLatitude === 'number' && typeof req.body.companionLongitude === 'number') {
+    const tzs = findTz(req.body.companionLatitude, req.body.companionLongitude);
+    const tz = tzs[0] || "America/Sao_Paulo";
+    coords2 = { latitude: req.body.companionLatitude, longitude: req.body.companionLongitude, timezone: tz };
+  } else {
+    coords2 = await resolveCityCoordinatesAndTimezone(companionBirthCity || "Rio de Janeiro");
+  }
+
+  // Calculate historical timezone offset for both using moment-timezone
+  const mt1 = moment.tz(`${birthDate || "1994-01-01"} ${birthTime || "12:00"}`, "YYYY-MM-DD HH:mm", coords1.timezone);
+  const tzOffset1 = mt1.utcOffset() / 60;
+
+  const mt2 = moment.tz(`${companionBirthDate || "1995-01-01"} ${companionBirthTime || "12:00"}`, "YYYY-MM-DD HH:mm", coords2.timezone);
+  const tzOffset2 = mt2.utcOffset() / 60;
+
   // Pre-calculate highly detailed parameters using compatibilityEngine
   const compResult = computeDetailedCompatibility(
     name,
@@ -2288,7 +2315,13 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     companionBirthTime || "12:00",
     companionBirthCity || "Rio de Janeiro",
     companionBirthCountry || "Brasil",
-    category || "love"
+    category || "love",
+    coords1.latitude,
+    coords1.longitude,
+    coords2.latitude,
+    coords2.longitude,
+    tzOffset1,
+    tzOffset2
   );
 
   const cacheKey = `compatibility:${name}:${birthDate}:${companionName}:${companionBirthDate}:${category || 'love'}:${lang || 'pt'}`;
@@ -2631,6 +2664,33 @@ app.post("/api/cupido/radar", async (req, res) => {
       return res.status(400).json({ error: "Parâmetros 'user' e 'person' são obrigatórios." });
     }
 
+    // Resolve coordinates & timezone for user
+    let coords1;
+    if (user && typeof user.latitude === 'number' && typeof user.longitude === 'number') {
+      const tzs = findTz(user.latitude, user.longitude);
+      const tz = tzs[0] || "America/Sao_Paulo";
+      coords1 = { latitude: user.latitude, longitude: user.longitude, timezone: tz };
+    } else {
+      coords1 = await resolveCityCoordinatesAndTimezone((user && user.birthCity) || "São Paulo");
+    }
+
+    // Resolve coordinates & timezone for person
+    let coords2;
+    if (person && typeof person.latitude === 'number' && typeof person.longitude === 'number') {
+      const tzs = findTz(person.latitude, person.longitude);
+      const tz = tzs[0] || "America/Sao_Paulo";
+      coords2 = { latitude: person.latitude, longitude: person.longitude, timezone: tz };
+    } else {
+      coords2 = await resolveCityCoordinatesAndTimezone((person && person.birthCity) || "Rio de Janeiro");
+    }
+
+    // Calculate historical offsets using moment-timezone
+    const mt1 = moment.tz(`${(user && user.birthDate) || "1994-01-01"} ${(user && user.birthTime) || "12:00"}`, "YYYY-MM-DD HH:mm", coords1.timezone);
+    const tzOffset1 = mt1.utcOffset() / 60;
+
+    const mt2 = moment.tz(`${(person && person.birthDate) || "1995-01-01"} ${(person && person.birthTime) || "12:00"}`, "YYYY-MM-DD HH:mm", coords2.timezone);
+    const tzOffset2 = mt2.utcOffset() / 60;
+
     // Calcular sinastria preliminar usando a compatibilidade real para enriquecer o prompt
     compResult = computeDetailedCompatibility(
       user.name,
@@ -2642,7 +2702,13 @@ app.post("/api/cupido/radar", async (req, res) => {
       person.birthTime || "12:00",
       person.birthCity,
       person.birthCountry || "Brasil",
-      "amor"
+      "amor",
+      coords1.latitude,
+      coords1.longitude,
+      coords2.latitude,
+      coords2.longitude,
+      tzOffset1,
+      tzOffset2
     );
 
     resolvedLang = (lang || 'pt').toLowerCase().split('-')[0].trim();

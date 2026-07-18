@@ -4,6 +4,7 @@ import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
 import { CompatibilityResult, UserProfile } from '../types';
 import { computeDetailedCompatibility } from './compatibilityEngine';
+import { CityAutocomplete } from './CityAutocomplete';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Heart, 
@@ -942,6 +943,8 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
   const [partnerTime, setPartnerTime] = useState('');
   const [partnerCity, setPartnerCity] = useState('');
   const [partnerCountry, setPartnerCountry] = useState('');
+  const [partnerLat, setPartnerLat] = useState<number | undefined>(undefined);
+  const [partnerLng, setPartnerLng] = useState<number | undefined>(undefined);
   const [showSurgical, setShowSurgical] = useState(false);
 
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -1052,11 +1055,15 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
           birthDate: user.birthDate,
           birthTime: user.birthTime || "12:00",
           birthCity: user.birthCity || "São Paulo",
+          latitude: user.latitude,
+          longitude: user.longitude,
           companionName: partnerName,
           companionBirthDate: partnerDate,
-          companionBirthTime: partnerTime,
+          companionBirthTime: partnerTime || "12:00",
           companionBirthCity: partnerCity,
-          companionBirthCountry: partnerCountry,
+          companionBirthCountry: partnerCountry || "Brasil",
+          companionLatitude: partnerLat,
+          companionLongitude: partnerLng,
           category: relationCategory,
           lang: idiomaAtual,
         })
@@ -1953,26 +1960,22 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("CIDADE DE NASCIMENTO")}</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={t("Cidade de nascimento")}
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("CIDADE E PAÍS DE NASCIMENTO")}</label>
+                  <CityAutocomplete
                     value={partnerCity}
-                    onChange={(e) => setPartnerCity(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:border-rose-500/40 focus:outline-hidden transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("PAÍS (OPCIONAL)")}</label>
-                  <input
-                    type="text"
-                    placeholder={t("País de nascimento")}
-                    value={partnerCountry}
-                    onChange={(e) => setPartnerCountry(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:border-rose-500/40 focus:outline-hidden transition"
+                    placeholder={t("Cidade e país de nascimento")}
+                    onChange={(val) => setPartnerCity(val)}
+                    onSelectCity={(city) => {
+                      setPartnerCity(city.label);
+                      const parts = city.label.split(',');
+                      if (parts.length > 0) {
+                        setPartnerCountry(parts[parts.length - 1].trim());
+                      }
+                      setPartnerLat(city.latitude);
+                      setPartnerLng(city.longitude);
+                    }}
+                    inputClassName="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:border-rose-500/40 focus:outline-hidden transition"
                   />
                 </div>
               </div>

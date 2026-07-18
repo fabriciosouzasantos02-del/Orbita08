@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import moment from 'moment-timezone';
 import { motion } from 'motion/react';
 import i18n from './lib/i18n';
 import { useTranslation } from 'react-i18next';
@@ -188,33 +189,18 @@ function getZodiacSign(dateStr: string): string {
   return "Capricórnio";
 }
 
-function getRisingSign(dateStr: string, timeStr: string): string {
+function getRisingSign(dateStr: string, timeStr: string, latitude?: number, longitude?: number): string {
   if (!dateStr) return "Sagitário";
-  const date = new Date(dateStr + "T00:00:00");
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  
-  let hour = 12;
-  let minute = 0;
-  if (timeStr && timeStr.includes(':')) {
-    const parts = timeStr.split(':');
-    hour = parseInt(parts[0], 10) || 12;
-    minute = parseInt(parts[1], 10) || 0;
+  const lat = latitude !== undefined ? latitude : -23.5505;
+  const lng = longitude !== undefined ? longitude : -46.6333;
+  try {
+    const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng);
+    const asc = chart.astros.find(a => a.name === "Ascendente");
+    return asc ? asc.sign : "Sagitário";
+  } catch (err) {
+    console.error("Error in high-precision getRisingSign fallback:", err);
+    return "Sagitário";
   }
-  
-  const daysSinceMarch21 = (month * 30 + day - 80 + 360) % 360;
-  const raSun = (daysSinceMarch21 / 360) * 24;
-  
-  const timeSinceNoon = hour + (minute / 60) - 12;
-  const lst = (raSun + timeSinceNoon + 24) % 24;
-  
-  const signs = [
-    "Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", 
-    "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"
-  ];
-  
-  const index = Math.floor((lst + 16.5) % 24 / 2) % 12;
-  return signs[index];
 }
 
 function getLifePathNumber(dateStr: string): number {
@@ -1185,9 +1171,9 @@ export default function App() {
             provider: 'google',
             trialUsed: forceTrialUsed ? true : (existingProfile.trialUsed ?? false),
             trialStartDate: existingProfile.trialStartDate || new Date().toISOString(),
-            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
             trialStart: existingProfile.trialStart || existingProfile.trialStartDate || new Date().toISOString(),
-            trialEnds: existingProfile.trialEnds || existingProfile.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+            trialEnds: existingProfile.trialEnds || existingProfile.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
             plan: existingProfile.plan || "none",
             subscriptionStatus: existingProfile.subscriptionStatus || (forceTrialUsed ? "ended" : "trialing"),
             stripeCustomerId: existingProfile.stripeCustomerId || "",
@@ -1247,11 +1233,11 @@ export default function App() {
             trialStartDate: user.trialStartDate || new Date().toISOString(),
             trialEndDate: blockTrial 
               ? new Date(Date.now() - 1000).toISOString()
-              : (user.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString()),
+              : (user.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()),
             trialStart: user.trialStart || user.trialStartDate || new Date().toISOString(),
             trialEnds: blockTrial
               ? new Date(Date.now() - 1000).toISOString()
-              : (user.trialEnds || user.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString()),
+              : (user.trialEnds || user.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()),
             plan: user.plan || "none",
             subscriptionStatus: user.subscriptionStatus || (blockTrial ? "ended" : "trialing"),
             stripeCustomerId: user.stripeCustomerId || "",
@@ -1280,7 +1266,9 @@ export default function App() {
               birthDateToUse,
               birthTimeToUse,
               birthCityToUse,
-              targetUser.preferredLanguage as any
+              targetUser.preferredLanguage as any,
+              targetUser.latitude,
+              targetUser.longitude
             );
             clientNum = calculateNumerology(
               finalNameToUse,
@@ -1409,9 +1397,9 @@ export default function App() {
             provider: 'facebook',
             trialUsed: forceTrialUsed ? true : (existingProfile.trialUsed ?? false),
             trialStartDate: existingProfile.trialStartDate || new Date().toISOString(),
-            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
             trialStart: existingProfile.trialStart || existingProfile.trialStartDate || new Date().toISOString(),
-            trialEnds: existingProfile.trialEnds || existingProfile.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+            trialEnds: existingProfile.trialEnds || existingProfile.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
             plan: existingProfile.plan || "none",
             subscriptionStatus: existingProfile.subscriptionStatus || (forceTrialUsed ? "ended" : "trialing"),
             stripeCustomerId: existingProfile.stripeCustomerId || "",
@@ -1461,11 +1449,11 @@ export default function App() {
             trialStartDate: new Date().toISOString(),
             trialEndDate: blockTrial 
               ? new Date(Date.now() - 1000).toISOString()
-              : new Date(Date.now() + 60 * 1000).toISOString(),
+              : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
             trialStart: new Date().toISOString(),
             trialEnds: blockTrial
               ? new Date(Date.now() - 1000).toISOString()
-              : new Date(Date.now() + 60 * 1000).toISOString(),
+              : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
             plan: "none",
             subscriptionStatus: blockTrial ? "ended" : "trialing",
             stripeCustomerId: "",
@@ -1649,11 +1637,11 @@ export default function App() {
         trialStartDate: user.trialStartDate || new Date().toISOString(),
         trialEndDate: blockTrial 
           ? new Date(Date.now() - 1000).toISOString()
-          : (user.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString()),
+          : (user.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()),
         trialStart: user.trialStart || user.trialStartDate || new Date().toISOString(),
         trialEnds: blockTrial
           ? new Date(Date.now() - 1000).toISOString()
-          : (user.trialEnds || user.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString()),
+          : (user.trialEnds || user.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()),
         plan: user.plan || "none",
         subscriptionStatus: user.subscriptionStatus || (blockTrial ? "ended" : "trialing"),
         stripeCustomerId: user.stripeCustomerId || "",
@@ -1680,7 +1668,9 @@ export default function App() {
           birthDateToUse,
           birthTimeToUse,
           birthCityToUse,
-          newUserProfile.preferredLanguage as any
+          newUserProfile.preferredLanguage as any,
+          newUserProfile.latitude,
+          newUserProfile.longitude
         );
         clientNum = calculateNumerology(
           finalNameToUse,
@@ -1833,6 +1823,23 @@ export default function App() {
   const [extraDate, setExtraDate] = useState('');
   const [extraTime, setExtraTime] = useState('');
   const [extraCity, setExtraCity] = useState('');
+
+  // Local state for profile settings birth details
+  const [settingsBirthDate, setSettingsBirthDate] = useState(user?.birthDate || "");
+  const [settingsBirthTime, setSettingsBirthTime] = useState(user?.birthTime || "");
+  const [settingsBirthCity, setSettingsBirthCity] = useState(user?.birthCity || "");
+  const [settingsLatitude, setSettingsLatitude] = useState<number | undefined>(user?.latitude);
+  const [settingsLongitude, setSettingsLongitude] = useState<number | undefined>(user?.longitude);
+
+  useEffect(() => {
+    if (user) {
+      setSettingsBirthDate(user.birthDate || "");
+      setSettingsBirthTime(user.birthTime || "");
+      setSettingsBirthCity(user.birthCity || "");
+      setSettingsLatitude(user.latitude);
+      setSettingsLongitude(user.longitude);
+    }
+  }, [user?.email, user?.birthDate, user?.birthTime, user?.birthCity, user?.latitude, user?.longitude]);
 
   // Handle viewing an extra map by fetching its report
   const triggerGenerateExtraMap = async (extraDetails: any) => {
@@ -3173,16 +3180,57 @@ export default function App() {
     );
   };
 
-  const mapLocalChartToAstrologyMap = (name: string, date: string, time: string, city: string, forcedLang?: Language): AstrologyMap => {
+  const mapLocalChartToAstrologyMap = (
+    name: string,
+    date: string,
+    time: string,
+    city: string,
+    forcedLang?: Language,
+    customLat?: number,
+    customLng?: number
+  ): AstrologyMap => {
     const activeLang = forcedLang || (i18n.language || 'pt').toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr';
     
+    const lat = customLat !== undefined ? customLat : (user.latitude !== undefined ? user.latitude : -23.5505);
+    const lng = customLng !== undefined ? customLng : (user.longitude !== undefined ? user.longitude : -46.6333);
+    
+    // Heuristic client-side timezone resolution
+    const deduceTimezone = (lLatitude: number, lLongitude: number): string => {
+      if (lLatitude < 5 && lLatitude > -35 && lLongitude < -30 && lLongitude > -75) {
+        if (lLongitude < -54) {
+          if (lLongitude < -65) {
+            return "America/Rio_Branco";
+          }
+          return "America/Manaus";
+        }
+        return "America/Sao_Paulo";
+      }
+      if (lLatitude > 24 && lLatitude < 49 && lLongitude < -66 && lLongitude > -125) {
+        if (lLongitude < -114) return "America/Los_Angeles";
+        if (lLongitude < -104) return "America/Denver";
+        if (lLongitude < -85) return "America/Chicago";
+        return "America/New_York";
+      }
+      if (lLatitude > 35 && lLatitude < 70 && lLongitude > -10 && lLongitude < 40) {
+        if (lLongitude < 2) return "Europe/London";
+        if (lLongitude < 20) return "Europe/Paris";
+        return "Europe/Athens";
+      }
+      return "America/Sao_Paulo";
+    };
+
+    const tzName = deduceTimezone(lat, lng);
+    const mt = moment.tz(`${date} ${time || "12:00"}`, "YYYY-MM-DD HH:mm", tzName);
+    const is_dst = mt.isDST();
+    const tzOffset = mt.utcOffset() / 60;
+
     // Perform high-precision mathematical astrological calculations
     const chart = performAstroCalculation(
       date,
       time || "12:00",
-      user.latitude !== undefined ? user.latitude : -23.5505,
-      user.longitude !== undefined ? user.longitude : -46.6333,
-      undefined,
+      lat,
+      lng,
+      tzOffset,
       activeLang
     );
 
@@ -3246,8 +3294,8 @@ export default function App() {
       welcomeMessage,
       originalTime: time,
       adjustedTime: time,
-      timezone: "America/Sao_Paulo",
-      is_dst: false,
+      timezone: tzName,
+      is_dst,
       lang: activeLang,
       distribution: chart.distribution,
       personalityTraits: traits,
@@ -3302,7 +3350,10 @@ export default function App() {
           localProfile.name || targetUser.name || "Buscador",
           localProfile.birthDate,
           localProfile.birthTime || "12:00",
-          localProfile.birthCity
+          localProfile.birthCity,
+          undefined,
+          localProfile.latitude,
+          localProfile.longitude
         );
         
         if (finalMap) {
@@ -3459,7 +3510,9 @@ export default function App() {
       defaultBirthDate,
       defaultBirthTime,
       defaultBirthCity,
-      forcedLang
+      forcedLang,
+      details.latitude !== undefined ? details.latitude : user.latitude,
+      details.longitude !== undefined ? details.longitude : user.longitude
     );
     const clientNum = calculateNumerology(
       details.name || user.name || "Buscador",
@@ -3689,7 +3742,9 @@ export default function App() {
           birthTime: user.birthTime,
           birthCity: user.birthCity,
           isUnknownTime: user.isUnknownTime,
-          email: user.email
+          email: user.email,
+          latitude: user.latitude,
+          longitude: user.longitude
         }, idioma);
       }
     }
@@ -3818,6 +3873,12 @@ export default function App() {
         timestamp: new Date().toLocaleTimeString().slice(0, 5)
       }
     ]);
+
+    // Properly update the user state and persist in Firestore
+    setUser(nextUser);
+    if (loggedEmail && isLoggedIn) {
+      saveProfileToDatabase(loggedEmail, nextUser).catch(e => console.error("Error saving user profile:", e));
+    }
   };
 
   // Dynamically synchronize Orbia welcome message with the actual user profile
@@ -3925,7 +3986,7 @@ export default function App() {
     if (user.hasCreatedMap && user.name) {
       const firstName = user.name.split(' ')[0];
       const sunSign = mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate) || "seu Signo";
-      const ascSign = mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "");
+      const ascSign = mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user.birthTime ? getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude) : "");
       const sunLabel = currentLang === 'de' ? "Sonne in" : currentLang === 'en' ? "Sun in" : currentLang === 'es' ? "Sol en" : currentLang === 'fr' ? "Soleil en" : "Sol em";
       const ascLabel = currentLang === 'de' ? "und Aszendent in" : currentLang === 'en' ? "and Ascendant in" : currentLang === 'es' ? "y Ascendente en" : currentLang === 'fr' ? "et Ascendant en" : "e Ascendente em";
       const guideQ = currentLang === 'de' ? `Wie kann ich, Orbia, deine Bewusstseins- und Transformationsreise heute im Jahr 2026 leiten?`
@@ -6155,7 +6216,7 @@ export default function App() {
                   </div>
                   <p className="text-[9px] font-mono text-slate-500 leading-none mt-1 truncate max-w-[200px] sm:max-w-md">
                     {user.birthDate ? (
-                      `Sol em ${mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate)} · Asc ${mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime)} · ${user.birthCity}`
+                      `Sol em ${mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate)} · Asc ${mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude)} · ${user.birthCity}`
                     ) : (
                       `${getDeviceDescription()} · Fuso Horário: ${getRealTimeZoneLocation()}`
                     )}
@@ -6345,7 +6406,7 @@ export default function App() {
                                   <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">{t("Ascendente")}</span>
                                   {(() => {
                                     const ascAst = mapData?.astros?.find(a => a.name === "Ascendente");
-                                    const label = ascAst ? `${t("Ascendente em")} ${t(ascAst.sign)} ${ascAst.degree}` : `${t("Ascendente em")} ${t(getRisingSign(user.birthDate, user.birthTime))}`;
+                                    const label = ascAst ? `${t("Ascendente em")} ${t(ascAst.sign)} ${ascAst.degree}` : `${t("Ascendente em")} ${t(getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude))}`;
                                     return <span className="font-bold text-xs text-slate-100 block break-words whitespace-normal leading-none max-w-full">{label}</span>;
                                   })()}
                                   <p className="text-[9px] text-slate-400 leading-tight">
@@ -6376,7 +6437,7 @@ export default function App() {
                               <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/25 text-slate-200 text-[11px] leading-relaxed flex items-start gap-2.5 shadow-xl animate-in fade-in duration-500">
                                 <span className="text-sm leading-none shrink-0 select-none">🌟</span>
                                 <p id="dst-precision-notice" className="text-slate-300">
-                                  <strong>{t("Nota de Precisão:")}</strong> {t("Identificamos que no dia, hora e local do seu nascimento estava vigorando o Horário de Verão. Plataformas de astrologia mais simples costumam errar o seu Ascendente porque esquecem de descontar essa 1 hora do relógio. Nosso sistema recalculou o céu com base na Hora Solar Real do seu nascimento, garantindo que o seu Ascendente em")} <strong>{t(mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime))}</strong> {t("esteja 100% correto e astronamicamente preciso!")}
+                                  <strong>{t("Nota de Precisão:")}</strong> {t("Identificamos que no dia, hora e local do seu nascimento estava vigorando o Horário de Verão. Plataformas de astrologia mais simples costumam errar o seu Ascendente porque esquecem de descontar essa 1 hora do relógio. Nosso sistema recalculou o céu com base na Hora Solar Real do seu nascimento, garantindo que o seu Ascendente em")} <strong>{t(mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude))}</strong> {t("esteja 100% correto e astronamicamente preciso!")}
                                 </p>
                               </div>
                             )}
@@ -7304,7 +7365,7 @@ export default function App() {
                     <LunarCycle 
                       userName={user?.name} 
                       userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Aquário")} 
-                      userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "Sagitário")}
+                      userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude) : "Sagitário")}
                       lang={currentLang}
                     />
                   </React.Suspense>
@@ -7726,9 +7787,9 @@ export default function App() {
                         <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_date')}</label>
                         <input 
                           type="date" 
-                          value={user.birthDate} 
+                          value={settingsBirthDate} 
                           disabled={(user.mainMapChangesCount ?? 0) >= 2}
-                          onChange={(e) => handleUpdateUserProfile({ birthDate: e.target.value })} 
+                          onChange={(e) => setSettingsBirthDate(e.target.value)} 
                           className="w-full px-3 py-2 rounded-xl bg-slate-955 border border-slate-850 text-xs text-slate-200 focus:outline-hidden disabled:opacity-50"
                         />
                       </div>
@@ -7737,9 +7798,9 @@ export default function App() {
                         <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_time')}</label>
                         <input 
                           type="text" 
-                          value={user.birthTime} 
+                          value={settingsBirthTime} 
                           disabled={(user.mainMapChangesCount ?? 0) >= 2}
-                          onChange={(e) => handleUpdateUserProfile({ birthTime: e.target.value })} 
+                          onChange={(e) => setSettingsBirthTime(e.target.value)} 
                           className="w-full px-3 py-2 rounded-xl bg-slate-955 border border-slate-850 text-xs text-slate-200 focus:outline-hidden disabled:opacity-50"
                           placeholder="e.g. 15:30"
                         />
@@ -7748,19 +7809,46 @@ export default function App() {
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_city')}</label>
                         <CityAutocomplete
-                          value={user.birthCity}
+                          value={settingsBirthCity}
                           placeholder="e.g. São Paulo, SP"
-                          onChange={(val) => handleUpdateUserProfile({ birthCity: val })}
+                          onChange={(val) => setSettingsBirthCity(val)}
                           onSelectCity={(city) => {
-                            handleUpdateUserProfile({
-                              birthCity: city.label,
-                              latitude: city.latitude,
-                              longitude: city.longitude
-                            });
+                            setSettingsBirthCity(city.label);
+                            setSettingsLatitude(city.latitude);
+                            setSettingsLongitude(city.longitude);
                           }}
                           inputClassName="px-3 py-2 rounded-xl"
                         />
                       </div>
+
+                      {((user.mainMapChangesCount ?? 0) < 2) && (
+                        <div className="sm:col-span-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!settingsBirthCity || !settingsBirthCity.includes(',')) {
+                                alert("Por favor, digite e selecione uma cidade válida da lista de sugestões (contendo Cidade e Estado/País) para obter coordenadas precisas.");
+                                return;
+                              }
+                              if (!settingsBirthDate || !settingsBirthTime) {
+                                alert("Por favor, preencha a data e a hora de nascimento corretamente.");
+                                return;
+                              }
+                              handleUpdateUserProfile({
+                                birthDate: settingsBirthDate,
+                                birthTime: settingsBirthTime,
+                                birthCity: settingsBirthCity,
+                                latitude: settingsLatitude,
+                                longitude: settingsLongitude
+                              });
+                              alert("Seu mapa astral e dados de nascimento foram recalculados com sucesso com coordenadas e fuso horário de alta precisão!");
+                            }}
+                            className="w-full py-2.5 rounded-xl bg-linear-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-sans font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md shadow-amber-950/20 active:scale-98 cursor-pointer"
+                          >
+                            Salvar e Recalcular Meu Mapa
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 

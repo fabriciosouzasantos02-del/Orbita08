@@ -28,6 +28,8 @@ export interface CupidoPerson {
   isUnknownTime?: boolean;
   createdAt: string;
   userId?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CupidoHistory {

@@ -31,6 +31,8 @@ interface CupidoRadarViewProps {
     birthTime?: string;
     birthCity: string;
     email?: string;
+    latitude?: number;
+    longitude?: number;
   };
   lang?: string;
 }
@@ -61,6 +63,7 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
   const [formBirthCity, setFormBirthCity] = useState('');
   const [formGender, setFormGender] = useState('feminino');
   const [formUnknownTime, setFormUnknownTime] = useState(false);
+  const [formBirthCoords, setFormBirthCoords] = useState<{ latitude?: number; longitude?: number } | null>(null);
 
   // Active radar view tab: 'radar' | 'linguagem' | 'estrategias' | 'compatibilidade' | 'linhaTempo' | 'fundamentacao' | 'favoritos' | 'ajustes'
   const [activeDashboardTab, setActiveDashboardTab] = useState('radar');
@@ -131,6 +134,7 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
     setFormBirthCity('');
     setFormGender('feminino');
     setFormUnknownTime(false);
+    setFormBirthCoords(null);
     setIsFormOpen(true);
   };
 
@@ -142,6 +146,7 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
     setFormBirthCity(person.birthCity);
     setFormGender(person.gender || 'feminino');
     setFormUnknownTime(!!person.isUnknownTime);
+    setFormBirthCoords({ latitude: person.latitude, longitude: person.longitude });
     setIsFormOpen(true);
   };
 
@@ -162,6 +167,8 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
       birthCity: formBirthCity,
       gender: formGender,
       isUnknownTime: formUnknownTime,
+      latitude: formBirthCoords?.latitude,
+      longitude: formBirthCoords?.longitude,
       createdAt: editingPerson ? editingPerson.createdAt : new Date().toISOString()
     };
 
@@ -198,7 +205,9 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
             name: user.name,
             birthDate: user.birthDate,
             birthTime: user.birthTime || "12:00",
-            birthCity: user.birthCity
+            birthCity: user.birthCity,
+            latitude: user.latitude,
+            longitude: user.longitude
           },
           person: {
             name: person.name,
@@ -206,7 +215,9 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
             birthTime: person.birthTime || "12:00",
             birthCity: person.birthCity,
             gender: person.gender,
-            isUnknownTime: person.isUnknownTime
+            isUnknownTime: person.isUnknownTime,
+            latitude: person.latitude,
+            longitude: person.longitude
           },
           lang
         })
@@ -507,7 +518,10 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
                   <CityAutocomplete 
                     value={formBirthCity}
                     onChange={(val) => setFormBirthCity(val)}
-                    onSelectCity={(city) => setFormBirthCity(city.name)}
+                    onSelectCity={(city) => {
+                      setFormBirthCity(city.label);
+                      setFormBirthCoords({ latitude: city.latitude, longitude: city.longitude });
+                    }}
                     placeholder={t('city_placeholder', { defaultValue: "Cidade e Estado/País..." })}
                     inputClassName="w-full py-3 bg-slate-950/60 rounded-xl border border-slate-850 focus:border-rose-500/50 outline-none text-xs transition text-slate-200"
                   />
