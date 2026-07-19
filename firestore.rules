@@ -77,6 +77,9 @@ service cloud.firestore {
       match /cupidoSettings/{settingsId} {
         allow read, write: if isOwner(userId);
       }
+      match /compatibilityHistory/{historyId} {
+        allow read, write: if isOwner(userId);
+      }
 
       // Social collections: following, followers, friends, likesGiven, likesSnapshot, notifications
       match /following/{followedUserId} {

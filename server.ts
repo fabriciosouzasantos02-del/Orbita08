@@ -2314,7 +2314,8 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     coords2.latitude,
     coords2.longitude,
     tzOffset1,
-    tzOffset2
+    tzOffset2,
+    lang
   );
 
   const cacheKey = `compatibility:${name}:${birthDate}:${companionName}:${companionBirthDate}:${category || 'love'}:${lang || 'pt'}`;
@@ -2400,6 +2401,10 @@ Return ONLY the raw literal JSON without any markdown code blocks or secondary t
     if (parsedData.diasFavoraveis) compResult.diasFavoraveis = parsedData.diasFavoraveis;
     if (parsedData.diasAtencao) compResult.diasAtencao = parsedData.diasAtencao;
     if (parsedData.oportunidades) compResult.oportunidades = parsedData.oportunidades;
+    
+    if (parsedData.categories && typeof parsedData.categories === 'object') {
+      compResult.categories = parsedData.categories;
+    }
 
     setCachedResponse(cacheKey, compResult);
     res.json({ compatibility: compResult });
@@ -2701,7 +2706,8 @@ app.post("/api/cupido/radar", async (req, res) => {
       coords2.latitude,
       coords2.longitude,
       tzOffset1,
-      tzOffset2
+      tzOffset2,
+      lang
     );
 
     resolvedLang = (lang || 'pt').toLowerCase().split('-')[0].trim();

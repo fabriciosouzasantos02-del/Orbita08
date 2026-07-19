@@ -429,3 +429,82 @@ export async function loadCupidoSettings(email: string): Promise<CupidoSettings>
 
   return localSettings;
 }
+
+// ----------------------------------------------------
+// Compatibility (Synastry) History Operations
+// ----------------------------------------------------
+export interface CompatibilityHistoryItem {
+  id: string; // e.g. partnerName_category_lang
+  partnerName: string;
+  category: string;
+  lang: string;
+  compatibilityData: any;
+  createdAt: string;
+  userId?: string;
+}
+
+export async function saveCompatibilityHistory(email: string, history: CompatibilityHistoryItem): Promise<void> {
+  const mailKey = email.toLowerCase().trim();
+  if (!mailKey) return;
+
+  const docKey = getUserDocKey(email);
+
+  // 1. Sync to LocalStorage
+  const savedList = localStorage.getItem("compatibility_history_list_v1");
+  let currentList: CompatibilityHistoryItem[] = [];
+  try {
+    currentList = savedList ? JSON.parse(savedList) : [];
+  } catch {}
+  currentList = currentList.filter(h => h.id !== history.id);
+  currentList.push(history);
+  localStorage.setItem("compatibility_history_list_v1", JSON.stringify(currentList));
+
+  // 2. Sync to Firestore
+  const db = getFirestoreDB();
+  if (db) {
+    const path = `users/${docKey}/compatibilityHistory/${history.id}`;
+    try {
+      const ref = doc(db, "users", docKey, "compatibilityHistory", history.id);
+      await setDoc(ref, {
+        ...history,
+        userId: docKey
+      });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, path);
+    }
+  }
+}
+
+export async function loadCompatibilityHistory(email: string): Promise<CompatibilityHistoryItem[]> {
+  const mailKey = email.toLowerCase().trim();
+  if (!mailKey) return [];
+
+  const savedList = localStorage.getItem("compatibility_history_list_v1");
+  let localList: CompatibilityHistoryItem[] = [];
+  try {
+    localList = savedList ? JSON.parse(savedList) : [];
+  } catch {}
+
+  const db = getFirestoreDB();
+  if (db) {
+    const docKey = getUserDocKey(email);
+    try {
+      const collRef = collection(db, "users", docKey, "compatibilityHistory");
+      const snapshot = await getDocs(collRef);
+      const remoteList: CompatibilityHistoryItem[] = [];
+      snapshot.forEach(doc => {
+        remoteList.push(doc.data() as CompatibilityHistoryItem);
+      });
+
+      if (remoteList.length > 0) {
+        localStorage.setItem("compatibility_history_list_v1", JSON.stringify(remoteList));
+        return remoteList;
+      }
+    } catch (e) {
+      console.warn("Error loading compatibility history from firestore:", e);
+    }
+  }
+
+  return localList;
+}
+

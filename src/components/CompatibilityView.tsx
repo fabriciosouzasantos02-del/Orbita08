@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
@@ -6,6 +6,12 @@ import { CompatibilityResult, UserProfile } from '../types';
 import { computeDetailedCompatibility } from './compatibilityEngine';
 import { CityAutocomplete } from './CityAutocomplete';
 import { motion, AnimatePresence } from 'motion/react';
+import { getFirebaseAuth } from '../lib/firebase';
+import { 
+  saveCompatibilityHistory, 
+  loadCompatibilityHistory, 
+  CompatibilityHistoryItem 
+} from '../lib/cupidoFirebase';
 import { 
   Heart, 
   Users, 
@@ -950,6 +956,127 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [result, setResult] = useState<any>(null);
 
+  const [authUid, setAuthUid] = useState<string>('');
+  const [history, setHistory] = useState<CompatibilityHistoryItem[]>([]);
+
+  // Listen to Auth State changes to capture active UID and re-trigger subscriptions safely
+  useEffect(() => {
+    const auth = getFirebaseAuth();
+    if (!auth) return;
+    return auth.onAuthStateChanged((firebaseUser) => {
+      setAuthUid(firebaseUser ? firebaseUser.uid : '');
+    });
+  }, []);
+
+  const userEmail = user?.email || 'offline_user';
+
+  // Load saved compatibility reports from Firestore & LocalStorage on mount or when user changes
+  useEffect(() => {
+    if (!userEmail) return;
+    const loadHistory = async () => {
+      const data = await loadCompatibilityHistory(userEmail);
+      setHistory(data);
+      // Auto-load the last calculated result if any exists
+      if (data && data.length > 0) {
+        const sorted = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setResult(sorted[0].compatibilityData);
+        // Populate inputs with last evaluated report's parameters
+        const lastItem = sorted[0];
+        setPartnerName(lastItem.partnerName);
+        setRelationCategory(lastItem.category as any);
+        if (lastItem.compatibilityData) {
+          const cData = lastItem.compatibilityData;
+          if (cData.partnerBirthDate) setPartnerDate(cData.partnerBirthDate);
+          if (cData.partnerBirthTime) setPartnerTime(cData.partnerBirthTime);
+          if (cData.partnerBirthCity) setPartnerCity(cData.partnerBirthCity);
+          if (cData.partnerBirthCountry) setPartnerCountry(cData.partnerBirthCountry);
+        }
+      }
+    };
+    loadHistory();
+  }, [userEmail, authUid]);
+
+  // Load matched history report if user switches category, companion, or language
+  useEffect(() => {
+    if (!partnerName) return;
+
+    // First try to find a history item matching partner, category and CURRENT language
+    const matchThisLang = history.find(h => 
+      h.partnerName.toLowerCase().trim() === partnerName.toLowerCase().trim() && 
+      h.category === relationCategory &&
+      (h.lang || 'pt') === idiomaAtual
+    );
+
+    if (matchThisLang) {
+      setResult(matchThisLang.compatibilityData);
+    } else {
+      // If we don't have a history item in this language, but we have a match in ANY language,
+      // OR we currently have a result showing, but in a different language:
+      const matchAnyLang = history.find(h => 
+        h.partnerName.toLowerCase().trim() === partnerName.toLowerCase().trim() && 
+        h.category === relationCategory
+      );
+
+      const hasResultDiffLang = result && 
+        (result.partnerName || '').toLowerCase().trim() === partnerName.toLowerCase().trim() &&
+        (result.category || '') === relationCategory &&
+        (result.lang || 'pt') !== idiomaAtual;
+
+      if ((matchAnyLang || hasResultDiffLang) && !isEvaluating) {
+        // Trigger background re-evaluation to translate/regenerate to the current language!
+        const autoTriggerEvaluate = async () => {
+          setIsEvaluating(true);
+          try {
+            const response = await fetch("/api/compatibility/evaluate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: user.name || "Você",
+                birthDate: user.birthDate,
+                birthTime: user.birthTime || "12:00",
+                birthCity: user.birthCity || "São Paulo",
+                latitude: user.latitude,
+                longitude: user.longitude,
+                companionName: partnerName,
+                companionBirthDate: partnerDate,
+                companionBirthTime: partnerTime || "12:00",
+                companionBirthCity: partnerCity,
+                companionBirthCountry: partnerCountry || "Brasil",
+                companionLatitude: partnerLat,
+                companionLongitude: partnerLng,
+                category: relationCategory,
+                lang: idiomaAtual,
+              })
+            });
+            const data = await response.json();
+            if (data.compatibility) {
+              setResult(data.compatibility);
+
+              const newHistoryItem: CompatibilityHistoryItem = {
+                id: `${partnerName}_${relationCategory}_${idiomaAtual}`.toLowerCase().trim().replace(/[.$#[\]\s]/g, "_"),
+                partnerName,
+                category: relationCategory,
+                lang: idiomaAtual,
+                compatibilityData: data.compatibility,
+                createdAt: new Date().toISOString()
+              };
+              await saveCompatibilityHistory(userEmail, newHistoryItem);
+              setHistory(prev => [newHistoryItem, ...prev.filter(h => h.id !== newHistoryItem.id)]);
+            }
+          } catch (err) {
+            console.error("Auto language translation fetch failed:", err);
+          } finally {
+            setIsEvaluating(false);
+          }
+        };
+        autoTriggerEvaluate();
+      } else if (matchAnyLang && !result) {
+        // Fallback: if we aren't translating yet, load any matching language result first so user doesn't see blank
+        setResult(matchAnyLang.compatibilityData);
+      }
+    }
+  }, [relationCategory, partnerName, history, idiomaAtual, result, isEvaluating, user]);
+
   // Interactivity for planetary aspect accordions and elements details
   const [expandedAspectIndex, setExpandedAspectIndex] = useState<number | null>(0);
   const [showElementsDetails, setShowElementsDetails] = useState<boolean>(false);
@@ -1071,6 +1198,18 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
       const data = await response.json();
       if (data.compatibility) {
         setResult(data.compatibility);
+
+        // Save to Firestore and Local History
+        const newHistoryItem: CompatibilityHistoryItem = {
+          id: `${partnerName}_${relationCategory}_${idiomaAtual}`.toLowerCase().trim().replace(/[.$#[\]\s]/g, "_"),
+          partnerName,
+          category: relationCategory,
+          lang: idiomaAtual,
+          compatibilityData: data.compatibility,
+          createdAt: new Date().toISOString()
+        };
+        await saveCompatibilityHistory(userEmail, newHistoryItem);
+        setHistory(prev => [newHistoryItem, ...prev.filter(h => h.id !== newHistoryItem.id)]);
       }
     } catch (err) {
       console.error(err);

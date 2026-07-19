@@ -7,6 +7,7 @@ import {
   TrendingUp, Flame
 } from 'lucide-react';
 import { CityAutocomplete } from './CityAutocomplete';
+import { getFirebaseAuth } from '../lib/firebase';
 import { 
   saveCupidoPerson, 
   deleteCupidoPerson, 
@@ -68,6 +69,17 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
   // Active radar view tab: 'radar' | 'linguagem' | 'estrategias' | 'compatibilidade' | 'linhaTempo' | 'fundamentacao' | 'favoritos' | 'ajustes'
   const [activeDashboardTab, setActiveDashboardTab] = useState('radar');
   const [radarData, setRadarData] = useState<any | null>(null);
+  const [authUid, setAuthUid] = useState<string>('');
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+
+  // Listen to Auth State changes to capture active UID and re-trigger subscriptions safely
+  useEffect(() => {
+    const auth = getFirebaseAuth();
+    if (!auth) return;
+    return auth.onAuthStateChanged((firebaseUser) => {
+      setAuthUid(firebaseUser ? firebaseUser.uid : '');
+    });
+  }, []);
 
   // User's email as key for syncing
   const userEmail = user?.email || 'offline_user';
@@ -100,7 +112,7 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
     return () => {
       unsubscribePeople();
     };
-  }, [userEmail]);
+  }, [userEmail, authUid]);
 
   // Load selected person radar from cache/history or generate new
   useEffect(() => {
@@ -118,10 +130,11 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
 
     if (cachedRadar) {
       setRadarData(cachedRadar.radarData);
-    } else {
+    } else if (generatingId !== selectedPerson.id) {
+      setGeneratingId(selectedPerson.id);
       handleGenerateRadar(selectedPerson);
     }
-  }, [selectedPerson, history, lang]);
+  }, [selectedPerson, history, lang, generatingId]);
 
   // ----------------------------------------------------
   // Actions
@@ -246,6 +259,7 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
       console.error("Error generating Cupido radar:", err);
     } finally {
       setLoading(false);
+      setGeneratingId(null);
     }
   };
 
