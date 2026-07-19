@@ -193,13 +193,48 @@ function getRisingSign(dateStr: string, timeStr: string, latitude?: number, long
   if (!dateStr) return "Sagitário";
   const lat = latitude !== undefined ? latitude : -23.5505;
   const lng = longitude !== undefined ? longitude : -46.6333;
+
+  const deduceTimezone = (lLatitude: number, lLongitude: number): string => {
+    if (lLatitude < 5 && lLatitude > -35 && lLongitude < -30 && lLongitude > -75) {
+      if (lLongitude < -54) {
+        if (lLongitude < -65) {
+          return "America/Rio_Branco";
+        }
+        return "America/Manaus";
+      }
+      return "America/Sao_Paulo";
+    }
+    if (lLatitude > 24 && lLatitude < 49 && lLongitude < -66 && lLongitude > -125) {
+      if (lLongitude < -114) return "America/Los_Angeles";
+      if (lLongitude < -104) return "America/Denver";
+      if (lLongitude < -85) return "America/Chicago";
+      return "America/New_York";
+    }
+    if (lLatitude > 35 && lLatitude < 70 && lLongitude > -10 && lLongitude < 40) {
+      if (lLongitude < 2) return "Europe/London";
+      if (lLongitude < 20) return "Europe/Paris";
+      return "Europe/Athens";
+    }
+    return "America/Sao_Paulo";
+  };
+
   try {
-    const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng);
+    const tzName = deduceTimezone(lat, lng);
+    const mt = moment.tz(`${dateStr} ${timeStr || "12:00"}`, "YYYY-MM-DD HH:mm", tzName);
+    const tzOffset = mt.utcOffset() / 60;
+
+    const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng, tzOffset);
     const asc = chart.astros.find(a => a.name === "Ascendente");
     return asc ? asc.sign : "Sagitário";
   } catch (err) {
     console.error("Error in high-precision getRisingSign fallback:", err);
-    return "Sagitário";
+    try {
+      const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng);
+      const asc = chart.astros.find(a => a.name === "Ascendente");
+      return asc ? asc.sign : "Sagitário";
+    } catch {
+      return "Sagitário";
+    }
   }
 }
 
@@ -1989,6 +2024,11 @@ export default function App() {
     }
   }, [user?.scorePoints, user?.stellarPoints]);
 
+  const userRef = useRef<UserProfile>(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   // Firebase Real-time listeners hook
   useEffect(() => {
     if (!isAuthInitialized) return;
@@ -2008,6 +2048,7 @@ export default function App() {
 
           return {
             ...prev,
+            ...updatedProfile, // Merge all remote fields to preserve latitude, longitude, and currentChartId
             name: finalName,
             displayName: updatedProfile.displayName || finalName,
             birthName: updatedProfile.birthName || finalName,
@@ -2104,10 +2145,11 @@ export default function App() {
 
     // 4. Natal Charts Real-time Sync
     const unsubNatalCharts = subscribeToNatalCharts(loggedEmail, (updatedCharts) => {
+      const currentUser = userRef.current;
       if (updatedCharts && updatedCharts.length > 0) {
         const activeLang = idioma || lang || 'pt';
-        const targetChart = updatedCharts.find(c => c.id === user?.currentChartId) || 
-                            updatedCharts.find(c => c.birthDate === user?.birthDate && (c.lang === activeLang || c.mapData?.lang === activeLang)) ||
+        const targetChart = (currentUser?.currentChartId ? updatedCharts.find(c => c.id === currentUser.currentChartId) : null) || 
+                            (currentUser?.birthDate ? updatedCharts.find(c => c.birthDate === currentUser.birthDate && (c.lang === activeLang || c.mapData?.lang === activeLang)) : null) ||
                             updatedCharts[0];
         if (targetChart && targetChart.mapData) {
           const chartIdToInject = targetChart.id || targetChart.chartId || "";
@@ -2128,9 +2170,9 @@ export default function App() {
             });
           }
         }
-      } else if (user?.hasCreatedMap && !mapDataRef.current) {
+      } else if (currentUser?.hasCreatedMap && !mapDataRef.current) {
         console.log("[SnapSync] No natal charts found in DB. Triggering automatic background generation...");
-        triggerGenerateMainMap(user);
+        triggerGenerateMainMap(currentUser);
       }
     }, (error) => {
       console.warn("Falha de sincronização real-time de natalCharts:", error);
@@ -2155,7 +2197,7 @@ export default function App() {
             motivacao: targetNum.motivacao ?? targetNum.soulUrgeNumber ?? targetNum.soulUrge ?? 5,
             personalidade: targetNum.personalidade ?? targetNum.personalityNumber ?? targetNum.personality ?? 7,
             ciclos: targetNum.ciclos ?? targetNum.derivedCycles ?? [],
-            chartId: targetNum.chartId ?? user?.currentChartId ?? "",
+            chartId: targetNum.chartId ?? userRef.current?.currentChartId ?? "",
             lang: targetNum.lang ?? activeLang
           };
           setNumerology(mappedNum);
