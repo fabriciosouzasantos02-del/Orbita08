@@ -1229,15 +1229,15 @@ export default function App() {
             isEmailVerified: true,
             photoURL: firebaseUser.photoURL || "",
             provider: 'google',
-            trialUsed: blockTrial ? true : (user.trialUsed || false),
-            trialStartDate: user.trialStartDate || new Date().toISOString(),
+            trialUsed: blockTrial ? true : false,
+            trialStartDate: new Date().toISOString(),
             trialEndDate: blockTrial 
               ? new Date(Date.now() - 1000).toISOString()
-              : (user.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()),
-            trialStart: user.trialStart || user.trialStartDate || new Date().toISOString(),
+              : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+            trialStart: new Date().toISOString(),
             trialEnds: blockTrial
               ? new Date(Date.now() - 1000).toISOString()
-              : (user.trialEnds || user.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()),
+              : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
             plan: user.plan || "none",
             subscriptionStatus: user.subscriptionStatus || (blockTrial ? "ended" : "trialing"),
             stripeCustomerId: user.stripeCustomerId || "",
@@ -1633,15 +1633,15 @@ export default function App() {
         isEmailVerified: true,
         emailVerified: true,
         provider: 'password',
-        trialUsed: blockTrial ? true : (user.trialUsed || false),
-        trialStartDate: user.trialStartDate || new Date().toISOString(),
+        trialUsed: blockTrial ? true : false,
+        trialStartDate: new Date().toISOString(),
         trialEndDate: blockTrial 
           ? new Date(Date.now() - 1000).toISOString()
-          : (user.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()),
-        trialStart: user.trialStart || user.trialStartDate || new Date().toISOString(),
+          : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+        trialStart: new Date().toISOString(),
         trialEnds: blockTrial
           ? new Date(Date.now() - 1000).toISOString()
-          : (user.trialEnds || user.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()),
+          : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
         plan: user.plan || "none",
         subscriptionStatus: user.subscriptionStatus || (blockTrial ? "ended" : "trialing"),
         stripeCustomerId: user.stripeCustomerId || "",

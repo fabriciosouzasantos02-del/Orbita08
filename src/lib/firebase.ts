@@ -1814,6 +1814,16 @@ export function getBrowserDeviceInfo() {
 export async function checkDeviceTrial(email: string): Promise<{ deviceId: string, fingerprint: string, isAllowed: boolean, isSelf: boolean }> {
   const { deviceId, fingerprint, info } = getBrowserDeviceInfo();
   const db = getFirestoreDB();
+
+  // If we are in the development/preview environment (localhost or run.app), we bypass the device anti-fraud blocking
+  // to allow the developer/owner to register new accounts and test the 4-day trial.
+  const isDevBypass = typeof window !== 'undefined' && (
+    window.location.hostname.includes('localhost') ||
+    window.location.hostname.includes('127.0.0.1') ||
+    window.location.hostname.includes('run.app') ||
+    window.location.hostname.includes('web-preview')
+  );
+
   if (!db) {
     return { deviceId, fingerprint, isAllowed: true, isSelf: true };
   }
@@ -1828,6 +1838,10 @@ export async function checkDeviceTrial(email: string): Promise<{ deviceId: strin
       const data = snap.data();
       const firstEmail = data.firstEmail ? data.firstEmail.toLowerCase().trim() : "";
       if (firstEmail && firstEmail !== currentEmail) {
+        if (isDevBypass) {
+          console.log("[Anti Fraud] Dev bypass active: allowing device trial for new test account:", currentEmail);
+          return { deviceId, fingerprint, isAllowed: true, isSelf: false };
+        }
         return { deviceId, fingerprint, isAllowed: false, isSelf: false };
       }
       return { deviceId, fingerprint, isAllowed: true, isSelf: true };
@@ -1846,6 +1860,10 @@ export async function checkDeviceTrial(email: string): Promise<{ deviceId: strin
         }
       });
       if (otherEmailFound) {
+        if (isDevBypass) {
+          console.log("[Anti Fraud] Dev bypass active: allowing fingerprint trial for new test account:", currentEmail);
+          return { deviceId, fingerprint, isAllowed: true, isSelf: false };
+        }
         return { deviceId, fingerprint, isAllowed: false, isSelf: false };
       }
     }
