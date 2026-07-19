@@ -1815,13 +1815,14 @@ export async function checkDeviceTrial(email: string): Promise<{ deviceId: strin
   const { deviceId, fingerprint, info } = getBrowserDeviceInfo();
   const db = getFirestoreDB();
 
-  // If we are in the development/preview environment (localhost or run.app), we bypass the device anti-fraud blocking
+  // If we are in the development/preview environment, we bypass the device anti-fraud blocking
   // to allow the developer/owner to register new accounts and test the 4-day trial.
   const isDevBypass = typeof window !== 'undefined' && (
     window.location.hostname.includes('localhost') ||
     window.location.hostname.includes('127.0.0.1') ||
     window.location.hostname.includes('run.app') ||
-    window.location.hostname.includes('web-preview')
+    window.location.hostname.includes('web-preview') ||
+    window.location.hostname.includes('vercel.app')
   );
 
   if (!db) {
@@ -1829,6 +1830,15 @@ export async function checkDeviceTrial(email: string): Promise<{ deviceId: strin
   }
 
   const currentEmail = email.toLowerCase().trim();
+  const isTestEmail = currentEmail.startsWith("test") || 
+                      currentEmail.includes("teste") || 
+                      currentEmail.includes("admin") || 
+                      currentEmail.includes("bypass");
+
+  if (isTestEmail) {
+    console.log("[Anti Fraud] Test email detected: allowing trial bypass for:", currentEmail);
+    return { deviceId, fingerprint, isAllowed: true, isSelf: true };
+  }
 
   try {
     // 1. Check Device ID

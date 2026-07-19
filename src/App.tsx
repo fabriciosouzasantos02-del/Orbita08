@@ -3561,14 +3561,19 @@ export default function App() {
       defaultBirthDate
     );
 
-    // Set high-precision map values instantly
+    // Set high-precision map values instantly if not already loaded or matching the expected ID
     const birthDateCleanInst = cleanStringForChartId(defaultBirthDate);
     const birthTimeCleanInst = cleanStringForChartId(defaultBirthTime);
     const birthCityCleanInst = cleanStringForChartId(defaultBirthCity);
     const expectedChartIdInst = details.currentChartId || user.currentChartId || `chart_${birthDateCleanInst}_${birthTimeCleanInst}_${birthCityCleanInst}`;
 
-    setMapData({ ...clientMap, chartId: expectedChartIdInst });
-    setNumerology({ ...clientNum, chartId: expectedChartIdInst });
+    if (!mapData || mapData.chartId !== expectedChartIdInst) {
+      console.log(`[Astro Engine] Setting client-side fallback map for ID: ${expectedChartIdInst}`);
+      setMapData({ ...clientMap, chartId: expectedChartIdInst });
+    }
+    if (!numerology || numerology.chartId !== expectedChartIdInst) {
+      setNumerology({ ...clientNum, chartId: expectedChartIdInst });
+    }
     setIsLoadingMain(false);
 
     try {

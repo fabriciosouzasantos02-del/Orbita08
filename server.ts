@@ -1578,20 +1578,13 @@ app.post("/api/astrology/generate", async (req, res) => {
       resolvedCoords = await resolveCityCoordinatesAndTimezone(safeBirthCity);
     }
     
-    // DST evaluation and standard real solar time subtraction
+    // DST evaluation and standard real solar time
     const tzName = resolvedCoords.timezone;
     const mt = moment.tz(`${safeBirthDate} ${safeBirthTime}`, "YYYY-MM-DD HH:mm", tzName);
     const is_dst = mt.isDST();
 
     let astroDate = safeBirthDate;
     let astroTime = safeBirthTime;
-
-    if (is_dst) {
-      // Subtract 1 hour to get standard real solar time
-      const standardTimeMoment = mt.clone().subtract(1, 'hour');
-      astroDate = standardTimeMoment.format('YYYY-MM-DD');
-      astroTime = standardTimeMoment.format('HH:mm');
-    }
 
     const timezoneOffsetHours = mt.utcOffset() / 60;
 
