@@ -44,6 +44,9 @@ service cloud.firestore {
       match /missions/{missionId} {
         allow read, write: if isOwner(userId);
       }
+      match /pointsTracker/{trackerId} {
+        allow read, write: if isOwner(userId);
+      }
       match /tarotReadings/{readingId} {
         allow read, write: if isOwner(userId);
       }

@@ -81,7 +81,8 @@ import {
   saveTarotReadingToDatabase,
   saveNumerologyToDatabase,
   saveProsperityMapToDatabase,
-  saveBiorhythmToDatabase
+  saveBiorhythmToDatabase,
+  loadPremiumSubscription
 } from './lib/firebase';
 import { generatePersonalizedProsperityMap } from './prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
@@ -595,6 +596,19 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "Você deseja excluir sua conta? Ao excluir sua conta todos os seus dados mapas registros estatísticas serão excluídos da plataforma.",
     delete_confirm_yes: "Sim, quero excluir",
     delete_confirm_cancel: "Cancelar",
+    manage_subscription_btn: "Gerenciar Assinatura",
+    no_subscription_title: "Sem Assinatura Ativa",
+    no_subscription_desc: "Você não possui uma assinatura ativa no Portal Órbita. Assine o plano Premium para acessar todas as sintonias celestes!",
+    subscription_details: "Detalhes da Assinatura",
+    sub_status: "Status",
+    sub_plan: "Plano",
+    sub_next_billing: "Próxima Cobrança",
+    sub_last_payment: "Último Pagamento",
+    sub_price: "Valor",
+    open_stripe_portal: "Abrir Portal da Assinatura",
+    close_btn: "Fechar",
+    loading: "Carregando...",
+    error_loading: "Erro ao carregar informações da assinatura.",
   },
   en: {
     general_settings: "General Settings",
@@ -640,6 +654,19 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "Are you sure you want to delete your account? All your charts, reports, and historic portal logs will be permanently erased.",
     delete_confirm_yes: "Yes, delete account",
     delete_confirm_cancel: "Cancel",
+    manage_subscription_btn: "Manage Subscription",
+    no_subscription_title: "No Active Subscription",
+    no_subscription_desc: "You do not have an active subscription to Portal Órbita. Subscribe to the Premium plan to access all celestial tunings!",
+    subscription_details: "Subscription Details",
+    sub_status: "Status",
+    sub_plan: "Plan",
+    sub_next_billing: "Next Billing",
+    sub_last_payment: "Last Payment",
+    sub_price: "Price",
+    open_stripe_portal: "Open Subscription Portal",
+    close_btn: "Close",
+    loading: "Loading...",
+    error_loading: "Error loading subscription details.",
   },
   es: {
     general_settings: "Configuración General",
@@ -685,6 +712,19 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "¿Desea eliminar su cuenta? Al hacerlo, todos sus datos, mapas e historiales serán borrados para siempre.",
     delete_confirm_yes: "Sí, quiero eliminar",
     delete_confirm_cancel: "Cancelar",
+    manage_subscription_btn: "Gestionar Suscripción",
+    no_subscription_title: "Sin Suscripción Activa",
+    no_subscription_desc: "No tienes una suscripción activa a Portal Órbita. ¡Suscríbete al plan Premium para acceder a todas las sintonías celestiales!",
+    subscription_details: "Detalles de la Suscripción",
+    sub_status: "Estado",
+    sub_plan: "Plan",
+    sub_next_billing: "Próximo Cobro",
+    sub_last_payment: "Último Pago",
+    sub_price: "Precio",
+    open_stripe_portal: "Abrir Portal de Suscripción",
+    close_btn: "Cerrar",
+    loading: "Cargando...",
+    error_loading: "Error al cargar los detalles de la suscripción.",
   },
   de: {
     general_settings: "Allgemeine Einstellungen",
@@ -730,6 +770,19 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "Möchten Sie Ihr Konto wirklich löschen? Alle Berichte und gespeicherten Horoskope werden dauerhaft entfernt.",
     delete_confirm_yes: "Ja, jetzt löschen",
     delete_confirm_cancel: "Abbrechen",
+    manage_subscription_btn: "Abonnement verwalten",
+    no_subscription_title: "Kein aktives Abonnement",
+    no_subscription_desc: "Sie haben kein aktives Abonnement für Portal Órbita. Abonnieren Sie den Premium-Plan, um auf alle himmlischen Abstimmungen zuzugreifen!",
+    subscription_details: "Abonnement-Details",
+    sub_status: "Status",
+    sub_plan: "Plan",
+    sub_next_billing: "Nächste Abrechnung",
+    sub_last_payment: "Letzte Zahlung",
+    sub_price: "Preis",
+    open_stripe_portal: "Abonnement-Portal öffnen",
+    close_btn: "Schließen",
+    loading: "Wird geladen...",
+    error_loading: "Fehler beim Laden der Abonnementdetails.",
   },
   fr: {
     general_settings: "Paramètres Généraux",
@@ -775,6 +828,19 @@ const localLangDict: Record<string, Record<string, string>> = {
     delete_confirm_desc: "Voulez-vous supprimer votre compte ? Toutes vos données, cartes et historiques seront définitivement effacés.",
     delete_confirm_yes: "Oui, supprimer",
     delete_confirm_cancel: "Annuler",
+    manage_subscription_btn: "Gérer l'Abonnement",
+    no_subscription_title: "Aucun Abonnement Actif",
+    no_subscription_desc: "Vous n'avez pas d'abonnement actif à Portal Órbita. Abonnez-vous au forfait Premium pour accéder à tous les réglages célestes !",
+    subscription_details: "Détails de l'Abonnement",
+    sub_status: "Statut",
+    sub_plan: "Forfait",
+    sub_next_billing: "Prochaine Facturation",
+    sub_last_payment: "Dernier Paiement",
+    sub_price: "Prix",
+    open_stripe_portal: "Ouvrir le Portail d'Abonnement",
+    close_btn: "Fermer",
+    loading: "Chargement...",
+    error_loading: "Erreur lors du chargement des détails de l'abonnement.",
   }
 };
 
@@ -958,6 +1024,15 @@ export default function App() {
 
   const [scorePoints, setScorePoints] = useState<number>(() => {
     if (typeof window !== 'undefined') {
+      const cachedProfile = localStorage.getItem("orbi_user_profile");
+      if (cachedProfile) {
+        try {
+          const parsed = JSON.parse(cachedProfile);
+          if (parsed && parsed.scorePoints !== undefined) {
+            return parsed.scorePoints;
+          }
+        } catch (e) {}
+      }
       const activeEmail = localStorage.getItem("orbi_logged_email");
       if (activeEmail) {
         const accounts = getRegisteredAccounts();
@@ -1064,6 +1139,13 @@ export default function App() {
   const [verifyingStripe, setVerifyingStripe] = useState<boolean>(false);
   const [firebaseErrors, setFirebaseErrors] = useState<any[]>([]);
 
+  // Stripe Customer Portal subscription states
+  const [showSubPortalModal, setShowSubPortalModal] = useState<boolean>(false);
+  const [isFetchingPortal, setIsFetchingPortal] = useState<boolean>(false);
+  const [isFetchingSubData, setIsFetchingSubData] = useState<boolean>(false);
+  const [subPortalError, setSubPortalError] = useState<string>("");
+  const [portalSubscriptionData, setPortalSubscriptionData] = useState<any | null>(null);
+
   // Authentication states
   const [authTab, setAuthTab] = useState<'birth_info' | 'register_credentials' | 'login' | 'forgot_password'>('birth_info');
   const [forgotEmail, setForgotEmail] = useState('');
@@ -1168,6 +1250,17 @@ export default function App() {
         const checkStatus = await checkDeviceTrial(emailLower);
         const existingProfile = await loadProfileFromDatabase(emailLower, firebaseUser.uid);
         let targetUser: UserProfile;
+
+        if (authTab === 'login' && !existingProfile) {
+          await logoutWithFirebase();
+          manualAuthActionRef.current = false;
+          triggerGlobalNotification(
+            t("Cadastro Não Encontrado"),
+            t("Esta conta Google não possui um mapa astral registrado no Portal Órbita. Por favor, registre-se primeiro."),
+            "alert"
+          );
+          return;
+        }
 
         if (existingProfile) {
           const birthDateToUse = existingProfile.birthDate || createMainDate || "";
@@ -1399,6 +1492,16 @@ export default function App() {
         const checkStatus = await checkDeviceTrial(emailLower);
         const existingProfile = await loadProfileFromDatabase(emailLower, firebaseUser.uid);
         let targetUser: UserProfile;
+
+        if (authTab === 'login' && !existingProfile) {
+          await logoutWithFirebase();
+          triggerGlobalNotification(
+            t("Cadastro Não Encontrado"),
+            t("Esta conta do Facebook não possui um mapa astral registrado no Portal Órbita. Por favor, registre-se primeiro."),
+            "alert"
+          );
+          return;
+        }
 
         if (existingProfile) {
           const finalBirthCity = loginBirthCity.trim() || existingProfile.birthCity || "";
@@ -1807,6 +1910,18 @@ export default function App() {
         return; // Stop flow immediately!
       }
 
+      // Check if profile exists in database
+      const existingProfile = await loadProfileFromDatabase(mailLower, firebaseUser.uid);
+      if (!existingProfile) {
+        await logoutWithFirebase();
+        triggerGlobalNotification(
+          t("Cadastro Não Encontrado"),
+          t("Esta conta não possui um mapa astral registrado no Portal Órbita. Por favor, registre-se primeiro."),
+          "alert"
+        );
+        return;
+      }
+
       // 2. Perform the fully blocking sync of profile and subcollections using UID
       await syncUserSession(firebaseUser);
 
@@ -1989,8 +2104,8 @@ export default function App() {
 
 
   useEffect(() => {
+    localStorage.setItem("orbi_user_profile", JSON.stringify(user));
     if (isLoggedIn && loggedEmail) {
-      localStorage.setItem("orbi_user_profile", JSON.stringify(user));
       const accounts = getRegisteredAccounts();
       const index = accounts.findIndex((a: any) => a.email.toLowerCase() === loggedEmail.toLowerCase());
       if (index !== -1) {
@@ -2006,9 +2121,18 @@ export default function App() {
   // Keep scorePoints reactively synced with user.scorePoints and database in real-time
   useEffect(() => {
     if (isLoggedIn && loggedEmail) {
-      const currentPts = user.stellarPoints !== undefined ? user.stellarPoints : (user.scorePoints ?? 0);
-      if (currentPts !== scorePoints) {
-        const nextUser = { ...user, scorePoints, stellarPoints: scorePoints };
+      const latestUser = userRef.current;
+      const currentPts = latestUser?.stellarPoints !== undefined ? latestUser.stellarPoints : (latestUser?.scorePoints ?? 0);
+      
+      // Ensure points only grow to prevent regression!
+      const finalPoints = Math.max(currentPts, scorePoints);
+      
+      if (currentPts !== finalPoints || scorePoints !== finalPoints) {
+        if (scorePoints !== finalPoints) {
+          setScorePoints(finalPoints);
+        }
+        
+        const nextUser = { ...latestUser, scorePoints: finalPoints, stellarPoints: finalPoints };
         setUser(nextUser);
         saveProfileToDatabase(loggedEmail, nextUser).catch(console.error);
       }
@@ -2018,8 +2142,12 @@ export default function App() {
   useEffect(() => {
     if (user) {
       const userPts = user.stellarPoints !== undefined ? user.stellarPoints : user.scorePoints;
-      if (userPts !== undefined && userPts !== scorePoints) {
-        setScorePoints(userPts);
+      if (userPts !== undefined) {
+        // Ensure points only grow to prevent regression!
+        const finalPts = Math.max(scorePoints, userPts);
+        if (finalPts !== scorePoints) {
+          setScorePoints(finalPts);
+        }
       }
     }
   }, [user?.scorePoints, user?.stellarPoints]);
@@ -2071,8 +2199,8 @@ export default function App() {
             stripeCustomerId: updatedProfile.stripeCustomerId || prev.stripeCustomerId || "",
             stripeSubscriptionId: updatedProfile.stripeSubscriptionId || prev.stripeSubscriptionId || "",
             subscriptionUpdatedAt: updatedProfile.subscriptionUpdatedAt || prev.subscriptionUpdatedAt || "",
-            scorePoints: updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : prev.scorePoints),
-            stellarPoints: updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : prev.stellarPoints)
+            scorePoints: Math.max(prev.scorePoints || 0, updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : 0)),
+            stellarPoints: Math.max(prev.stellarPoints || 0, updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : 0))
           };
         });
       }
@@ -2148,7 +2276,8 @@ export default function App() {
       const currentUser = userRef.current;
       if (updatedCharts && updatedCharts.length > 0) {
         const activeLang = idioma || lang || 'pt';
-        const targetChart = (currentUser?.currentChartId ? updatedCharts.find(c => c.id === currentUser.currentChartId) : null) || 
+        const cleanUserChartId = cleanStringForChartId(currentUser?.currentChartId || "");
+        const targetChart = (cleanUserChartId ? updatedCharts.find(c => cleanStringForChartId(c.id || "") === cleanUserChartId) : null) || 
                             (currentUser?.birthDate ? updatedCharts.find(c => c.birthDate === currentUser.birthDate && (c.lang === activeLang || c.mapData?.lang === activeLang)) : null) ||
                             updatedCharts[0];
         if (targetChart && targetChart.mapData) {
@@ -2222,6 +2351,19 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const stripeSuccess = params.get('stripe_success');
     const sessionId = params.get('session_id');
+    const stripePortalSimulated = params.get('stripe_portal_simulated');
+
+    if (stripePortalSimulated === 'true') {
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+      triggerGlobalNotification(
+        t("Portal Órbita"),
+        currentLang === 'pt' 
+          ? "Você retornou do Portal de Gerenciamento da Stripe com sucesso."
+          : "You have successfully returned from the Stripe Management Portal.",
+        "success"
+      );
+    }
 
     if (stripeSuccess === 'true' && sessionId) {
       setVerifyingStripe(true);
@@ -2304,6 +2446,81 @@ export default function App() {
       return () => clearTimeout(t);
     }
   }, [isLoggedIn, loggedEmail, user]);
+
+  const handleManageSubscription = async () => {
+    if (!isLoggedIn || !firebaseUid) {
+      triggerGlobalNotification(
+        "Acesso Negado",
+        currentLang === 'pt' ? "Por favor, faça login para gerenciar sua assinatura." : "Please log in to manage your subscription.",
+        "error"
+      );
+      return;
+    }
+
+    setIsFetchingSubData(true);
+    setSubPortalError("");
+    setShowSubPortalModal(true);
+
+    try {
+      const remoteSub = await loadPremiumSubscription(firebaseUid);
+      const directPremium = user?.premium;
+      const mergedPremium = remoteSub || directPremium || null;
+      const isUserPremium = user?.isPremium || user?.isSubscribed || mergedPremium?.isPremium || false;
+
+      if (!isUserPremium) {
+        setPortalSubscriptionData(null);
+      } else {
+        const formattedData = {
+          isPremium: true,
+          status: mergedPremium?.status || user?.subscriptionStatus || "active",
+          planType: mergedPremium?.planType || user?.plan || "monthly",
+          currentPeriodEnd: mergedPremium?.currentPeriodEnd || user?.subscriptionEndDate || "",
+          lastPaymentDate: mergedPremium?.lastPaymentDate || mergedPremium?.currentPeriodStart || "",
+          amount: mergedPremium?.amount || (mergedPremium?.planType === 'annual' ? 79.99 : 9.99),
+          currency: mergedPremium?.currency || "eur",
+          customerId: mergedPremium?.customerId || user?.stripeCustomerId || ""
+        };
+        setPortalSubscriptionData(formattedData);
+      }
+    } catch (err: any) {
+      console.error("Error loading subscription data:", err);
+      setSubPortalError(err.message || "Failed to load subscription details.");
+    } finally {
+      setIsFetchingSubData(false);
+    }
+  };
+
+  const triggerOpenStripePortal = async () => {
+    if (!firebaseUid) return;
+    setIsFetchingPortal(true);
+    setSubPortalError("");
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uid: firebaseUid })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create customer portal session");
+      }
+
+      const { url } = await response.json();
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error("No URL returned from backend portal session");
+      }
+    } catch (err: any) {
+      console.error("Error launching Stripe Portal:", err);
+      setSubPortalError(err.message || "Could not launch Stripe Portal. Please try again later.");
+    } finally {
+      setIsFetchingPortal(false);
+    }
+  };
 
   const profileLoadedRef = useRef(false);
   const manualAuthActionRef = useRef(false);
@@ -2758,24 +2975,25 @@ export default function App() {
     const birthTimeClean = cleanStringForChartId(user.birthTime || "12:00");
     const birthCityClean = cleanStringForChartId(user.birthCity || "Sao_Paulo");
     const expectedChartId = user.currentChartId || `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+    const cleanExpectedChartId = cleanStringForChartId(expectedChartId);
 
     let needsRecalculateMap = false;
     let needsRecalculateNum = false;
 
     // 1. Verify Meu Mapa (My Map)
     if (mapData) {
-      const mapChartId = mapData.chartId;
-      if (!mapChartId || mapChartId !== expectedChartId) {
-        console.log(`[Validation Utility] My Map discrepancy detected (Expected: ${expectedChartId}, got: ${mapChartId}). Forcing recalculation using the official astro engine...`);
+      const cleanMapChartId = cleanStringForChartId(mapData.chartId || "");
+      if (!cleanMapChartId || cleanMapChartId !== cleanExpectedChartId) {
+        console.log(`[Validation Utility] My Map discrepancy detected (Expected: ${cleanExpectedChartId}, got: ${cleanMapChartId}). Forcing recalculation using the official astro engine...`);
         needsRecalculateMap = true;
       }
     }
 
     // 2. Verify Numerologia (Numerology)
     if (numerology) {
-      const numChartId = numerology.chartId;
-      if (!numChartId || numChartId !== expectedChartId) {
-        console.log(`[Validation Utility] Numerology discrepancy detected. Forcing recalculation using the official numerology engine...`);
+      const cleanNumChartId = cleanStringForChartId(numerology.chartId || "");
+      if (!cleanNumChartId || cleanNumChartId !== cleanExpectedChartId) {
+        console.log(`[Validation Utility] Numerology discrepancy detected (Expected: ${cleanExpectedChartId}, got: ${cleanNumChartId}). Forcing recalculation using the official numerology engine...`);
         needsRecalculateNum = true;
       }
     }
@@ -2800,7 +3018,7 @@ export default function App() {
 
     // 3. Verify Tarot draw session discrepancy
     const tarotSavedChartId = localStorage.getItem("tarot_saved_chart_id_semanal");
-    if (tarotSavedChartId && tarotSavedChartId !== expectedChartId) {
+    if (tarotSavedChartId && cleanStringForChartId(tarotSavedChartId) !== cleanExpectedChartId) {
       console.log(`[Validation Utility] Tarot discrepancy detected. Clearing outdated Tarot readings to force recalculation.`);
       localStorage.removeItem("tarot_last_draw_semanal");
       localStorage.removeItem("tarot_saved_reading_semanal");
@@ -3332,10 +3550,18 @@ export default function App() {
     };
     const traits = personalityTraitsByLang[activeLang] || personalityTraitsByLang.pt;
 
+    let adjustedTime = time || "12:00";
+    if (is_dst) {
+      const [h, m] = (time || "12:00").split(":").map(Number);
+      let newH = h - 1;
+      if (newH < 0) newH = 23;
+      adjustedTime = `${newH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    }
+
     return {
       welcomeMessage,
       originalTime: time,
-      adjustedTime: time,
+      adjustedTime: adjustedTime,
       timezone: tzName,
       is_dst,
       lang: activeLang,
@@ -3567,11 +3793,15 @@ export default function App() {
     const birthCityCleanInst = cleanStringForChartId(defaultBirthCity);
     const expectedChartIdInst = details.currentChartId || user.currentChartId || `chart_${birthDateCleanInst}_${birthTimeCleanInst}_${birthCityCleanInst}`;
 
-    if (!mapData || mapData.chartId !== expectedChartIdInst) {
+    const cleanCurrentMapId = cleanStringForChartId(mapData?.chartId || "");
+    const cleanCurrentNumId = cleanStringForChartId(numerology?.chartId || "");
+    const cleanExpectedInst = cleanStringForChartId(expectedChartIdInst);
+
+    if (!mapData || cleanCurrentMapId !== cleanExpectedInst) {
       console.log(`[Astro Engine] Setting client-side fallback map for ID: ${expectedChartIdInst}`);
       setMapData({ ...clientMap, chartId: expectedChartIdInst });
     }
-    if (!numerology || numerology.chartId !== expectedChartIdInst) {
+    if (!numerology || cleanCurrentNumId !== cleanExpectedInst) {
       setNumerology({ ...clientNum, chartId: expectedChartIdInst });
     }
     setIsLoadingMain(false);
@@ -3878,7 +4108,8 @@ export default function App() {
     setActiveExtraMapNumerology(null);
     setActiveExtraMapBirthDate('');
     setActiveExtraMapName('');
-    setScorePoints(0);
+    // Keep user's accumulated scorePoints from regressing during profile update!
+    setScorePoints(prev => Math.max(prev, user.scorePoints || 0));
 
     // Reseta abas de navegação para a tela principal
     setAreaSubTab('universo_mostrando');
@@ -6374,7 +6605,11 @@ export default function App() {
                           
                           {/* Profile Photo Icon Layout */}
                           <div className="md:col-span-4 flex flex-col items-center text-center space-y-4 border-r border-slate-850/60 pr-0 md:pr-6 justify-center py-2">
-                            <div className="relative group">
+                            <div 
+                              onClick={() => setIsAvatarModalOpen(true)}
+                              className="relative group cursor-pointer"
+                              title={t("Clique para escolher seu avatar místico")}
+                            >
                               <div className="absolute inset-x-0 -inset-y-0.5 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-500 rounded-full blur-sm opacity-60 group-hover:opacity-100 transition duration-1000 animate-pulse" />
                               <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-amber-400 bg-slate-950 flex items-center justify-center shadow-2xl">
                                 {user.profilePhoto ? (
@@ -7793,7 +8028,7 @@ export default function App() {
                 {/* Header Banner */}
                 <div className="p-6 rounded-3xl bg-linear-to-r from-slate-950 via-slate-905 to-slate-900 border border-slate-850 shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-80 h-80 bg-slate-500/5 rounded-full blur-3xl pointer-events-none" />
-                  <div className="relative flex justify-between items-center">
+                  <div className="relative flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                     <div>
                       <span className="px-3 py-1 rounded-full text-[10px] uppercase font-mono font-semibold tracking-wider text-slate-500 bg-slate-800/20 border border-slate-800">
                         {tLocal('control_panel')}
@@ -7801,11 +8036,20 @@ export default function App() {
                       <h1 className="text-2xl font-sans font-bold tracking-tight text-slate-100 mt-2">
                         {tLocal('general_settings')}
                       </h1>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-slate-500 mt-1 mb-4">
                         {tLocal('settings_desc')}
                       </p>
+                      
+                      <button
+                        id="manage-subscription-btn"
+                        onClick={handleManageSubscription}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-amber-500 to-[#E5C158] text-slate-950 hover:brightness-110 active:scale-95 transition shadow-lg shadow-amber-500/10 cursor-pointer"
+                      >
+                        <span>✨</span>
+                        {tLocal('manage_subscription_btn')}
+                      </button>
                     </div>
-                    <span className="text-3xl text-[#E5C158] shrink-0">⚙️</span>
+                    <span className="text-3xl text-[#E5C158] shrink-0 self-end sm:self-center">⚙️</span>
                   </div>
                 </div>
 
@@ -8054,6 +8298,148 @@ export default function App() {
                   </React.Suspense>
                 )}
 
+                {/* Stripe Subscription Portal Modal */}
+                {showSubPortalModal && (
+                  <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full relative space-y-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] animate-in fade-in zoom-in-95 duration-200">
+                      
+                      {/* Close top right button */}
+                      <button 
+                        onClick={() => setShowSubPortalModal(false)}
+                        className="absolute top-4 right-4 text-slate-500 hover:text-slate-350 transition cursor-pointer"
+                        aria-label="Close"
+                      >
+                        ✕
+                      </button>
+
+                      {/* Header */}
+                      <div className="text-center space-y-1">
+                        <div className="w-12 h-12 bg-linear-to-b from-amber-400 to-amber-600 text-slate-950 rounded-full flex items-center justify-center mx-auto text-xl font-bold shadow-lg shadow-amber-500/10">
+                          ✨
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-100 font-sans mt-3">
+                          {tLocal('subscription_details')}
+                        </h3>
+                      </div>
+
+                      {/* Content */}
+                      {isFetchingSubData ? (
+                        <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                          <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+                          <p className="text-xs text-slate-400 font-mono">{tLocal('loading')}</p>
+                        </div>
+                      ) : subPortalError ? (
+                        <div className="space-y-4 text-center py-4">
+                          <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-500/20 text-xs text-rose-400 font-sans">
+                            {tLocal('error_loading')}: {subPortalError}
+                          </div>
+                          <button
+                            onClick={handleManageSubscription}
+                            className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 transition cursor-pointer"
+                          >
+                            Tentar Novamente
+                          </button>
+                        </div>
+                      ) : !portalSubscriptionData ? (
+                        /* UNSUBSCRIBED VIEW */
+                        <div className="space-y-5 text-center">
+                          <p className="text-xs text-slate-400 leading-relaxed font-sans px-2">
+                            {tLocal('no_subscription_desc')}
+                          </p>
+                          <div className="flex flex-col gap-2.5 pt-2">
+                            <button
+                              onClick={() => {
+                                setShowSubPortalModal(false);
+                                setShowPremiumModal(true);
+                              }}
+                              className="w-full py-3 bg-gradient-to-r from-amber-500 to-[#E5C158] text-slate-950 font-bold rounded-2xl text-xs uppercase tracking-wider hover:brightness-110 active:scale-98 transition shadow-lg shadow-amber-500/10 cursor-pointer"
+                            >
+                              {currentLang === 'pt' ? 'Assinar Portal Premium' : 'Subscribe to Premium'}
+                            </button>
+                            <button
+                              onClick={() => setShowSubPortalModal(false)}
+                              className="w-full py-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-750 text-slate-300 font-bold rounded-2xl text-xs uppercase tracking-wider transition active:scale-98 cursor-pointer"
+                            >
+                              {tLocal('close_btn')}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* SUBSCRIBED VIEW */
+                        <div className="space-y-5">
+                          <div className="bg-slate-950/50 rounded-2xl p-4 border border-slate-850/50 space-y-3">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400 font-sans">{tLocal('sub_plan')}</span>
+                              <span className="font-semibold text-slate-200 font-sans">
+                                Portal Premium ({portalSubscriptionData.planType === 'annual' ? 'Anual' : 'Mensal'})
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400 font-sans">{tLocal('sub_status')}</span>
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-semibold font-mono tracking-wider text-emerald-400 bg-emerald-950/30 border border-emerald-500/20">
+                                {portalSubscriptionData.status === 'active' ? 'Ativa' : portalSubscriptionData.status}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400 font-sans">{tLocal('sub_price')}</span>
+                              <span className="font-semibold text-slate-200 font-mono">
+                                {portalSubscriptionData.currency === 'brl' ? 'R$' : portalSubscriptionData.currency === 'eur' ? '€' : '$'} {(portalSubscriptionData.amount).toFixed(2)} / {portalSubscriptionData.planType === 'annual' ? 'ano' : 'mês'}
+                              </span>
+                            </div>
+
+                            {portalSubscriptionData.currentPeriodEnd && (
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-400 font-sans">{tLocal('sub_next_billing')}</span>
+                                <span className="font-semibold text-slate-200 font-sans">
+                                  {new Date(portalSubscriptionData.currentPeriodEnd).toLocaleDateString(
+                                    currentLang === 'pt' ? 'pt-BR' : currentLang === 'es' ? 'es-ES' : 'en-US',
+                                    { day: '2-digit', month: 'long', year: 'numeric' }
+                                  )}
+                                </span>
+                              </div>
+                            )}
+
+                            {portalSubscriptionData.lastPaymentDate && (
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-400 font-sans">{tLocal('sub_last_payment')}</span>
+                                <span className="font-semibold text-slate-200 font-sans text-right">
+                                  {new Date(portalSubscriptionData.lastPaymentDate).toLocaleDateString(
+                                    currentLang === 'pt' ? 'pt-BR' : currentLang === 'es' ? 'es-ES' : 'en-US',
+                                    { day: '2-digit', month: 'long', year: 'numeric' }
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col gap-2 pt-2">
+                            <button
+                              onClick={triggerOpenStripePortal}
+                              disabled={isFetchingPortal}
+                              className="w-full py-3 bg-gradient-to-r from-amber-500 to-[#E5C158] text-slate-950 font-bold rounded-2xl text-xs uppercase tracking-wider hover:brightness-110 disabled:opacity-50 disabled:pointer-events-none active:scale-98 transition shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              {isFetchingPortal ? (
+                                <div className="w-4 h-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+                              ) : (
+                                <span>💳</span>
+                              )}
+                              <span>{tLocal('open_stripe_portal')}</span>
+                            </button>
+                            <button
+                              onClick={() => setShowSubPortalModal(false)}
+                              className="w-full py-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-750 text-slate-300 font-bold rounded-2xl text-xs uppercase tracking-wider transition active:scale-98 cursor-pointer"
+                            >
+                              {tLocal('close_btn')}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Substantially realistic Account Deletion confirmation prompt */}
                 {showDeleteConfirm && (
                   <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -8124,7 +8510,7 @@ export default function App() {
                                         key={av.id}
                                         type="button"
                                         onClick={async () => {
-                                          const nextUser = { ...user, profilePhoto: av.id };
+                                          const nextUser = { ...user, profilePhoto: av.id, avatarId: av.id };
                                           setUser(nextUser);
                                           if (isLoggedIn && loggedEmail) {
                                             try {

@@ -1211,12 +1211,20 @@ function generateMapData(
   // Calculate high-precision astronomical chart using local Swiss Ephemeris offline library
   const chart = performPreciseServerCalculation(dDate, dTime, coords.latitude, coords.longitude, timezoneOffset, lang);
   
+  let displayAdjustedTime = time || "12:00";
+  if (isDst) {
+    const [h, m] = (time || "12:00").split(":").map(Number);
+    let newH = h - 1;
+    if (newH < 0) newH = 23;
+    displayAdjustedTime = `${newH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  }
+
   const finalMap = {
     welcomeMessage: `Olás ${name}, seja bem-vindo ao seu Mapa Astral. Aqui começa a sua jornada astrológica profissional baseada em efemérides reais de altíssima precisão!`,
     is_dst: isDst || false,
     timezone: coords.timezone,
     originalTime: time || "12:00",
-    adjustedTime: dTime,
+    adjustedTime: displayAdjustedTime,
     distribution: chart.distribution,
     personalityTraits: {
       harmonious: [
@@ -2339,10 +2347,15 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     };
     const targetLangName = langNames[lang] || langNames.pt;
 
+    // Create a copy of compResult without categories for Gemini input to save massive amounts of tokens
+    // and keep Gemini focused on rewriting the main evaluation fields.
+    const compResultForGemini = { ...compResult };
+    delete (compResultForGemini as any).categories;
+
     const prompt = `You are an elite astrologer. The user ${name} performed a chart crossover (synastry) in the category of "${category || 'love'}" with ${companionName}.
 Below are the actual calculated data of positions, elements, planets, and dozens of structured metrics we deterministically generated based on actual ephemerides:
 
-${JSON.stringify(compResult, null, 2)}
+${JSON.stringify(compResultForGemini, null, 2)}
 
 Your sole task is to return an IDENTICAL JSON object in structure. Fill all descriptive text fields, array lists, titles, and explanations with even longer, majestic, profound, poetic analyses in the authentic tone of premium astrology.
 CRITICAL REQUIREMENT: All generated descriptive text fields, descriptions, items, and string arrays MUST be written 100% in the language: ${targetLangName}.
@@ -2401,10 +2414,6 @@ Return ONLY the raw literal JSON without any markdown code blocks or secondary t
     if (parsedData.diasFavoraveis) compResult.diasFavoraveis = parsedData.diasFavoraveis;
     if (parsedData.diasAtencao) compResult.diasAtencao = parsedData.diasAtencao;
     if (parsedData.oportunidades) compResult.oportunidades = parsedData.oportunidades;
-    
-    if (parsedData.categories && typeof parsedData.categories === 'object') {
-      compResult.categories = parsedData.categories;
-    }
 
     setCachedResponse(cacheKey, compResult);
     res.json({ compatibility: compResult });
@@ -7461,6 +7470,115 @@ async function logBillingEvent(email: string, eventType: string, planId: string,
   }
 }
 
+async function syncStripeSubscriptionToFirestore(stripeCustomerId: string, subscriptionId: string | null, email?: string | null, forceStatus?: string) {
+  const db = getBackendDb();
+  if (!db) {
+    console.error("[Sync Stripe] Database not initialized");
+    return;
+  }
+
+  try {
+    const stripe = getStripeClient();
+    let sub: any = null;
+    if (stripe && subscriptionId) {
+      try {
+        sub = await stripe.subscriptions.retrieve(subscriptionId);
+      } catch (err) {
+        console.warn(`[Sync Stripe] Could not retrieve subscription ${subscriptionId}:`, err);
+      }
+    }
+
+    const isPremium = forceStatus ? (forceStatus === 'active' || forceStatus === 'trialing') : (sub ? (sub.status === 'active' || sub.status === 'trialing') : false);
+    const priceId = sub?.items?.data?.[0]?.price?.id || "";
+    const isAnnual = priceId === 'price_1Tu3HmLy2FLlsgZ1jlfKwPQT' || priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' || sub?.metadata?.planId === 'annual';
+    const planType = isAnnual ? 'annual' : 'monthly';
+    const status = forceStatus || sub?.status || (isPremium ? "active" : "inactive");
+    
+    const currentPeriodStart = sub?.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : "";
+    const currentPeriodEnd = sub?.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : "";
+    const cancelAtPeriodEnd = sub ? !!sub.cancel_at_period_end : false;
+    const nextBillingDate = currentPeriodEnd;
+    const lastPaymentDate = sub?.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : new Date().toISOString();
+    const currency = sub?.items?.data?.[0]?.price?.currency || sub?.currency || "eur";
+    const amount = sub?.items?.data?.[0]?.price?.unit_amount ? sub.items.data[0].price.unit_amount / 100 : (isAnnual ? 79.99 : 9.99);
+
+    const premiumData = {
+      isPremium,
+      customerId: stripeCustomerId || "",
+      subscriptionId: subscriptionId || "",
+      priceId,
+      planType,
+      status,
+      currentPeriodStart,
+      currentPeriodEnd,
+      cancelAtPeriodEnd,
+      nextBillingDate,
+      lastPaymentDate,
+      currency,
+      amount,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Find users to update
+    const usersRef = collection(db, "users");
+    let userDocs: any[] = [];
+
+    if (stripeCustomerId) {
+      const q = query(usersRef, where("stripeCustomerId", "==", stripeCustomerId));
+      const snap = await getDocs(q);
+      userDocs = snap.docs;
+    }
+
+    if (userDocs.length === 0 && email) {
+      const q = query(usersRef, where("email", "==", email.toLowerCase().trim()));
+      const snap = await getDocs(q);
+      userDocs = snap.docs;
+    }
+
+    // Fallback search by sub.metadata.uid if available
+    if (userDocs.length === 0 && sub?.metadata?.uid) {
+      const docRef = doc(db, "users", sub.metadata.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        userDocs = [{ id: sub.metadata.uid, data: () => docSnap.data() }];
+      }
+    }
+
+    const updateDataMainDoc = {
+      isPremium,
+      isSubscribed: isPremium,
+      plan: isPremium ? planType : 'none',
+      planId: isPremium ? planType : 'none',
+      subscriptionId: subscriptionId || "",
+      subscriptionEndDate: currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      subscriptionStatus: status,
+      stripeCustomerId: stripeCustomerId || "",
+      stripeSubscriptionId: subscriptionId || "",
+      subscriptionUpdatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      premium: premiumData // Map/Object fields nested inside the user doc
+    };
+
+    if (userDocs.length > 0) {
+      for (const uDoc of userDocs) {
+        const uid = uDoc.id;
+        // Update main document
+        await setDoc(doc(db, "users", uid), updateDataMainDoc, { merge: true });
+        
+        // Update users/{uid}/premium subcollection document (e.g. status/subscription)
+        await setDoc(doc(db, "users", uid, "premium", "status"), premiumData, { merge: true });
+        await setDoc(doc(db, "users", uid, "premium", "subscription"), premiumData, { merge: true });
+        
+        console.log(`[Sync Stripe] Synced user ${uid} to Firestore.`);
+      }
+    } else {
+      console.warn(`[Sync Stripe] No user document found for Customer: ${stripeCustomerId}, Email: ${email}`);
+    }
+  } catch (err) {
+    console.error("[Sync Stripe] Error during synchronization:", err);
+  }
+}
+
 app.post("/api/stripe/webhook", async (req: any, res) => {
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -7495,79 +7613,19 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
     switch (eventType) {
       case 'checkout.session.completed': {
         const session = event.data.object;
+        const stripeCustomerId = typeof session.customer === 'string' ? session.customer : "";
+        const subscriptionId = typeof session.subscription === 'string' ? session.subscription : null;
         let email = session.metadata?.email || (session.customer_details && session.customer_details.email) || session.customer_email;
         const uid = session.metadata?.uid;
-        const planId = session.metadata?.planId || "monthly";
-        const subscriptionId = session.subscription || "";
-        const stripeCustomerId = typeof session.customer === 'string' ? session.customer : "";
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook completed] Error fetching customer email:", e);
-          }
+
+        // Associate uid with stripeCustomerId in Firestore immediately if possible
+        if (uid && stripeCustomerId) {
+          await setDoc(doc(db, "users", uid), { stripeCustomerId }, { merge: true });
         }
 
-        let subscriptionEndDate = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString();
-        let trialStart = "";
-        let trialEnds = "";
-        let status = "active";
-
-        if (subscriptionId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const sub = await stripe.subscriptions.retrieve(subscriptionId);
-              subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
-              status = (sub.status === "trialing" || sub.status === "active") ? "active" : sub.status;
-              if (sub.trial_start) trialStart = new Date(sub.trial_start * 1000).toISOString();
-              if (sub.trial_end) trialEnds = new Date(sub.trial_end * 1000).toISOString();
-            }
-          } catch (subErr) {
-            console.error("Error retrieving subscription detail:", subErr);
-          }
-        }
-
-        const updateData = {
-          isPremium: status === "active",
-          isSubscribed: status === "active",
-          planId: planId,
-          subscriptionId: subscriptionId,
-          subscriptionEndDate,
-          plan: planId,
-          subscriptionStatus: status,
-          stripeCustomerId,
-          stripeSubscriptionId: subscriptionId,
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          trialStart,
-          trialEnds
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Real-time premium sync success for uid users/${uid}`);
-        }
-
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email);
         if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Real-time email sync success for users/${d.id}`);
-            }
-          }
-          await logBillingEvent(email, "ACTIVATION", planId, { session_id: session.id, subscriptionId });
+          await logBillingEvent(email, "ACTIVATION", session.metadata?.planId || "monthly", { session_id: session.id, subscriptionId });
         }
         break;
       }
@@ -7575,267 +7633,46 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const sub = event.data.object;
-        const subscriptionId = sub.id;
         const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
-        
-        let email = sub.metadata?.email;
-        let uid = sub.metadata?.uid;
-        
-        const priceId = sub.items?.data?.[0]?.price?.id || "";
-        const planId = sub.metadata?.planId || ((priceId === 'price_1Tu3HmLy2FLlsgZ1jlfKwPQT' || priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB') ? 'annual' : 'monthly');
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook updated] Error fetching customer email:", e);
-          }
-        }
-
-        const status = (sub.status === 'active' || sub.status === 'trialing') ? 'active' : sub.status;
-        const subscriptionEndDate = new Date(sub.current_period_end * 1000).toISOString();
-        const trialStart = sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : "";
-        const trialEnds = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : "";
-
-        const updateData = {
-          isPremium: status === 'active',
-          isSubscribed: status === 'active',
-          planId: planId,
-          subscriptionId: subscriptionId,
-          subscriptionEndDate,
-          subscriptionStatus: status,
-          plan: status === 'active' ? planId : 'none',
-          stripeCustomerId: stripeCustomerId,
-          stripeSubscriptionId: subscriptionId,
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          trialStart,
-          trialEnds
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Direct sync for uid users/${uid} on event ${eventType}`);
-        }
-
-        if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Email sync for users/${d.id} on event ${eventType}`);
-            }
-          }
-          await logBillingEvent(email, `SUBSCRIPTION_${eventType.replace('customer.subscription.', '').toUpperCase()}`, planId, { subscriptionId, status });
-        }
+        const subscriptionId = sub.id;
+        const email = sub.metadata?.email;
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email);
         break;
       }
 
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
-        const subscriptionId = sub.id;
-        let email = sub.metadata?.email || (sub.customer_details && sub.customer_details.email);
-        const uid = sub.metadata?.uid;
         const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook deleted] Error fetching customer email:", e);
-          }
-        }
-
-        const updateData = {
-          isPremium: false,
-          isSubscribed: false,
-          plan: "none",
-          subscriptionStatus: "cancelled",
-          stripeCustomerId: stripeCustomerId,
-          stripeSubscriptionId: "",
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Cancellation direct sync for users/${uid}`);
-        }
-
-        if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Cancellation email sync for users/${d.id}`);
-            }
-          }
-          await logBillingEvent(email, "CANCELLATION", "none", { subscriptionId });
-        }
+        const subscriptionId = sub.id;
+        const email = sub.metadata?.email;
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email, 'canceled');
         break;
       }
 
+      case 'invoice.paid':
       case 'invoice.payment_succeeded': {
-        const _invoice = event.data.object;
-        const subscriptionId = _invoice.subscription;
-        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
-        let uid = _invoice.metadata?.uid;
-        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook payment_succeeded] Error fetching customer email:", e);
-          }
-        }
-
-        let subscriptionEndDate = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString();
-        let planId = "monthly";
-        let trialStart = "";
-        let trialEnds = "";
-
-        if (subscriptionId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const sub = await stripe!.subscriptions.retrieve(subscriptionId);
-              subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
-              const priceId = sub.items?.data?.[0]?.price?.id || "";
-              planId = sub.metadata?.planId || ((priceId === 'price_1Tu3HmLy2FLlsgZ1jlfKwPQT' || priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB') ? 'annual' : 'monthly');
-              if (!uid) uid = sub.metadata?.uid;
-              if (!email) email = sub.metadata?.email;
-              if (sub.trial_start) trialStart = new Date(sub.trial_start * 1000).toISOString();
-              if (sub.trial_end) trialEnds = new Date(sub.trial_end * 1000).toISOString();
-            }
-          } catch (subErr) {
-            console.error("[Webhook payment_succeeded] Sub retrieve failed:", subErr);
-          }
-        }
-
-        const updateData = {
-          isPremium: true,
-          isSubscribed: true,
-          planId: planId,
-          subscriptionId: subscriptionId || "",
-          subscriptionEndDate,
-          plan: planId,
-          subscriptionStatus: "active",
-          stripeCustomerId: stripeCustomerId,
-          stripeSubscriptionId: subscriptionId || "",
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          trialStart,
-          trialEnds
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Payment Succeeded direct sync for users/${uid}`);
-        }
-
-        if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Payment Succeeded email sync for users/${d.id}`);
-            }
-          }
-          await logBillingEvent(email, "RENEWAL_SUCCESS", planId, { invoice_id: _invoice.id, subscriptionId });
-        }
+        const invoice = event.data.object;
+        const stripeCustomerId = typeof invoice.customer === 'string' ? invoice.customer : "";
+        const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : null;
+        const email = invoice.customer_email || (invoice.customer_details && invoice.customer_details.email);
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email);
         break;
       }
 
       case 'invoice.payment_failed': {
-        const _invoice = event.data.object;
-        const subscriptionId = _invoice.subscription;
-        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
-        let uid = _invoice.metadata?.uid;
-        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook payment_failed] Error fetching customer email:", e);
-          }
-        }
+        const invoice = event.data.object;
+        const stripeCustomerId = typeof invoice.customer === 'string' ? invoice.customer : "";
+        const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : null;
+        const email = invoice.customer_email || (invoice.customer_details && invoice.customer_details.email);
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email, 'unpaid');
+        break;
+      }
 
-        if (subscriptionId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const sub = await stripe.subscriptions.retrieve(subscriptionId);
-              if (!uid) uid = sub.metadata?.uid;
-              if (!email) email = sub.metadata?.email;
-            }
-          } catch (e) {
-            console.error("[Webhook payment_failed] Sub retrieval failed:", e);
-          }
-        }
-
-        const updateData = {
-          isPremium: false,
-          isSubscribed: false,
-          subscriptionStatus: "unpaid",
-          stripeCustomerId: stripeCustomerId,
-          stripeSubscriptionId: subscriptionId || "",
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Payment Failed direct sync for users/${uid}`);
-        }
-
-        if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Payment Failed email sync for users/${d.id}`);
-            }
-          }
-          await logBillingEvent(email, "PAYMENT_FAILED", "none", { subscriptionId, invoice_id: _invoice.id });
-        }
+      case 'customer.updated': {
+        const customer = event.data.object;
+        const stripeCustomerId = customer.id;
+        const email = customer.email;
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, null, email);
         break;
       }
 
@@ -8128,6 +7965,96 @@ app.get("/api/stripe/verify-session", async (req, res) => {
   } catch (err: any) {
     console.error("[Stripe] Erro ao verificar checkout session:", err);
     return res.status(500).json({ error: err.message || (req as any).t('api.stripe.validation_error') });
+  }
+});
+
+app.post("/api/stripe/create-portal-session", async (req, res) => {
+  try {
+    const { uid } = req.body;
+    if (!uid) {
+      return res.status(400).json({ error: "User UID is required" });
+    }
+
+    const requestOrigin = req.get('origin') || req.get('referer');
+    let origin = 'https://portalorbit.vercel.app';
+    if (requestOrigin) {
+      try {
+        const parsedUrl = new URL(requestOrigin);
+        const host = parsedUrl.host;
+        if (host.includes('localhost') || host.includes('127.0.0.1') || host.includes('run.app') || host.includes('vercel.app')) {
+          origin = `${parsedUrl.protocol}//${host}`;
+        }
+      } catch {}
+    }
+
+    const db = getBackendDb();
+    if (!db) {
+      return res.status(500).json({ error: "Database not available" });
+    }
+
+    const userDocRef = doc(db, "users", uid);
+    const userDocSnap = await getDoc(userDocRef);
+    if (!userDocSnap.exists()) {
+      return res.status(404).json({ error: "User profile not found in database" });
+    }
+
+    const userData = userDocSnap.data();
+    let stripeCustomerId = userData?.stripeCustomerId || userData?.premium?.customerId;
+
+    const stripe = getStripeClient();
+
+    // Check if Stripe key is missing or is placeholder: Run beautiful simulator link
+    if (!stripe) {
+      console.log(`[Stripe Portal Simulator] Ativando portal simulado para uid ${uid}`);
+      const simulatedUrl = `${origin}?stripe_portal_simulated=true&uid=${uid}`;
+      return res.json({
+        url: simulatedUrl,
+        simulated: true,
+        message: "Portal simulator active"
+      });
+    }
+
+    // Try finding or creating customer on Stripe if missing but email is present
+    if (!stripeCustomerId && userData?.email) {
+      try {
+        const customers = await stripe.customers.list({ email: userData.email.toLowerCase().trim(), limit: 1 });
+        if (customers.data.length > 0) {
+          stripeCustomerId = customers.data[0].id;
+          await setDoc(userDocRef, { stripeCustomerId }, { merge: true });
+        } else {
+          const customer = await stripe.customers.create({
+            email: userData.email.toLowerCase().trim(),
+            metadata: {
+              app: "Orbita",
+              uid: uid
+            }
+          });
+          stripeCustomerId = customer.id;
+          await setDoc(userDocRef, { stripeCustomerId }, { merge: true });
+        }
+      } catch (cusErr) {
+        console.warn("[Stripe Portal] Failed to lookup/create customer:", cusErr);
+      }
+    }
+
+    if (!stripeCustomerId) {
+      return res.status(400).json({ error: "Stripe Customer ID is missing. Please subscribe first." });
+    }
+
+    // Create Stripe Customer Portal Session
+    const session = await stripe.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: `${origin}`,
+    });
+
+    return res.json({
+      url: session.url,
+      simulated: false
+    });
+
+  } catch (err: any) {
+    console.error("[Stripe Portal Session Error]:", err);
+    return res.status(500).json({ error: err.message || "Failed to create customer portal session" });
   }
 });
 

@@ -352,6 +352,10 @@
       "schema": "Mission",
       "description": "Tracks daily synchronized interactive challenges completed or ongoing."
     },
+    "/users/{userId}/pointsTracker/{trackerId}": {
+      "schema": "User",
+      "description": "Sub-collection of points tracker records to keep user's points persistent and authenticated, preventing regression."
+    },
     "/users/{userId}/tarotReadings/{readingId}": {
       "schema": "TarotReading",
       "description": "History of tarot cards drawn and divine explanations."

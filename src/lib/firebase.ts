@@ -374,6 +374,22 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
       });
       await setDoc(userRef, sanitizeFirestoreData(enrichedProfile), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc SUCCESS for path: ${path}`);
+
+      // Also save to the pointsTracker subcollection as a dedicated record for auditing and durability
+      const trackerPath = `users/${docKey}/pointsTracker/current`;
+      try {
+        const trackerRef = doc(db, "users", docKey, "pointsTracker", "current");
+        await setDoc(trackerRef, {
+          scorePoints: pointsVal,
+          stellarPoints: pointsVal,
+          updatedAt: new Date().toISOString(),
+          email: mailKey,
+          uid: activeUid || ""
+        }, { merge: true });
+        console.log(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] pointsTracker setDoc SUCCESS for path: ${trackerPath}`);
+      } catch (trackerErr: any) {
+        console.warn(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] pointsTracker setDoc warning for path: ${trackerPath}`, trackerErr);
+      }
     } catch (e: any) {
       console.error(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc FAILED for path: ${path}`, {
         error: e?.message || String(e),
@@ -537,40 +553,78 @@ export async function loadProfileFromDatabase(email: string, explicitUid?: strin
   return null;
 }
 
-// Intelligent caching system for astronomical & numerological calculations
-export async function saveCalculationCache(email: string, cacheId: string, data: any): Promise<void> {
-  const mailKey = email.toLowerCase().trim();
-  if (!mailKey || !cacheId) return;
-
-  // Sync to local storage for local offline redundancy/speed
-  const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
-  localStorage.setItem(storageKey, JSON.stringify({
-    data,
-    updatedAt: new Date().toISOString()
-  }));
-
+export async function loadPremiumSubscription(uid: string): Promise<any | null> {
   const db = getFirestoreDB();
-  if (db) {
-    const docKey = getUserDocKey(email);
-    const path = `users/${docKey}/cache/${cacheId}`;
-    try {
-      const cacheRef = doc(db, "users", docKey, "cache", cacheId);
-      await setDoc(cacheRef, {
-        id: cacheId,
-        userId: docKey,
-        data,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-      console.log(`[Cache] Cálculo '${cacheId}' gravado com sucesso no Firestore. [Chave: ${docKey}]`);
-    } catch (e) {
-      console.warn(`[Cache] Erro ao gravar '${cacheId}' no Firestore. Usando redundância local.`);
-      handleFirestoreError(e, OperationType.WRITE, path);
+  if (!db || !uid) return null;
+  try {
+    const subRef = doc(db, "users", uid, "premium", "status");
+    const snap = await getDocWithTimeout(subRef);
+    if (snap.exists()) {
+      return snap.data();
     }
+    const subRefAlt = doc(db, "users", uid, "premium", "subscription");
+    const snapAlt = await getDocWithTimeout(subRefAlt);
+    if (snapAlt.exists()) {
+      return snapAlt.data();
+    }
+  } catch (err) {
+    console.warn("[Firebase Client] Error loading premium sub document:", err);
   }
+  return null;
 }
 
-// Automatic Cache Expiration Check Helper
-function isCacheExpired(cacheId: string, updatedAtStr: string): boolean {
+// Helper to calculate exact cache expiration times
+export function getCacheExpiration(cacheId: string): string {
+  const now = new Date();
+  
+  // Daily contents
+  if (
+    cacheId.includes('daily') || 
+    cacheId.includes('day') || 
+    cacheId.includes('moontip') || 
+    cacheId.includes('mission') || 
+    cacheId.includes('dashboard') ||
+    cacheId.match(/\d{4}-\d{2}-\d{2}/)
+  ) {
+    // Expires at midnight tonight (23:59:59.999) in local user system time
+    const expires = new Date();
+    expires.setHours(23, 59, 59, 999);
+    return expires.toISOString();
+  }
+  
+  // Weekly contents
+  if (cacheId.includes('weekly') || cacheId.includes('week')) {
+    // Expires at the end of the current week (Sunday 23:59:59.999)
+    const expires = new Date();
+    const day = expires.getDay();
+    const distanceToSunday = 7 - (day === 0 ? 7 : day);
+    expires.setDate(expires.getDate() + distanceToSunday);
+    expires.setHours(23, 59, 59, 999);
+    return expires.toISOString();
+  }
+  
+  // Monthly contents
+  if (cacheId.includes('monthly') || cacheId.includes('month') || cacheId.includes('prosperity')) {
+    // Expires at the end of the current month
+    const expires = new Date();
+    const lastDay = new Date(expires.getFullYear(), expires.getMonth() + 1, 0);
+    lastDay.setHours(23, 59, 59, 999);
+    return lastDay.toISOString();
+  }
+  
+  // Permanent / Other data: default 1 year (365 days)
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 365);
+  return expires.toISOString();
+}
+
+// Automatic Cache Expiration Check Helper (supports expiresAt metadata)
+export function isCacheExpired(cacheId: string, updatedAtStr: string, expiresAtStr?: string): boolean {
+  if (expiresAtStr) {
+    try {
+      return new Date() > new Date(expiresAtStr);
+    } catch {}
+  }
   if (!updatedAtStr) return true;
   try {
     const updatedAt = new Date(updatedAtStr);
@@ -583,7 +637,7 @@ function isCacheExpired(cacheId: string, updatedAtStr: string): boolean {
       cacheId.includes('moontip') || 
       cacheId.includes('mission') || 
       cacheId.includes('dashboard') ||
-      cacheId.match(/\d{4}-\d{2}-\d{2}/) // Any key containing a date string like YYYY-MM-DD
+      cacheId.match(/\d{4}-\d{2}-\d{2}/)
     ) {
       return updatedAt.getDate() !== now.getDate() ||
              updatedAt.getMonth() !== now.getMonth() ||
@@ -613,61 +667,177 @@ function isCacheExpired(cacheId: string, updatedAtStr: string): boolean {
   return false;
 }
 
+// Intelligent caching system for astronomical & numerological calculations
+export async function saveCalculationCache(email: string, cacheId: string, data: any): Promise<void> {
+  const mailKey = email.toLowerCase().trim();
+  if (!mailKey || !cacheId) return;
+
+  const docKey = getUserDocKey(email);
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const expiryIso = getCacheExpiration(cacheId);
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Build the complete rich cache metadata object
+  const cachePayload = {
+    id: cacheId,
+    userId: docKey,
+    module: cacheId.split('_')[0] || "general",
+    generatedAt: nowIso,
+    expiresAt: expiryIso,
+    schemaVersion: "1.0.0",
+    lastUpdate: nowIso,
+    contentVersion: "1.0.0",
+    timezone: tz,
+    data: data,
+    updatedAt: nowIso
+  };
+
+  // Sync to local storage for local offline redundancy/speed
+  const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
+  localStorage.setItem(storageKey, JSON.stringify(cachePayload));
+
+  // Sync to Firestore
+  const db = getFirestoreDB();
+  if (db) {
+    const path = `users/${docKey}/cache/${cacheId}`;
+    try {
+      const cacheRef = doc(db, "users", docKey, "cache", cacheId);
+      await setDoc(cacheRef, cachePayload, { merge: true });
+      console.log(`[Cache] Cálculo '${cacheId}' gravado com sucesso no Firestore. [Chave: ${docKey}]`);
+    } catch (e) {
+      console.warn(`[Cache] Erro ao gravar '${cacheId}' no Firestore. Usando redundância local.`);
+      handleFirestoreError(e, OperationType.WRITE, path);
+    }
+  }
+}
+
 export async function loadCalculationCache(email: string, cacheId: string): Promise<any | null> {
   const mailKey = email.toLowerCase().trim();
   if (!mailKey || !cacheId) return null;
 
+  const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
+  const savedLocal = localStorage.getItem(storageKey);
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const expiryIso = getCacheExpiration(cacheId);
+
+  let localPayload: any = null;
+  if (savedLocal) {
+    try {
+      localPayload = JSON.parse(savedLocal);
+    } catch {}
+  }
+
+  const isLocalValid = localPayload && localPayload.expiresAt && !isCacheExpired(cacheId, localPayload.updatedAt || localPayload.lastUpdate, localPayload.expiresAt);
+
+  // 1. If local cache is valid, return IMMEDIATELY (0ms block!) and synchronize silently in the background
+  if (isLocalValid) {
+    console.log(`[Cache] Returning instant local cache for '${cacheId}'`);
+
+    const db = getFirestoreDB();
+    if (db) {
+      setTimeout(async () => {
+        try {
+          const docKey = getUserDocKey(email);
+          const cacheRef = doc(db, "users", docKey, "cache", cacheId);
+          const snap = await getDoc(cacheRef);
+          if (snap.exists()) {
+            const docData = snap.data();
+            if (docData && docData.data) {
+              const firestoreExpiresAt = docData.expiresAt;
+              const isFirestoreExpired = isCacheExpired(cacheId, docData.updatedAt || docData.lastUpdate, firestoreExpiresAt);
+              
+              if (!isFirestoreExpired) {
+                const firestoreDataStr = JSON.stringify(docData.data);
+                const localDataStr = JSON.stringify(localPayload.data);
+                
+                if (firestoreDataStr !== localDataStr) {
+                  console.log(`[Cache Silent Sync] Firestore cache updated/differs for '${cacheId}'. Updating locally...`);
+                  const updatedPayload = {
+                    ...localPayload,
+                    ...docData,
+                    updatedAt: docData.updatedAt || nowIso
+                  };
+                  localStorage.setItem(storageKey, JSON.stringify(updatedPayload));
+                  
+                  // Notify UI components dynamically
+                  window.dispatchEvent(new CustomEvent(`orbi_cache_updated_${cacheId}`, {
+                    detail: { cacheId, data: docData.data }
+                  }));
+                }
+              }
+            }
+          } else {
+            // Firestore missing but local is valid -> write back to Firestore silently
+            console.log(`[Cache Silent Sync] Firestore missing valid cache for '${cacheId}'. Syncing local to server...`);
+            const docKey = getUserDocKey(email);
+            const cacheRef = doc(db, "users", docKey, "cache", cacheId);
+            await setDoc(cacheRef, {
+              ...localPayload,
+              userId: docKey
+            }, { merge: true });
+          }
+        } catch (err) {
+          console.warn(`[Cache Silent Sync] Background sync failed for '${cacheId}':`, err);
+        }
+      }, 500);
+    }
+
+    return localPayload.data;
+  }
+
+  // 2. If local cache is missing or expired, fetch from Firestore synchronously (with timeout)
   const db = getFirestoreDB();
   if (db) {
     const docKey = getUserDocKey(email);
     const path = `users/${docKey}/cache/${cacheId}`;
     try {
       const cacheRef = doc(db, "users", docKey, "cache", cacheId);
-      const snap = await getDocWithTimeout(cacheRef);
+      const snap = await getDocWithTimeout(cacheRef, 3000);
       if (snap.exists()) {
         const docData = snap.data();
         if (docData && docData.data) {
-          const updatedAtStr = docData.updatedAt || new Date().toISOString();
+          const firestoreExpiresAt = docData.expiresAt || docData.updatedAt;
+          const isFirestoreExpired = isCacheExpired(cacheId, docData.updatedAt || docData.lastUpdate, firestoreExpiresAt);
           
-          if (isCacheExpired(cacheId, updatedAtStr)) {
-            console.log(`[Cache Invalidation] Firestore cache '${cacheId}' is expired. Recalculating...`);
-            // Delete expired cache from Firestore asynchronously to keep database tidy
+          if (!isFirestoreExpired) {
+            console.log(`[Cache] Loaded valid cache from Firestore for '${cacheId}'`);
+            const newPayload = {
+              id: cacheId,
+              userId: docKey,
+              module: docData.module || cacheId.split('_')[0] || "general",
+              generatedAt: docData.generatedAt || docData.updatedAt || nowIso,
+              expiresAt: docData.expiresAt || expiryIso,
+              schemaVersion: docData.schemaVersion || "1.0.0",
+              lastUpdate: docData.lastUpdate || docData.updatedAt || nowIso,
+              contentVersion: docData.contentVersion || "1.0.0",
+              timezone: docData.timezone || tz,
+              data: docData.data,
+              updatedAt: docData.updatedAt || nowIso
+            };
+            localStorage.setItem(storageKey, JSON.stringify(newPayload));
+            return docData.data;
+          } else {
+            console.log(`[Cache Invalidation] Firestore cache '${cacheId}' is expired. Deleting stale copy...`);
             deleteDoc(cacheRef).catch(console.warn);
-            const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
             localStorage.removeItem(storageKey);
-            return null;
           }
-
-          // Warm up local storage
-          const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
-          localStorage.setItem(storageKey, JSON.stringify({
-            data: docData.data,
-            updatedAt: updatedAtStr
-          }));
-          return docData.data;
         }
       }
     } catch (e) {
-      console.warn(`[Cache] Leitura de cache '${cacheId}' falhou no Firestore. Tentando local storage.`);
+      console.warn(`[Cache] Firestore fetch failed or timed out for '${cacheId}'.`);
       handleFirestoreError(e, OperationType.GET, path);
     }
   }
 
-  // Local storage fallback
-  const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
-  const saved = localStorage.getItem(storageKey);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      const updatedAtStr = parsed?.updatedAt || new Date().toISOString();
-      if (isCacheExpired(cacheId, updatedAtStr)) {
-        console.log(`[Cache Invalidation] Local cache '${cacheId}' is expired. Clearing...`);
-        localStorage.removeItem(storageKey);
-        return null;
-      }
-      return parsed?.data || null;
-    } catch {}
+  // 3. Absolute offline/recovery fallback: if we have stale/expired local data, use it as a last resort
+  if (localPayload && localPayload.data) {
+    console.log(`[Cache Offline Fallback] Using stale local cache for '${cacheId}' due to network state.`);
+    return localPayload.data;
   }
+
   return null;
 }
 
@@ -1091,6 +1261,57 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
     const path = `users/${docKey}/natalCharts/${chartId}`;
     const auth = getFirebaseAuth();
     try {
+      // 1. CLEAR PREVIOUS NATAL CHARTS (where ID is different)
+      const chartsColRef = collection(db, "users", docKey, "natalCharts");
+      const chartsSnap = await getDocs(chartsColRef);
+      for (const docSnap of chartsSnap.docs) {
+        if (docSnap.id !== chartId) {
+          console.log(`[FIRESTORE_CLEANUP] Deleting old natalChart document: ${docSnap.id} to avoid conflicts`);
+          await deleteDoc(doc(db, "users", docKey, "natalCharts", docSnap.id));
+        }
+      }
+
+      // 2. CLEAR PREVIOUS TRANSITS from Firestore
+      const transitsColRef = collection(db, "users", docKey, "transits");
+      try {
+        const transitsSnap = await getDocs(transitsColRef);
+        for (const docSnap of transitsSnap.docs) {
+          console.log(`[FIRESTORE_CLEANUP] Deleting old transit document: ${docSnap.id} to avoid transit predictions mismatch`);
+          await deleteDoc(doc(db, "users", docKey, "transits", docSnap.id));
+        }
+      } catch (err) {
+        console.warn(`[FIRESTORE_CLEANUP] Failed to clear transits docs:`, err);
+      }
+
+      // 3. CLEAN UP LOCALSTORAGE CACHES
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key) {
+            const lowerKey = key.toLowerCase();
+            if (
+              (lowerKey.startsWith(`orbi_natal_chart_${docKey.toLowerCase()}_`) && !lowerKey.includes(chartId.toLowerCase())) ||
+              (lowerKey.startsWith(`orbi_natal_chart_${mailKey}_`) && !lowerKey.includes(chartId.toLowerCase())) ||
+              lowerKey.startsWith(`orbi_transit_${docKey.toLowerCase()}_`) ||
+              lowerKey.startsWith(`orbi_transit_${mailKey}_`) ||
+              lowerKey === "orbi_map_data" ||
+              lowerKey === `orbi_map_data_${docKey.toLowerCase()}` ||
+              lowerKey === `orbi_map_data_${mailKey}` ||
+              lowerKey === "orbi_natal_chart_data"
+            ) {
+              keysToRemove.push(key);
+            }
+          }
+        }
+        for (const k of keysToRemove) {
+          console.log(`[FIRESTORE_CLEANUP] Removing old cached item from localStorage: ${k}`);
+          localStorage.removeItem(k);
+        }
+      } catch (err) {
+        console.warn(`[FIRESTORE_CLEANUP] LocalStorage cleanup error:`, err);
+      }
+
       const docRef = doc(db, "users", docKey, "natalCharts", chartId);
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] Starting setDoc to path: ${path}`, {
         chartId,
@@ -1477,6 +1698,43 @@ export async function saveNumerologyToDatabase(email: string, numerologyId: stri
   if (db) {
     const path = `users/${docKey}/numerology/${numerologyId}`;
     try {
+      // 1. CLEAR PREVIOUS NUMEROLOGIES (where ID is different)
+      const numColRef = collection(db, "users", docKey, "numerology");
+      const numSnap = await getDocs(numColRef);
+      for (const docSnap of numSnap.docs) {
+        if (docSnap.id !== numerologyId) {
+          console.log(`[FIRESTORE_CLEANUP] Deleting old numerology document: ${docSnap.id} to avoid conflicts`);
+          await deleteDoc(doc(db, "users", docKey, "numerology", docSnap.id));
+        }
+      }
+
+      // 2. CLEAN UP LOCALSTORAGE CACHES
+      try {
+        const mailKey = email.toLowerCase().trim();
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key) {
+            const lowerKey = key.toLowerCase();
+            if (
+              (lowerKey.startsWith(`orbi_numerology_${docKey.toLowerCase()}_`) && !lowerKey.includes(numerologyId.toLowerCase())) ||
+              (lowerKey.startsWith(`orbi_numerology_${mailKey}_`) && !lowerKey.includes(numerologyId.toLowerCase())) ||
+              lowerKey === "orbi_numerology_data" ||
+              lowerKey === `orbi_numerology_data_${docKey.toLowerCase()}` ||
+              lowerKey === `orbi_numerology_data_${mailKey}`
+            ) {
+              keysToRemove.push(key);
+            }
+          }
+        }
+        for (const k of keysToRemove) {
+          console.log(`[FIRESTORE_CLEANUP] Removing old cached numerology item from localStorage: ${k}`);
+          localStorage.removeItem(k);
+        }
+      } catch (err) {
+        console.warn(`[FIRESTORE_CLEANUP] LocalStorage cleanup warning:`, err);
+      }
+
       const docRef = doc(db, "users", docKey, "numerology", numerologyId);
       await setDoc(docRef, {
         id: numerologyId,

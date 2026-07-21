@@ -1658,6 +1658,40 @@ export default function UserDashboardPortal({
     const email = user.email || localStorage.getItem("orbi_logged_email") || "";
     const todayStr = new Date().toISOString().split('T')[0];
 
+    const missionCacheKey = `orbi_cache_updated_daily_missions_v4_${todayStr}_${activeLang}`;
+    const dashboardCacheKey = `orbi_cache_updated_daily_osiris_dashboard_${todayStr}_${activeLang}`;
+
+    const handleMissionsBgUpdate = (e: any) => {
+      if (e.detail && e.detail.data) {
+        console.log("[Cache Event] Silently updated daily missions in background.");
+        const bgData = e.detail.data;
+        if (Array.isArray(bgData.missions)) {
+          setDailyMissions(prev => {
+            return bgData.missions.map((m: any) => {
+              const matched = prev.find(curr => curr.id === m.id);
+              return {
+                ...m,
+                isCompleted: matched ? matched.isCompleted : false
+              };
+            });
+          });
+        }
+        if (Array.isArray(bgData.weeklyMissions)) {
+          setWeeklyMissions(bgData.weeklyMissions);
+        }
+      }
+    };
+
+    const handleDashboardBgUpdate = (e: any) => {
+      if (e.detail && e.detail.data) {
+        console.log("[Cache Event] Silently updated Osiris dashboard in background.");
+        setOsirisDashboard(e.detail.data);
+      }
+    };
+
+    window.addEventListener(missionCacheKey, handleMissionsBgUpdate);
+    window.addEventListener(dashboardCacheKey, handleDashboardBgUpdate);
+
     // Fetch daily missions
     const fetchMissions = async () => {
       try {
@@ -1767,6 +1801,11 @@ export default function UserDashboardPortal({
 
     fetchMissions();
     fetchOsirisDashboard();
+
+    return () => {
+      window.removeEventListener(missionCacheKey, handleMissionsBgUpdate);
+      window.removeEventListener(dashboardCacheKey, handleDashboardBgUpdate);
+    };
   }, [user, activeLang]);
 
   const handleSendOsirisMessage = async () => {
