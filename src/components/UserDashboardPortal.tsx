@@ -1506,7 +1506,7 @@ export default function UserDashboardPortal({
   const [universoSintonizado, setUniversoSintonizado] = useState<boolean>(false);
 
   // Weekly Missions State
-  const [weeklyMissions, setWeeklyMissions] = useState(() => {
+  const [weeklyMissions, setWeeklyMissions] = useState<Array<{ id: string; title: string; description: string; isCompleted: boolean; points: number; isClaimed?: boolean }>>(() => {
     const activeLang = lang || 'pt';
     const isEn = activeLang === 'en';
     const isEs = activeLang === 'es';
@@ -3619,7 +3619,7 @@ export default function UserDashboardPortal({
 
                         {/* Custom animated responsive SVG area line graph */}
                         <div className="w-full h-44 relative bg-slate-900/20 rounded-xl border border-slate-900/60 p-2 overflow-hidden flex items-end">
-                          <svg className="w-full h-full" viewBox="0 0 500 120" preserveAspectRatio="none" referrerPolicy="no-referrer">
+                          <svg className="w-full h-full" viewBox="0 0 500 120" preserveAspectRatio="none">
                             
                             {/* Grid lines */}
                             <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(51, 65, 85, 0.2)" strokeDasharray="3,3" />

@@ -940,7 +940,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
     return tI18n(text);
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'geral'>('geral'); // Only Cruzamento Astrológico remains
+  const [activeSubTab, setActiveSubTab] = useState<'geral' | 'curtidas' | 'visitantes' | 'busca'>('geral'); // Only Cruzamento Astrológico remains
   const [relationCategory, setRelationCategory] = useState<'love' | 'business' | 'friend' | 'family' | 'marriage' | 'partnership'>('love');
   const [partnerName, setPartnerName] = useState('');
   const [partnerDate, setPartnerDate] = useState('');

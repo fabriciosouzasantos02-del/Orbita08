@@ -1161,7 +1161,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                     {tI18n("Sol em")} {tI18n(getZodiacSign(activeProfile.birthDate))}
                   </span>
                   
-                  {activeProfile.hasPremium && (
+                  {activeProfile.isPremium && (
                     <span className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 text-[9px] font-mono text-cyan-450 rounded-md">
                       {tI18n("Membro Premium")}
                     </span>

@@ -557,6 +557,10 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
     return getLocalDateStr(getMostRecentSunday());
   };
 
+  const getUserKey = () => {
+    return userEmail ? cleanStringForChartId(userEmail) : "guest";
+  };
+
   // Sync state with Firestore database history
   const syncWithFirestore = async () => {
     if (!userEmail) return;
@@ -567,6 +571,7 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
       const todayStr = getLocalDateStr();
       const sundayStr = getMostRecentSundayDateStr();
       const now = Date.now();
+      const uKey = getUserKey();
       
       const updatedCooldowns: Record<TarotMode, number | null> = {
         inteligente: null,
@@ -601,7 +606,7 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
           updatedCooldowns[mode] = readingTimestamp;
           
           // Sync to localStorage
-          localStorage.setItem(`tarot_last_draw_${mode}`, readingTimestamp.toString());
+          localStorage.setItem(`tarot_last_draw_${uKey}_${mode}`, readingTimestamp.toString());
           if (latest.interpretação) {
             const interpretationText = typeof latest.interpretação === 'string' 
               ? latest.interpretação 
@@ -610,11 +615,11 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
               ? ''
               : latest.interpretação.guidance || latest.interpretação.advice || '';
             
-            localStorage.setItem(`tarot_saved_reading_${mode}`, interpretationText);
-            localStorage.setItem(`tarot_saved_guidance_${mode}`, guidanceText);
+            localStorage.setItem(`tarot_saved_reading_${uKey}_${mode}`, interpretationText);
+            localStorage.setItem(`tarot_saved_guidance_${uKey}_${mode}`, guidanceText);
           }
           if (latest.cartas || latest.cards) {
-            localStorage.setItem(`tarot_saved_cards_${mode}`, JSON.stringify(latest.cartas || latest.cards));
+            localStorage.setItem(`tarot_saved_cards_${uKey}_${mode}`, JSON.stringify(latest.cartas || latest.cards));
           }
         }
       });
@@ -641,8 +646,8 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
           setTempDrawnCards(latest.cartas || latest.cards || []);
           setSelectableCount(modeCount(activeMode));
           
-          const savedMap = localStorage.getItem(`tarot_saved_map_${activeMode}`);
-          const savedIndices = localStorage.getItem(`tarot_saved_indices_${activeMode}`);
+          const savedMap = localStorage.getItem(`tarot_saved_map_${uKey}_${activeMode}`);
+          const savedIndices = localStorage.getItem(`tarot_saved_indices_${uKey}_${activeMode}`);
           if (savedMap && savedIndices) {
             setCardMapping(JSON.parse(savedMap));
             setRevealedIndices(JSON.parse(savedIndices));
@@ -691,22 +696,23 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
     const birthTimeClean = cleanStringForChartId(birthTime || "12:00");
     const birthCityClean = cleanStringForChartId(birthCity || "sao_paulo");
     const expectedChartId = currentChartId || (birthDate ? `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}` : 'default');
+    const uKey = getUserKey();
 
     modes.forEach((mode) => {
       // Verify map ID discrepancy (Tarot validator)
-      const savedChartId = localStorage.getItem(`tarot_saved_chart_id_${mode}`);
+      const savedChartId = localStorage.getItem(`tarot_saved_chart_id_${uKey}_${mode}`);
       if (savedChartId && savedChartId !== expectedChartId) {
         console.log(`[Tarot Validator] Discrepancy detected in Tarot mode ${mode}. Saved: ${savedChartId} vs Current: ${expectedChartId}. Cleared.`);
-        localStorage.removeItem(`tarot_last_draw_${mode}`);
-        localStorage.removeItem(`tarot_saved_reading_${mode}`);
-        localStorage.removeItem(`tarot_saved_guidance_${mode}`);
-        localStorage.removeItem(`tarot_saved_cards_${mode}`);
-        localStorage.removeItem(`tarot_saved_map_${mode}`);
-        localStorage.removeItem(`tarot_saved_indices_${mode}`);
-        localStorage.removeItem(`tarot_saved_chart_id_${mode}`);
+        localStorage.removeItem(`tarot_last_draw_${uKey}_${mode}`);
+        localStorage.removeItem(`tarot_saved_reading_${uKey}_${mode}`);
+        localStorage.removeItem(`tarot_saved_guidance_${uKey}_${mode}`);
+        localStorage.removeItem(`tarot_saved_cards_${uKey}_${mode}`);
+        localStorage.removeItem(`tarot_saved_map_${uKey}_${mode}`);
+        localStorage.removeItem(`tarot_saved_indices_${uKey}_${mode}`);
+        localStorage.removeItem(`tarot_saved_chart_id_${uKey}_${mode}`);
       }
 
-      const lastDraw = localStorage.getItem(`tarot_last_draw_${mode}`);
+      const lastDraw = localStorage.getItem(`tarot_last_draw_${uKey}_${mode}`);
       if (lastDraw) {
         const lastTime = parseInt(lastDraw, 10);
         let isValid = false;
@@ -726,11 +732,11 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
     // If active mode is currently locked, recover the saved reading so they can re-read it
     const lastTime = updatedCooldowns[activeMode];
     if (lastTime) {
-      const savedReading = localStorage.getItem(`tarot_saved_reading_${activeMode}`);
-      const savedGuidance = localStorage.getItem(`tarot_saved_guidance_${activeMode}`);
-      const savedCards = localStorage.getItem(`tarot_saved_cards_${activeMode}`);
-      const savedMap = localStorage.getItem(`tarot_saved_map_${activeMode}`);
-      const savedIndices = localStorage.getItem(`tarot_saved_indices_${activeMode}`);
+      const savedReading = localStorage.getItem(`tarot_saved_reading_${uKey}_${activeMode}`);
+      const savedGuidance = localStorage.getItem(`tarot_saved_guidance_${uKey}_${activeMode}`);
+      const savedCards = localStorage.getItem(`tarot_saved_cards_${uKey}_${activeMode}`);
+      const savedMap = localStorage.getItem(`tarot_saved_map_${uKey}_${activeMode}`);
+      const savedIndices = localStorage.getItem(`tarot_saved_indices_${uKey}_${activeMode}`);
 
       if (savedReading && savedGuidance && savedCards) {
         try {
@@ -883,13 +889,14 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
         const birthTimeClean = cleanStringForChartId(birthTime || "12:00");
         const birthCityClean = cleanStringForChartId(birthCity || "sao_paulo");
         const expectedChartId = currentChartId || (birthDate ? `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}` : 'default');
-        localStorage.setItem(`tarot_last_draw_${activeMode}`, nowTimestamp.toString());
-        localStorage.setItem(`tarot_saved_reading_${activeMode}`, data.reading);
-        localStorage.setItem(`tarot_saved_guidance_${activeMode}`, data.guidance);
-        localStorage.setItem(`tarot_saved_cards_${activeMode}`, JSON.stringify(tempDrawnCards));
-        localStorage.setItem(`tarot_saved_map_${activeMode}`, JSON.stringify(cardMapping));
-        localStorage.setItem(`tarot_saved_indices_${activeMode}`, JSON.stringify(revealedIndices));
-        localStorage.setItem(`tarot_saved_chart_id_${activeMode}`, expectedChartId);
+        const uKey = getUserKey();
+        localStorage.setItem(`tarot_last_draw_${uKey}_${activeMode}`, nowTimestamp.toString());
+        localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}`, data.reading);
+        localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}`, data.guidance);
+        localStorage.setItem(`tarot_saved_cards_${uKey}_${activeMode}`, JSON.stringify(tempDrawnCards));
+        localStorage.setItem(`tarot_saved_map_${uKey}_${activeMode}`, JSON.stringify(cardMapping));
+        localStorage.setItem(`tarot_saved_indices_${uKey}_${activeMode}`, JSON.stringify(revealedIndices));
+        localStorage.setItem(`tarot_saved_chart_id_${uKey}_${activeMode}`, expectedChartId);
 
         // Update cooldowns UI
         setCooldowns((prev) => ({
@@ -940,13 +947,14 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
       const birthTimeClean = cleanStringForChartId(birthTime || "12:00");
       const birthCityClean = cleanStringForChartId(birthCity || "sao_paulo");
       const expectedChartId = currentChartId || (birthDate ? `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}` : 'default');
-      localStorage.setItem(`tarot_last_draw_${activeMode}`, nowTimestamp.toString());
-      localStorage.setItem(`tarot_saved_reading_${activeMode}`, fallbackReading);
-      localStorage.setItem(`tarot_saved_guidance_${activeMode}`, fallbackGuidance);
-      localStorage.setItem(`tarot_saved_cards_${activeMode}`, JSON.stringify(tempDrawnCards));
-      localStorage.setItem(`tarot_saved_map_${activeMode}`, JSON.stringify(cardMapping));
-      localStorage.setItem(`tarot_saved_indices_${activeMode}`, JSON.stringify(revealedIndices));
-      localStorage.setItem(`tarot_saved_chart_id_${activeMode}`, expectedChartId);
+      const uKey = getUserKey();
+      localStorage.setItem(`tarot_last_draw_${uKey}_${activeMode}`, nowTimestamp.toString());
+      localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}`, fallbackReading);
+      localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}`, fallbackGuidance);
+      localStorage.setItem(`tarot_saved_cards_${uKey}_${activeMode}`, JSON.stringify(tempDrawnCards));
+      localStorage.setItem(`tarot_saved_map_${uKey}_${activeMode}`, JSON.stringify(cardMapping));
+      localStorage.setItem(`tarot_saved_indices_${uKey}_${activeMode}`, JSON.stringify(revealedIndices));
+      localStorage.setItem(`tarot_saved_chart_id_${uKey}_${activeMode}`, expectedChartId);
 
       setCooldowns((prev) => ({
         ...prev,

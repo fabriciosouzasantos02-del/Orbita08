@@ -60,6 +60,28 @@ const DEFAULT_SETTINGS: CupidoSettings = {
   notifyFavorablePeriods: true
 };
 
+// User-scoped LocalStorage Key Helpers
+function getCupidoPeopleKey(email: string): string {
+  const docKey = getUserDocKey(email);
+  return docKey ? `cupido_people_list_${docKey}` : `cupido_people_list_guest`;
+}
+function getCupidoHistoryKey(email: string): string {
+  const docKey = getUserDocKey(email);
+  return docKey ? `cupido_history_list_${docKey}` : `cupido_history_list_guest`;
+}
+function getCupidoFavKey(email: string): string {
+  const docKey = getUserDocKey(email);
+  return docKey ? `cupido_favorites_list_${docKey}` : `cupido_favorites_list_guest`;
+}
+function getCupidoSettingsKey(email: string): string {
+  const docKey = getUserDocKey(email);
+  return docKey ? `cupido_settings_${docKey}` : `cupido_settings_guest`;
+}
+function getCompatibilityHistoryKey(email: string): string {
+  const docKey = getUserDocKey(email);
+  return docKey ? `compatibility_history_${docKey}` : `compatibility_history_guest`;
+}
+
 // ----------------------------------------------------
 // Cupido Person Operations
 // ----------------------------------------------------
@@ -68,16 +90,17 @@ export async function saveCupidoPerson(email: string, person: CupidoPerson): Pro
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getCupidoPeopleKey(email);
 
   // 1. Sync to LocalStorage
-  const savedList = localStorage.getItem("cupido_people_list_v1");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: CupidoPerson[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(p => p.id !== person.id);
   currentList.push(person);
-  localStorage.setItem("cupido_people_list_v1", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   // 2. Sync to Firestore
   const db = getFirestoreDB();
@@ -100,23 +123,25 @@ export async function deleteCupidoPerson(email: string, personId: string): Promi
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const peopleKey = getCupidoPeopleKey(email);
+  const favKey = getCupidoFavKey(email);
 
   // 1. LocalStorage Sync
-  const savedList = localStorage.getItem("cupido_people_list_v1");
+  const savedList = localStorage.getItem(peopleKey);
   let currentList: CupidoPerson[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(p => p.id !== personId);
-  localStorage.setItem("cupido_people_list_v1", JSON.stringify(currentList));
+  localStorage.setItem(peopleKey, JSON.stringify(currentList));
 
   // Clean favorites and history locally for this person
-  const favList = localStorage.getItem("cupido_favorites_list_v1");
+  const favList = localStorage.getItem(favKey);
   if (favList) {
     try {
       const list = JSON.parse(favList);
       const filtered = list.filter((f: any) => f.personId !== personId);
-      localStorage.setItem("cupido_favorites_list_v1", JSON.stringify(filtered));
+      localStorage.setItem(favKey, JSON.stringify(filtered));
     } catch {}
   }
 
@@ -137,14 +162,9 @@ export async function loadCupidoPeople(email: string): Promise<CupidoPerson[]> {
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return [];
 
-  // Always pre-load from LocalStorage for immediate layout render
-  const savedList = localStorage.getItem("cupido_people_list_v1");
-  let localList: CupidoPerson[] = [];
-  try {
-    localList = savedList ? JSON.parse(savedList) : [];
-  } catch {}
-
+  const storageKey = getCupidoPeopleKey(email);
   const db = getFirestoreDB();
+
   if (db) {
     const docKey = getUserDocKey(email);
     try {
@@ -155,16 +175,19 @@ export async function loadCupidoPeople(email: string): Promise<CupidoPerson[]> {
         remoteList.push(doc.data() as CupidoPerson);
       });
 
-      if (remoteList.length > 0) {
-        localStorage.setItem("cupido_people_list_v1", JSON.stringify(remoteList));
-        return remoteList;
-      }
+      localStorage.setItem(storageKey, JSON.stringify(remoteList));
+      return remoteList;
     } catch (e) {
       console.warn("Error loading cupido people from firestore, using local fallback:", e);
     }
   }
 
-  return localList;
+  const savedList = localStorage.getItem(storageKey);
+  try {
+    return savedList ? JSON.parse(savedList) : [];
+  } catch {
+    return [];
+  }
 }
 
 export function subscribeToCupidoPeople(
@@ -176,11 +199,12 @@ export function subscribeToCupidoPeople(
   if (!mailKey) return () => {};
 
   const docKey = getUserDocKey(email);
+  const storageKey = getCupidoPeopleKey(email);
   const db = getFirestoreDB();
 
   if (!db) {
     // If offline, just trigger once with local list
-    const savedList = localStorage.getItem("cupido_people_list_v1");
+    const savedList = localStorage.getItem(storageKey);
     let localList: CupidoPerson[] = [];
     try {
       localList = savedList ? JSON.parse(savedList) : [];
@@ -197,7 +221,7 @@ export function subscribeToCupidoPeople(
       snapshot.forEach(doc => {
         people.push(doc.data() as CupidoPerson);
       });
-      localStorage.setItem("cupido_people_list_v1", JSON.stringify(people));
+      localStorage.setItem(storageKey, JSON.stringify(people));
       onUpdate(people);
     },
     (err) => {
@@ -215,16 +239,17 @@ export async function saveCupidoHistory(email: string, history: CupidoHistory): 
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getCupidoHistoryKey(email);
 
   // 1. Sync to LocalStorage
-  const savedList = localStorage.getItem("cupido_history_list_v1");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: CupidoHistory[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(h => h.id !== history.id);
   currentList.push(history);
-  localStorage.setItem("cupido_history_list_v1", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   // 2. Sync to Firestore
   const db = getFirestoreDB();
@@ -246,13 +271,9 @@ export async function loadCupidoHistory(email: string): Promise<CupidoHistory[]>
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return [];
 
-  const savedList = localStorage.getItem("cupido_history_list_v1");
-  let localList: CupidoHistory[] = [];
-  try {
-    localList = savedList ? JSON.parse(savedList) : [];
-  } catch {}
-
+  const storageKey = getCupidoHistoryKey(email);
   const db = getFirestoreDB();
+
   if (db) {
     const docKey = getUserDocKey(email);
     try {
@@ -263,16 +284,19 @@ export async function loadCupidoHistory(email: string): Promise<CupidoHistory[]>
         remoteList.push(doc.data() as CupidoHistory);
       });
 
-      if (remoteList.length > 0) {
-        localStorage.setItem("cupido_history_list_v1", JSON.stringify(remoteList));
-        return remoteList;
-      }
+      localStorage.setItem(storageKey, JSON.stringify(remoteList));
+      return remoteList;
     } catch (e) {
       console.warn("Error loading cupido history from firestore:", e);
     }
   }
 
-  return localList;
+  const savedList = localStorage.getItem(storageKey);
+  try {
+    return savedList ? JSON.parse(savedList) : [];
+  } catch {
+    return [];
+  }
 }
 
 // ----------------------------------------------------
@@ -283,16 +307,17 @@ export async function saveCupidoFavorite(email: string, favorite: CupidoFavorite
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getCupidoFavKey(email);
 
   // 1. LocalStorage
-  const savedList = localStorage.getItem("cupido_favorites_list_v1");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: CupidoFavorite[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(f => f.id !== favorite.id);
   currentList.push(favorite);
-  localStorage.setItem("cupido_favorites_list_v1", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   // 2. Firestore
   const db = getFirestoreDB();
@@ -315,15 +340,16 @@ export async function deleteCupidoFavorite(email: string, favoriteId: string): P
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getCupidoFavKey(email);
 
   // 1. LocalStorage
-  const savedList = localStorage.getItem("cupido_favorites_list_v1");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: CupidoFavorite[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(f => f.id !== favoriteId);
-  localStorage.setItem("cupido_favorites_list_v1", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   // 2. Firestore
   const db = getFirestoreDB();
@@ -342,13 +368,9 @@ export async function loadCupidoFavorites(email: string): Promise<CupidoFavorite
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return [];
 
-  const savedList = localStorage.getItem("cupido_favorites_list_v1");
-  let localList: CupidoFavorite[] = [];
-  try {
-    localList = savedList ? JSON.parse(savedList) : [];
-  } catch {}
-
+  const storageKey = getCupidoFavKey(email);
   const db = getFirestoreDB();
+
   if (db) {
     const docKey = getUserDocKey(email);
     try {
@@ -359,16 +381,19 @@ export async function loadCupidoFavorites(email: string): Promise<CupidoFavorite
         remoteList.push(doc.data() as CupidoFavorite);
       });
 
-      if (remoteList.length > 0) {
-        localStorage.setItem("cupido_favorites_list_v1", JSON.stringify(remoteList));
-        return remoteList;
-      }
+      localStorage.setItem(storageKey, JSON.stringify(remoteList));
+      return remoteList;
     } catch (e) {
       console.warn("Error loading cupido favorites from firestore:", e);
     }
   }
 
-  return localList;
+  const savedList = localStorage.getItem(storageKey);
+  try {
+    return savedList ? JSON.parse(savedList) : [];
+  } catch {
+    return [];
+  }
 }
 
 // ----------------------------------------------------
@@ -379,9 +404,10 @@ export async function saveCupidoSettings(email: string, settings: CupidoSettings
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getCupidoSettingsKey(email);
 
   // 1. LocalStorage
-  localStorage.setItem("cupido_settings_v1", JSON.stringify(settings));
+  localStorage.setItem(storageKey, JSON.stringify(settings));
 
   // 2. Firestore
   const db = getFirestoreDB();
@@ -403,15 +429,9 @@ export async function loadCupidoSettings(email: string): Promise<CupidoSettings>
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return DEFAULT_SETTINGS;
 
-  const saved = localStorage.getItem("cupido_settings_v1");
-  let localSettings = DEFAULT_SETTINGS;
-  if (saved) {
-    try {
-      localSettings = JSON.parse(saved);
-    } catch {}
-  }
-
+  const storageKey = getCupidoSettingsKey(email);
   const db = getFirestoreDB();
+
   if (db) {
     const docKey = getUserDocKey(email);
     try {
@@ -419,15 +439,25 @@ export async function loadCupidoSettings(email: string): Promise<CupidoSettings>
       const docSnap = await getDoc(ref);
       if (docSnap.exists()) {
         const remoteSettings = docSnap.data() as CupidoSettings;
-        localStorage.setItem("cupido_settings_v1", JSON.stringify(remoteSettings));
+        localStorage.setItem(storageKey, JSON.stringify(remoteSettings));
         return remoteSettings;
+      } else {
+        localStorage.setItem(storageKey, JSON.stringify(DEFAULT_SETTINGS));
+        return DEFAULT_SETTINGS;
       }
     } catch (e) {
       console.warn("Error loading cupido settings from firestore:", e);
     }
   }
 
-  return localSettings;
+  const saved = localStorage.getItem(storageKey);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {}
+  }
+
+  return DEFAULT_SETTINGS;
 }
 
 // ----------------------------------------------------
@@ -448,16 +478,17 @@ export async function saveCompatibilityHistory(email: string, history: Compatibi
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getCompatibilityHistoryKey(email);
 
   // 1. Sync to LocalStorage
-  const savedList = localStorage.getItem("compatibility_history_list_v1");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: CompatibilityHistoryItem[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(h => h.id !== history.id);
   currentList.push(history);
-  localStorage.setItem("compatibility_history_list_v1", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   // 2. Sync to Firestore
   const db = getFirestoreDB();
@@ -479,13 +510,9 @@ export async function loadCompatibilityHistory(email: string): Promise<Compatibi
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return [];
 
-  const savedList = localStorage.getItem("compatibility_history_list_v1");
-  let localList: CompatibilityHistoryItem[] = [];
-  try {
-    localList = savedList ? JSON.parse(savedList) : [];
-  } catch {}
-
+  const storageKey = getCompatibilityHistoryKey(email);
   const db = getFirestoreDB();
+
   if (db) {
     const docKey = getUserDocKey(email);
     try {
@@ -496,15 +523,17 @@ export async function loadCompatibilityHistory(email: string): Promise<Compatibi
         remoteList.push(doc.data() as CompatibilityHistoryItem);
       });
 
-      if (remoteList.length > 0) {
-        localStorage.setItem("compatibility_history_list_v1", JSON.stringify(remoteList));
-        return remoteList;
-      }
+      localStorage.setItem(storageKey, JSON.stringify(remoteList));
+      return remoteList;
     } catch (e) {
       console.warn("Error loading compatibility history from firestore:", e);
     }
   }
 
-  return localList;
+  const savedList = localStorage.getItem(storageKey);
+  try {
+    return savedList ? JSON.parse(savedList) : [];
+  } catch {
+    return [];
+  }
 }
-

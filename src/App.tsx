@@ -2463,7 +2463,7 @@ export default function App() {
 
     try {
       const remoteSub = await loadPremiumSubscription(firebaseUid);
-      const directPremium = user?.premium;
+      const directPremium = user?.isPremium;
       const mergedPremium = remoteSub || directPremium || null;
       const isUserPremium = user?.isPremium || user?.isSubscribed || mergedPremium?.isPremium || false;
 
@@ -6740,7 +6740,7 @@ export default function App() {
                         {/* Interactive Área do Usuário Sub Navigation and Dashboard Portal */}
                         <div key={`user_dashboard_portal_${user.name}_${user.birthDate}_${user.birthTime || ''}_${systemDate.toDateString()}`}>
                           <UserDashboardPortal
-                            user={user}
+                            user={user as any}
                             scorePoints={scorePoints}
                             setScorePoints={setScorePoints}
                             dailyMissions={dailyMissions}
@@ -7279,7 +7279,7 @@ export default function App() {
                                   <span className="text-[9px] font-mono text-amber-500/70 block uppercase tracking-widest">Semana de 08/06 a 14/06 de 2026</span>
                                   
                                   <p className="font-serif italic text-sm text-amber-100/90 leading-relaxed max-w-xl mx-auto">
-                                    "{user.name.split(' ')[0]}, o céu desta semana convida você a encontrar o silêncio lúcido em meio ao turbilhão de ideias brilhantes que seu Sol em {mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate)} tanto gera. A força construtora do seu Caminho de Vida {numerology?.lifePathNumber || getLifePathNumber(user.birthDate)} exige que você não apenas idealize soluções, mas permita-se o cansaço terapêutico de assentar as ideias no solo firme da realidade."
+                                    "{user.name.split(' ')[0]}, o céu desta semana convida você a encontrar o silêncio lúcido em meio ao turbilhão de ideias brilhantes que seu Sol em {mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate || "")} tanto gera. A força construtora do seu Caminho de Vida {(numerology as any)?.lifePathNumber || numerology?.caminhoDeVida || getLifePathNumber(user.birthDate || "")} exige que você não apenas idealize soluções, mas permita-se o cansaço terapêutico de assentar as ideias no solo firme da realidade."
                                   </p>
 
                                   <p className="font-serif italic text-sm text-amber-200/90 leading-relaxed max-w-xl mx-auto pt-1">
@@ -7403,7 +7403,7 @@ export default function App() {
                               <div key={`numerology_view_${user.name}_${user.birthDate}`}>
                                 <NumerologyView 
                                   numerology={numerology} 
-                                  user={user} 
+                                  user={user as any} 
                                   lang={currentLang}
                                 />
                               </div>

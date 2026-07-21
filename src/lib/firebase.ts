@@ -283,6 +283,11 @@ export interface UserProfileData {
   currentChartId?: string;
   mainMapChangesCount?: number;
   verificationCode?: string;
+  followersCount?: number;
+  followingCount?: number;
+  likesCount?: number;
+  friendsCount?: number;
+  schemaVersion?: number;
   verificationCodeCreatedAt?: string;
 }
 
@@ -356,6 +361,18 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
     preferredLanguage: profile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
     scorePoints: pointsVal,
     stellarPoints: pointsVal,
+    birthDate: profile.birthDate || "",
+    birthTime: profile.birthTime || "12:00",
+    birthCity: profile.birthCity || "Sao_Paulo",
+    latitude: profile.latitude !== undefined ? profile.latitude : -23.55052,
+    longitude: profile.longitude !== undefined ? profile.longitude : -46.633308,
+    isPremium: profile.isPremium !== undefined ? profile.isPremium : false,
+    followersCount: profile.followersCount !== undefined ? profile.followersCount : 0,
+    followingCount: profile.followingCount !== undefined ? profile.followingCount : 0,
+    likesCount: profile.likesCount !== undefined ? profile.likesCount : 0,
+    friendsCount: profile.friendsCount !== undefined ? profile.friendsCount : 0,
+    schemaVersion: profile.schemaVersion || "1.0.0",
+    createdAt: profile.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
 
@@ -918,21 +935,33 @@ export function subscribeToUserProfile(email: string, onUpdate: (profile: UserPr
   });
 }
 
+// User-scoped localStorage helpers for Extra Maps & Dreams
+function getExtraMapsStorageKey(email: string): string {
+  const docKey = getUserDocKey(email);
+  return docKey ? `orbi_extra_maps_${docKey}` : `orbi_extra_maps_guest`;
+}
+
+function getDreamsStorageKey(email: string): string {
+  const docKey = getUserDocKey(email);
+  return docKey ? `star_map_dreams_${docKey}` : `star_map_dreams_guest`;
+}
+
 // 2. Extra Maps Sync & Real-Time Subscriber
 export async function saveExtraMapToDatabase(email: string, extraMap: ExtraMapItem) {
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getExtraMapsStorageKey(email);
 
-  const savedList = localStorage.getItem("orbi_extra_maps");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: ExtraMapItem[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(m => m.id !== extraMap.id);
   currentList.push(extraMap);
-  localStorage.setItem("orbi_extra_maps", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   const db = getFirestoreDB();
   if (db) {
@@ -955,14 +984,15 @@ export async function deleteExtraMapFromDatabase(email: string, mapId: string) {
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getExtraMapsStorageKey(email);
 
-  const savedList = localStorage.getItem("orbi_extra_maps");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: ExtraMapItem[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(m => m.id !== mapId);
-  localStorage.setItem("orbi_extra_maps", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   const db = getFirestoreDB();
   if (db) {
@@ -980,6 +1010,7 @@ export async function loadExtraMapsFromDatabase(email: string): Promise<ExtraMap
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return [];
 
+  const storageKey = getExtraMapsStorageKey(email);
   const db = getFirestoreDB();
   if (db) {
     const docKey = getUserDocKey(email);
@@ -991,16 +1022,14 @@ export async function loadExtraMapsFromDatabase(email: string): Promise<ExtraMap
       snap.forEach((docSnap) => {
         results.push(docSnap.data() as ExtraMapItem);
       });
-      if (results.length > 0) {
-        localStorage.setItem("orbi_extra_maps", JSON.stringify(results));
-        return results;
-      }
+      localStorage.setItem(storageKey, JSON.stringify(results));
+      return results;
     } catch (e) {
       handleFirestoreError(e, OperationType.GET, path);
     }
   }
 
-  const savedList = localStorage.getItem("orbi_extra_maps");
+  const savedList = localStorage.getItem(storageKey);
   if (savedList) {
     try {
       return JSON.parse(savedList);
@@ -1018,6 +1047,7 @@ export function subscribeToExtraMaps(email: string, onUpdate: (maps: ExtraMapIte
   }
 
   const docKey = getUserDocKey(email);
+  const storageKey = getExtraMapsStorageKey(email);
   const path = `users/${docKey}/extraMaps`;
   const collectionRef = collection(db, "users", docKey, "extraMaps");
 
@@ -1026,7 +1056,7 @@ export function subscribeToExtraMaps(email: string, onUpdate: (maps: ExtraMapIte
     snapshot.forEach((snap) => {
       results.push(snap.data() as ExtraMapItem);
     });
-    localStorage.setItem("orbi_extra_maps", JSON.stringify(results));
+    localStorage.setItem(storageKey, JSON.stringify(results));
     onUpdate(results);
   }, (error) => {
     console.error("[SnapSync] Erro no snapshot de extraMaps:", error);
@@ -1131,15 +1161,16 @@ export async function saveDreamToDatabase(email: string, dream: DreamLogItem) {
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getDreamsStorageKey(email);
 
-  const savedList = localStorage.getItem("star_map_dreams_v2");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: DreamLogItem[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(d => d.id !== dream.id);
   currentList.push(dream);
-  localStorage.setItem("star_map_dreams_v2", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   const db = getFirestoreDB();
   if (db) {
@@ -1161,14 +1192,15 @@ export async function deleteDreamFromDatabase(email: string, dreamId: string) {
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getDreamsStorageKey(email);
 
-  const savedList = localStorage.getItem("star_map_dreams_v2");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: DreamLogItem[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(d => d.id !== dreamId);
-  localStorage.setItem("star_map_dreams_v2", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   const db = getFirestoreDB();
   if (db) {
@@ -1186,6 +1218,7 @@ export async function loadDreamsFromDatabase(email: string): Promise<DreamLogIte
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return [];
 
+  const storageKey = getDreamsStorageKey(email);
   const db = getFirestoreDB();
   if (db) {
     const docKey = getUserDocKey(email);
@@ -1197,16 +1230,14 @@ export async function loadDreamsFromDatabase(email: string): Promise<DreamLogIte
       snap.forEach((docSnap) => {
         results.push(docSnap.data() as DreamLogItem);
       });
-      if (results.length > 0) {
-        localStorage.setItem("star_map_dreams_v2", JSON.stringify(results));
-        return results;
-      }
+      localStorage.setItem(storageKey, JSON.stringify(results));
+      return results;
     } catch (e) {
       handleFirestoreError(e, OperationType.GET, path);
     }
   }
 
-  const savedList = localStorage.getItem("star_map_dreams_v2");
+  const savedList = localStorage.getItem(storageKey);
   if (savedList) {
     try {
       return JSON.parse(savedList);
@@ -1224,6 +1255,7 @@ export function subscribeToDreams(email: string, onUpdate: (dreams: DreamLogItem
   }
 
   const docKey = getUserDocKey(email);
+  const storageKey = getDreamsStorageKey(email);
   const path = `users/${docKey}/dreams`;
   const collectionRef = collection(db, "users", docKey, "dreams");
 
@@ -1232,7 +1264,7 @@ export function subscribeToDreams(email: string, onUpdate: (dreams: DreamLogItem
     snapshot.forEach((snap) => {
       results.push(snap.data() as DreamLogItem);
     });
-    localStorage.setItem("star_map_dreams_v2", JSON.stringify(results));
+    localStorage.setItem(storageKey, JSON.stringify(results));
     onUpdate(results);
   }, (error) => {
     console.error("[SnapSync] Erro no snapshot de dreams:", error);
