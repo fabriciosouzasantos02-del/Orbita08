@@ -555,17 +555,11 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
         // Ensure we exclude other visitant placeholders, but filter valid records
         docsList = docsList.filter(u => u.email && u.name);
 
-        // Seeding mechanism: if there are no seed users, automatically write them to Firestore to populate the system
+        // Seeding mechanism: if there are few other users, include seed profiles in memory
         const otherDocs = docsList.filter(u => getUserKey(u) !== currentUserKey);
         if (otherDocs.length < 3) {
           for (const s of SEED_USERS) {
             if (!docsList.some(u => u.email.toLowerCase().trim() === s.email.toLowerCase().trim())) {
-              const seedRef = doc(db, "users", s.email);
-              await setDoc(seedRef, {
-                ...s,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              });
               docsList.push(s as SocialProfile);
             }
           }

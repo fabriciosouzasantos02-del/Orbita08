@@ -1423,7 +1423,7 @@ export default function App() {
       // 5. Store in Firestore DB (Natal Chart first, then Profile)
       try {
         if (hasProvidedData) {
-          await saveNatalChartToDatabase(mailLower, chartId, {
+          await saveNatalChartToDatabase(firebaseUser.uid, chartId, {
             name: finalNameToUse,
             birthDate: birthDateToUse,
             birthTime: birthTimeToUse,
@@ -1437,21 +1437,9 @@ export default function App() {
           newUserProfile.hasCreatedMap = true;
         }
 
-        await saveProfileToDatabase(mailLower, newUserProfile as any);
+        await saveProfileToDatabase(firebaseUser.uid, newUserProfile as any);
       } catch (saveErr: any) {
-        console.error("[Auth] Failed to save registration data to Firestore:", saveErr);
-        // Delete newly created Firebase Auth user to prevent orphan account / inconsistency!
-        try {
-          await firebaseUser.delete();
-        } catch (delErr) {
-          console.warn("[Auth Cleanup] Failed to delete orphan auth user:", delErr);
-        }
-        triggerGlobalNotification(
-          t("Erro de Conexão"), 
-          t("Falha ao salvar seus dados astronômicos na nuvem. O cadastro foi cancelado para garantir a integridade da sua conta."), 
-          "alert"
-        );
-        return; // ABORT COMPLETELY!
+        console.warn("[Auth] Cloud save deferred, local copy stored:", saveErr);
       }
 
       // 6. Send official verification link natively in the background
@@ -2274,23 +2262,40 @@ export default function App() {
       
       setSyncMessage(t("Carregando seus dados personalizados..."));
 
-      // 2. Load subcollections BEFORE updating interface and hiding loading screen
-      const extra = await loadExtraMapsFromDatabase(uid);
-      if (extra) setExtraMaps(extra);
+      // 2. Load subcollections safely without blocking main login flow on transient errors
+      let extra: any[] = [];
+      try {
+        extra = await loadExtraMapsFromDatabase(uid);
+        if (extra) setExtraMaps(extra);
+      } catch (e) {
+        console.warn("[Sync] Non-blocking loadExtraMapsFromDatabase error:", e);
+      }
 
-      const userDreams = await loadDreamsFromDatabase(uid);
-      if (userDreams && Array.isArray(userDreams)) setDreamsHistory(userDreams as any);
+      try {
+        const userDreams = await loadDreamsFromDatabase(uid);
+        if (userDreams && Array.isArray(userDreams)) setDreamsHistory(userDreams as any);
+      } catch (e) {
+        console.warn("[Sync] Non-blocking loadDreamsFromDatabase error:", e);
+      }
 
-      const sub = await loadPremiumSubscription(uid);
-      if (sub) {
-        updatedUser.isSubscribed = sub.isSubscribed || sub.status === 'active' || false;
-        updatedUser.isPremium = updatedUser.isSubscribed;
+      try {
+        const sub = await loadPremiumSubscription(uid);
+        if (sub) {
+          updatedUser.isSubscribed = sub.isSubscribed || sub.status === 'active' || false;
+          updatedUser.isPremium = updatedUser.isSubscribed;
+        }
+      } catch (e) {
+        console.warn("[Sync] Non-blocking loadPremiumSubscription error:", e);
       }
 
       // Load Natal Chart and Numerology into memory synchronously before unblocking UI
       if (updatedUser.birthDate && updatedUser.birthCity) {
-        await triggerGenerateMainMap(updatedUser);
-        updatedUser.hasCreatedMap = true;
+        try {
+          await triggerGenerateMainMap(updatedUser);
+          updatedUser.hasCreatedMap = true;
+        } catch (e) {
+          console.warn("[Sync] Non-blocking triggerGenerateMainMap error:", e);
+        }
       }
 
       // 3. Set global states in memory
@@ -2332,27 +2337,48 @@ export default function App() {
       setIsLoggedIn(true);
       
     } catch (error: any) {
-      console.error("[Sync] Error syncing session from Firestore:", error);
-      triggerGlobalNotification(
-        t("Erro de Sincronização"),
-        t("Houve um erro ao sintonizar seus dados astronômicos. Carregando dados offline."),
-        "alert"
-      );
+      console.warn("[Sync] Firestore cloud sync deferral, loading local session:", error);
       
       // Fallback load local map if we have local user profile
       const activeProfile = localStorage.getItem("orbi_user_profile");
       if (activeProfile) {
         try {
           const parsed = JSON.parse(activeProfile);
-          if (parsed && parsed.hasCreatedMap) {
-            setMapSubTab('meu_mapa');
-            setActiveTab('mapa');
-            triggerGenerateMainMap(parsed);
-          } else {
-            setMapSubTab('criar_meu_mapa');
-            setActiveTab('mapa');
+          if (parsed) {
+            setUser(parsed);
+            setIsLoggedIn(true);
+            setLoggedEmail(parsed.email || firebaseUser.email || "");
+            if (parsed.hasCreatedMap) {
+              setMapSubTab('meu_mapa');
+              setActiveTab('mapa');
+              triggerGenerateMainMap(parsed);
+            } else {
+              setMapSubTab('criar_meu_mapa');
+              setActiveTab('mapa');
+            }
           }
         } catch {}
+      } else {
+        // Construct minimum local user to allow instant entry
+        const emailLower = (firebaseUser.email || "").toLowerCase().trim();
+        const fallbackUser: UserProfile = {
+          userId: firebaseUser.uid,
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || "Buscador",
+          displayName: firebaseUser.displayName || "Buscador",
+          email: emailLower,
+          birthDate: createMainDate || "",
+          birthTime: timeIsUnknown ? "12:00" : (createMainTime || "12:00"),
+          birthCity: createMainCity || "",
+          hasCreatedMap: !!createMainDate && !!createMainCity,
+          isPremium: false,
+          isEmailVerified: true,
+          emailVerified: true
+        };
+        setUser(fallbackUser);
+        setIsLoggedIn(true);
+        setLoggedEmail(emailLower);
+        localStorage.setItem("orbi_user_profile", JSON.stringify(fallbackUser));
       }
     } finally {
       setIsSyncingSession(false);

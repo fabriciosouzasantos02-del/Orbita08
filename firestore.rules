@@ -84,6 +84,11 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // Catch-all rule for any other user subcollections (premium, posts, etc.)
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId);
+      }
+
       // Social collections: following, followers, friends, likesGiven, likesSnapshot, notifications
       match /following/{followedUserId} {
         // You can read your own following, and write (follow/unfollow) if you are the owner of this list

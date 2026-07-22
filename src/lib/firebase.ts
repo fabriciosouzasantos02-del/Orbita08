@@ -356,22 +356,31 @@ export function getUserDocKey(emailOrUid?: string): string {
   const cachedUid = localStorage.getItem("orbi_logged_uid");
   if (cachedUid) return cachedUid;
 
-  const cachedEmail = localStorage.getItem("orbi_logged_email");
-  if (cachedEmail && !cachedEmail.includes("@")) {
-    return cachedEmail;
-  }
+  try {
+    const savedProfile = localStorage.getItem("orbi_user_profile");
+    if (savedProfile) {
+      const parsed = JSON.parse(savedProfile);
+      if (parsed?.uid && typeof parsed.uid === 'string' && !parsed.uid.includes("@")) return parsed.uid;
+      if (parsed?.userId && typeof parsed.userId === 'string' && !parsed.userId.includes("@")) return parsed.userId;
+    }
+  } catch (_) {}
 
-  return emailOrUid ? emailOrUid.toLowerCase().trim() : "";
+  // Never return an email address as a document key under users/{key}
+  return "";
 }
 
 // Core Profile Real-Time Synchronizers
 export async function saveProfileToDatabase(email: string, profile: UserProfileData) {
   const mailKey = email.toLowerCase().trim();
-  if (!mailKey) return;
-  
-  const docKey = getUserDocKey(email);
   const auth = getFirebaseAuth();
-  const activeUid = auth?.currentUser?.uid || profile.uid || profile.userId || "";
+  const activeUid = auth?.currentUser?.uid || profile.uid || profile.userId || localStorage.getItem("orbi_logged_uid") || "";
+
+  if (!activeUid) {
+    console.warn("[saveProfileToDatabase] Impossível salvar no Firestore sem UID ativo.");
+    return;
+  }
+
+  const docKey = activeUid;
 
   // Read existing local profile to protect against overwriting valid fields
   let existingLocal: any = null;
@@ -537,103 +546,58 @@ export async function migrateLegacyUserSubcollections(db: any, mailKey: string, 
 
 export async function loadProfileFromDatabase(email: string, explicitUid?: string): Promise<UserProfileData | null> {
   const mailKey = email.toLowerCase().trim();
-  if (!mailKey) return null;
-  
   const db = getFirestoreDB();
-  if (db) {
-    const auth = getFirebaseAuth();
-    const uid = explicitUid || auth?.currentUser?.uid;
-    
-    // First try the optimal route via current session's authenticated UID
-    if (uid) {
-      const path = `users/${uid}`;
+  if (!db) return null;
+
+  const auth = getFirebaseAuth();
+  const uid = explicitUid || auth?.currentUser?.uid || (email && !email.includes("@") ? email : localStorage.getItem("orbi_logged_uid"));
+
+  if (!uid) {
+    console.warn("[Sync] loadProfileFromDatabase chamado sem UID válido.");
+    return null;
+  }
+
+  const path = `users/${uid}`;
+  try {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDocWithTimeout(userRef);
+    if (snap.exists()) {
+      const remote = snap.data() as UserProfileData;
+
+      let local: UserProfileData | null = null;
       try {
-        const userRef = doc(db, "users", uid);
-        const snap = await getDocWithTimeout(userRef);
-        if (snap.exists()) {
-          const remote = snap.data() as UserProfileData;
-          
-          let local: UserProfileData | null = null;
-          try {
-            const saved = localStorage.getItem("orbi_user_profile");
-            if (saved) local = JSON.parse(saved);
-          } catch (_) {}
-          
-          const merged = mergeProfileData(local, remote);
-          localStorage.setItem("orbi_user_profile", JSON.stringify(merged));
-          
-          // If local was newer, upload merged to Firestore
-          const localTime = local && local.updatedAt ? new Date(local.updatedAt).getTime() : 0;
-          const remoteTime = remote && remote.updatedAt ? new Date(remote.updatedAt).getTime() : 0;
-          if (localTime > remoteTime) {
-            console.log("[Sync Engine] Local profile is newer, uploading merged profile to Firestore...");
-            await setDoc(userRef, sanitizeFirestoreData(merged), { merge: true });
-          }
-          
-          return merged;
-        }
-      } catch (e) {
-        console.warn("[Sync] Leitura por UID falhou.");
+        const saved = localStorage.getItem("orbi_user_profile");
+        if (saved) local = JSON.parse(saved);
+      } catch (_) {}
+
+      const merged = mergeProfileData(local, remote);
+      localStorage.setItem("orbi_user_profile", JSON.stringify(merged));
+
+      // If local was newer, upload merged to Firestore
+      const localTime = local && local.updatedAt ? new Date(local.updatedAt).getTime() : 0;
+      const remoteTime = remote && remote.updatedAt ? new Date(remote.updatedAt).getTime() : 0;
+      if (localTime > remoteTime) {
+        console.log("[Sync Engine] Local profile is newer, uploading merged profile to Firestore...");
+        await setDoc(userRef, sanitizeFirestoreData(merged), { merge: true });
       }
+
+      return merged;
     }
-    
-    // Fallback/Legacy lookup via lowercase email
-    const emailPath = `users/${mailKey}`;
-    try {
-      const userRef = doc(db, "users", mailKey);
-      const snap = await getDocWithTimeout(userRef);
-      if (snap.exists()) {
-        const remote = snap.data() as UserProfileData;
-        
-        // If we have an active Firebase Auth user, migrate the legacy document to users/{uid}
-        if (uid) {
-          console.log("[Migration] Migrando perfil legado de e-mail para nova estrutura users/{uid}:", uid);
-          const newDocRef = doc(db, "users", uid);
-          const migratedProfile = {
-            ...remote,
-            uid: uid,
-            userId: uid,
-            updatedAt: new Date().toISOString()
-          };
-          
-          // 1. Cópia bem-sucedida do documento principal
-          await setDoc(newDocRef, migratedProfile, { merge: true });
-          
-          // 2. Cópia de todas as subcoleções (Natal Charts, Dreams, Extra Maps, Tarot, etc.)
-          await migrateLegacyUserSubcollections(db, mailKey, uid, email);
-          
-          // 3. Deleta o documento principal e todas as estruturas antigas apenas pós confirmação
-          await deleteDoc(userRef).catch(e => console.warn("[Migration] Erro ao deletar documento principal legado:", e));
-          
-          localStorage.setItem("orbi_user_profile", JSON.stringify(migratedProfile));
-          return migratedProfile;
-        }
-        
-        let local: UserProfileData | null = null;
-        try {
-          const saved = localStorage.getItem("orbi_user_profile");
-          if (saved) local = JSON.parse(saved);
-        } catch (_) {}
-        
-        const merged = mergeProfileData(local, remote);
-        localStorage.setItem("orbi_user_profile", JSON.stringify(merged));
-        return merged;
-      }
-    } catch (e) {
-      console.warn("[Sync] Leitura por e-mail falhou.");
-      handleFirestoreError(e, OperationType.GET, emailPath);
+  } catch (e: any) {
+    console.warn(`[Sync] Leitura do perfil por UID (${uid}) falhou:`, e);
+    if (e?.code || e?.message?.includes('permission')) {
+      handleFirestoreError(e, OperationType.GET, path);
     }
   }
-  
+
   const saved = localStorage.getItem("orbi_user_profile");
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if (parsed && (parsed.email?.toLowerCase().trim() === mailKey || parsed.uid === mailKey || parsed.userId === mailKey)) {
-        return parsed;
-      }
-    } catch {}
+      if (parsed) return parsed;
+    } catch (_) {}
   }
+
   return null;
 }
 
@@ -1081,6 +1045,7 @@ export async function loadExtraMapsFromDatabase(email: string): Promise<ExtraMap
   const db = getFirestoreDB();
   if (db) {
     const docKey = getUserDocKey(email);
+    if (!docKey) return [];
     const path = `users/${docKey}/extraMaps`;
     try {
       const colRef = collection(db, "users", docKey, "extraMaps");
@@ -1092,7 +1057,7 @@ export async function loadExtraMapsFromDatabase(email: string): Promise<ExtraMap
       localStorage.setItem(storageKey, JSON.stringify(results));
       return results;
     } catch (e) {
-      handleFirestoreError(e, OperationType.GET, path);
+      console.warn(`[Sync] Load Extra Maps deferred for ${path}:`, e);
     }
   }
 
@@ -1289,6 +1254,7 @@ export async function loadDreamsFromDatabase(email: string): Promise<DreamLogIte
   const db = getFirestoreDB();
   if (db) {
     const docKey = getUserDocKey(email);
+    if (!docKey) return [];
     const path = `users/${docKey}/dreams`;
     try {
       const colRef = collection(db, "users", docKey, "dreams");
@@ -1300,7 +1266,7 @@ export async function loadDreamsFromDatabase(email: string): Promise<DreamLogIte
       localStorage.setItem(storageKey, JSON.stringify(results));
       return results;
     } catch (e) {
-      handleFirestoreError(e, OperationType.GET, path);
+      console.warn(`[Sync] Load Dreams deferred for ${path}:`, e);
     }
   }
 
@@ -1456,6 +1422,7 @@ export async function loadNatalChartFromDatabase(email: string, chartId: string)
   if (!mailKey || !chartId) return null;
 
   const docKey = getUserDocKey(email);
+  if (!docKey) return null;
   const db = getFirestoreDB();
   if (db) {
     const path = `users/${docKey}/natalCharts/${chartId}`;
@@ -1481,6 +1448,7 @@ export async function loadAllNatalCharts(email: string): Promise<any[]> {
   if (!mailKey) return [];
 
   const docKey = getUserDocKey(email);
+  if (!docKey) return [];
   const db = getFirestoreDB();
   if (db) {
     const path = `users/${docKey}/natalCharts`;
