@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
@@ -996,6 +996,8 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
     loadHistory();
   }, [userEmail, authUid]);
 
+  const autoEvalLockRef = useRef<string | null>(null);
+
   // Load matched history report if user switches category, companion, or language
   useEffect(() => {
     if (!partnerName) return;
@@ -1010,26 +1012,28 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
     if (matchThisLang) {
       setResult(matchThisLang.compatibilityData);
     } else {
-      // If we don't have a history item in this language, but we have a match in ANY language,
-      // OR we currently have a result showing, but in a different language:
+      // If we don't have a history item in this language, but we have a match in ANY language
       const matchAnyLang = history.find(h => 
         h.partnerName.toLowerCase().trim() === partnerName.toLowerCase().trim() && 
         h.category === relationCategory
       );
 
-      const hasResultDiffLang = result && 
-        (result.partnerName || '').toLowerCase().trim() === partnerName.toLowerCase().trim() &&
-        (result.category || '') === relationCategory &&
-        (result.lang || 'pt') !== idiomaAtual;
+      const evalKey = `${partnerName}_${relationCategory}_${idiomaAtual}`.toLowerCase().trim();
 
-      if ((matchAnyLang || hasResultDiffLang) && !isEvaluating) {
-        // Trigger background re-evaluation to translate/regenerate to the current language!
+      if (matchAnyLang && autoEvalLockRef.current !== evalKey) {
+        autoEvalLockRef.current = evalKey;
+        setResult(matchAnyLang.compatibilityData); // Show previous lang result while loading translation
+
         const autoTriggerEvaluate = async () => {
           setIsEvaluating(true);
           try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
+
             const response = await fetch("/api/compatibility/evaluate", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              signal: controller.signal,
               body: JSON.stringify({
                 name: user.name || "Você",
                 birthDate: user.birthDate,
@@ -1048,34 +1052,37 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 lang: idiomaAtual,
               })
             });
-            const data = await response.json();
-            if (data.compatibility) {
-              setResult(data.compatibility);
+            clearTimeout(timeoutId);
 
-              const newHistoryItem: CompatibilityHistoryItem = {
-                id: `${partnerName}_${relationCategory}_${idiomaAtual}`.toLowerCase().trim().replace(/[.$#[\]\s]/g, "_"),
-                partnerName,
-                category: relationCategory,
-                lang: idiomaAtual,
-                compatibilityData: data.compatibility,
-                createdAt: new Date().toISOString()
-              };
-              await saveCompatibilityHistory(userEmail, newHistoryItem);
-              setHistory(prev => [newHistoryItem, ...prev.filter(h => h.id !== newHistoryItem.id)]);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.compatibility) {
+                setResult(data.compatibility);
+
+                const newHistoryItem: CompatibilityHistoryItem = {
+                  id: evalKey.replace(/[.$#[\]\s]/g, "_"),
+                  partnerName,
+                  category: relationCategory,
+                  lang: idiomaAtual,
+                  compatibilityData: data.compatibility,
+                  createdAt: new Date().toISOString()
+                };
+                await saveCompatibilityHistory(userEmail, newHistoryItem);
+                setHistory(prev => [newHistoryItem, ...prev.filter(h => h.id !== newHistoryItem.id)]);
+              }
             }
           } catch (err) {
-            console.error("Auto language translation fetch failed:", err);
+            console.warn("Auto language translation fetch failed/timed out:", err);
           } finally {
             setIsEvaluating(false);
           }
         };
         autoTriggerEvaluate();
       } else if (matchAnyLang && !result) {
-        // Fallback: if we aren't translating yet, load any matching language result first so user doesn't see blank
         setResult(matchAnyLang.compatibilityData);
       }
     }
-  }, [relationCategory, partnerName, history, idiomaAtual, result, isEvaluating, user]);
+  }, [relationCategory, partnerName, history, idiomaAtual, user]);
 
   // Interactivity for planetary aspect accordions and elements details
   const [expandedAspectIndex, setExpandedAspectIndex] = useState<number | null>(0);

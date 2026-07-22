@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getClientCupidoFallback } from '../lib/cupidoFallback';
 import { 
   Heart, Sparkles, User, Calendar, Clock, MapPin, Trash, Edit2, Plus, 
   Activity, Star, ArrowRight, Compass, ShieldCheck, BookOpen, MessageSquare, 
@@ -114,6 +115,9 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
     };
   }, [userEmail, authUid]);
 
+  // Ref to prevent duplicate/concurrent generation loops
+  const inFlightRef = useRef<string | null>(null);
+
   // Load selected person radar from cache/history or generate new
   useEffect(() => {
     if (!selectedPerson) {
@@ -130,11 +134,13 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
 
     if (cachedRadar) {
       setRadarData(cachedRadar.radarData);
-    } else if (generatingId !== selectedPerson.id) {
-      setGeneratingId(selectedPerson.id);
-      handleGenerateRadar(selectedPerson);
+      setLoading(false);
+    } else {
+      if (inFlightRef.current !== targetId) {
+        handleGenerateRadar(selectedPerson, targetId);
+      }
     }
-  }, [selectedPerson, history, lang, generatingId]);
+  }, [selectedPerson, history, lang]);
 
   // ----------------------------------------------------
   // Actions
@@ -207,12 +213,24 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
     await deleteCupidoPerson(userEmail, personId);
   };
 
-  const handleGenerateRadar = async (person: CupidoPerson) => {
+  const handleGenerateRadar = async (person: CupidoPerson, forcedTargetId?: string) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const targetId = forcedTargetId || `${person.id}_${todayStr}_${lang}`;
+
+    if (inFlightRef.current === targetId && loading) return;
+    inFlightRef.current = targetId;
+
     setLoading(true);
+    setGeneratingId(person.id);
+
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
       const response = await fetch("/api/cupido/radar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           user: {
             name: user.name,
@@ -235,17 +253,17 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
           lang
         })
       });
+      clearTimeout(timeoutId);
 
-      if (!response.ok) throw new Error("API call failed");
+      if (!response.ok) throw new Error(`API call failed with status ${response.status}`);
 
       const data = await response.json();
-      if (data.radar) {
+      if (data && data.radar) {
         setRadarData(data.radar);
 
         // Cache into history
-        const todayStr = new Date().toISOString().split('T')[0];
         const newHistoryItem: CupidoHistory = {
-          id: `${person.id}_${todayStr}_${lang}`,
+          id: targetId,
           personId: person.id,
           date: todayStr,
           radarData: data.radar,
@@ -254,12 +272,28 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
 
         await saveCupidoHistory(userEmail, newHistoryItem);
         setHistory(prev => [newHistoryItem, ...prev.filter(h => h.id !== newHistoryItem.id)]);
+      } else {
+        throw new Error("No radar data in response");
       }
     } catch (err) {
-      console.error("Error generating Cupido radar:", err);
+      console.warn("[CupidoRadar] Using localized fallback due to API error or timeout:", err);
+      const fallback = getClientCupidoFallback(user, person, lang);
+      setRadarData(fallback);
+
+      const fallbackHistoryItem: CupidoHistory = {
+        id: targetId,
+        personId: person.id,
+        date: todayStr,
+        radarData: fallback,
+        createdAt: new Date().toISOString()
+      };
+
+      await saveCupidoHistory(userEmail, fallbackHistoryItem);
+      setHistory(prev => [fallbackHistoryItem, ...prev.filter(h => h.id !== fallbackHistoryItem.id)]);
     } finally {
       setLoading(false);
       setGeneratingId(null);
+      inFlightRef.current = null;
     }
   };
 
