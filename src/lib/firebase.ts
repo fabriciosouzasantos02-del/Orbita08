@@ -139,14 +139,38 @@ export function mergeProfileData(local: any, remote: any): any {
   if (!local) return remote;
   if (!remote) return local;
 
+  const merged: any = { ...remote, ...local };
+
+  // Preserve valid non-empty birth details prioritizing whichever object has non-empty values
+  merged.birthDate = (local.birthDate && local.birthDate.trim()) ? local.birthDate : (remote.birthDate && remote.birthDate.trim() ? remote.birthDate : "");
+  merged.birthTime = (local.birthTime && local.birthTime.trim()) ? local.birthTime : (remote.birthTime && remote.birthTime.trim() ? remote.birthTime : "12:00");
+  merged.birthCity = (local.birthCity && local.birthCity.trim() && local.birthCity !== "Sao_Paulo") 
+    ? local.birthCity 
+    : (remote.birthCity && remote.birthCity.trim() ? remote.birthCity : (local.birthCity || "Sao_Paulo"));
+  merged.isUnknownTime = local.isUnknownTime ?? remote.isUnknownTime ?? false;
+
+  const validLocalName = local.name && local.name !== "Viajante Estelar" && local.name !== "Buscador" ? local.name : null;
+  const validRemoteName = remote.name && remote.name !== "Viajante Estelar" && remote.name !== "Buscador" ? remote.name : null;
+  merged.name = validLocalName || validRemoteName || local.name || remote.name || "Buscador";
+
+  merged.displayName = local.displayName || remote.displayName || merged.name;
+  merged.birthName = local.birthName || remote.birthName || merged.name;
+  merged.profileName = local.profileName || remote.profileName || merged.name;
+
+  merged.avatarId = local.avatarId || remote.avatarId || local.profilePhoto || remote.profilePhoto || "";
+  merged.profilePhoto = merged.avatarId;
+
+  merged.currentChartId = local.currentChartId || remote.currentChartId || "";
+  merged.hasCreatedMap = !!merged.birthDate && !!merged.birthCity;
+
+  merged.scorePoints = Math.max(local.scorePoints ?? 0, remote.scorePoints ?? 0, local.stellarPoints ?? 0, remote.stellarPoints ?? 0);
+  merged.stellarPoints = merged.scorePoints;
+
   const localTime = new Date(local.updatedAt || 0).getTime();
   const remoteTime = new Date(remote.updatedAt || 0).getTime();
+  merged.updatedAt = localTime > remoteTime ? local.updatedAt : remote.updatedAt;
 
-  if (localTime > remoteTime) {
-    return { ...remote, ...local, updatedAt: local.updatedAt };
-  } else {
-    return { ...local, ...remote, updatedAt: remote.updatedAt };
-  }
+  return merged;
 }
 
 // Lazy-loaded or optionally fallback firebase configuration
@@ -316,22 +340,28 @@ export interface DreamLogItem {
 }
 
 // 1. Helper to retrieve current document key (strictly preferring active authenticated UID or cached UID, preventing hybrid email keys)
-export function getUserDocKey(email: string): string {
-  const mailKey = email.toLowerCase().trim();
-  
-  // If the parameter passed is already a UID (doesn't contain '@' and isn't empty), return it directly
-  if (email && !email.includes("@")) {
-    return email;
+export function getUserDocKey(emailOrUid?: string): string {
+  // If the parameter passed is already a valid non-email UID, return it directly
+  if (emailOrUid) {
+    const trimmed = emailOrUid.trim();
+    if (trimmed && !trimmed.includes("@")) {
+      return trimmed;
+    }
   }
 
   const auth = getFirebaseAuth();
-  const uid = auth?.currentUser?.uid;
-  if (uid) return uid;
+  const activeUid = auth?.currentUser?.uid;
+  if (activeUid) return activeUid;
 
   const cachedUid = localStorage.getItem("orbi_logged_uid");
   if (cachedUid) return cachedUid;
 
-  return mailKey;
+  const cachedEmail = localStorage.getItem("orbi_logged_email");
+  if (cachedEmail && !cachedEmail.includes("@")) {
+    return cachedEmail;
+  }
+
+  return emailOrUid ? emailOrUid.toLowerCase().trim() : "";
 }
 
 // Core Profile Real-Time Synchronizers
@@ -343,36 +373,61 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
   const auth = getFirebaseAuth();
   const activeUid = auth?.currentUser?.uid || profile.uid || profile.userId || "";
 
-  const rawName = profile.name || profile.displayName || profile.profileName || profile.birthName || "Buscador";
-  const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+  // Read existing local profile to protect against overwriting valid fields
+  let existingLocal: any = null;
+  try {
+    const saved = localStorage.getItem("orbi_user_profile");
+    if (saved) existingLocal = JSON.parse(saved);
+  } catch (_) {}
 
-  const pointsVal = profile.stellarPoints !== undefined ? profile.stellarPoints : (profile.scorePoints ?? 0);
+  const rawName = profile.name || profile.displayName || profile.profileName || profile.birthName || existingLocal?.name || existingLocal?.displayName || "";
+  const validName = (rawName && rawName !== "Viajante Estelar" && rawName !== "Buscador") 
+    ? rawName 
+    : (existingLocal?.name && existingLocal?.name !== "Viajante Estelar" && existingLocal?.name !== "Buscador" ? existingLocal.name : (rawName || "Buscador"));
+
+  const pointsVal = Math.max(
+    profile.stellarPoints !== undefined ? profile.stellarPoints : 0,
+    profile.scorePoints !== undefined ? profile.scorePoints : 0,
+    existingLocal?.scorePoints !== undefined ? existingLocal.scorePoints : 0,
+    existingLocal?.stellarPoints !== undefined ? existingLocal.stellarPoints : 0
+  );
+
+  const birthDateVal = (profile.birthDate && profile.birthDate.trim()) ? profile.birthDate : (existingLocal?.birthDate || "");
+  const birthTimeVal = (profile.birthTime && profile.birthTime.trim()) ? profile.birthTime : (existingLocal?.birthTime || "12:00");
+  const birthCityVal = (profile.birthCity && profile.birthCity.trim() && profile.birthCity !== "Sao_Paulo") 
+    ? profile.birthCity 
+    : (existingLocal?.birthCity || profile.birthCity || "Sao_Paulo");
+  const avatarIdVal = profile.avatarId || profile.profilePhoto || existingLocal?.avatarId || existingLocal?.profilePhoto || "";
 
   const enrichedProfile = {
+    ...existingLocal,
     ...profile,
-    uid: activeUid || profile.uid || "",
-    userId: activeUid || profile.userId || "",
+    uid: activeUid || profile.uid || existingLocal?.uid || "",
+    userId: activeUid || profile.userId || existingLocal?.userId || "",
     email: mailKey,
-    name: finalName,
-    displayName: profile.displayName || finalName,
-    birthName: profile.birthName || finalName,
-    profileName: profile.profileName || finalName,
-    avatarId: profile.avatarId || profile.profilePhoto || "",
-    preferredLanguage: profile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
+    name: validName,
+    displayName: (profile.displayName && profile.displayName !== "Viajante Estelar" && profile.displayName !== "Buscador") ? profile.displayName : (existingLocal?.displayName || validName),
+    birthName: (profile.birthName && profile.birthName !== "Viajante Estelar" && profile.birthName !== "Buscador") ? profile.birthName : (existingLocal?.birthName || validName),
+    profileName: (profile.profileName && profile.profileName !== "Viajante Estelar" && profile.profileName !== "Buscador") ? profile.profileName : (existingLocal?.profileName || validName),
+    avatarId: avatarIdVal,
+    profilePhoto: avatarIdVal,
+    preferredLanguage: profile.preferredLanguage || existingLocal?.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
     scorePoints: pointsVal,
     stellarPoints: pointsVal,
-    birthDate: profile.birthDate || "",
-    birthTime: profile.birthTime || "12:00",
-    birthCity: profile.birthCity || "Sao_Paulo",
-    latitude: profile.latitude !== undefined ? profile.latitude : -23.55052,
-    longitude: profile.longitude !== undefined ? profile.longitude : -46.633308,
-    isPremium: profile.isPremium !== undefined ? profile.isPremium : false,
-    followersCount: profile.followersCount !== undefined ? profile.followersCount : 0,
-    followingCount: profile.followingCount !== undefined ? profile.followingCount : 0,
-    likesCount: profile.likesCount !== undefined ? profile.likesCount : 0,
-    friendsCount: profile.friendsCount !== undefined ? profile.friendsCount : 0,
-    schemaVersion: profile.schemaVersion || "1.0.0",
-    createdAt: profile.createdAt || new Date().toISOString(),
+    birthDate: birthDateVal,
+    birthTime: birthTimeVal,
+    birthCity: birthCityVal,
+    currentChartId: profile.currentChartId || existingLocal?.currentChartId || "",
+    hasCreatedMap: profile.hasCreatedMap ?? (!!birthDateVal && !!birthCityVal),
+    latitude: profile.latitude !== undefined ? profile.latitude : (existingLocal?.latitude ?? -23.55052),
+    longitude: profile.longitude !== undefined ? profile.longitude : (existingLocal?.longitude ?? -46.633308),
+    isPremium: profile.isPremium !== undefined ? profile.isPremium : (existingLocal?.isPremium ?? false),
+    followersCount: profile.followersCount !== undefined ? profile.followersCount : (existingLocal?.followersCount ?? 0),
+    followingCount: profile.followingCount !== undefined ? profile.followingCount : (existingLocal?.followingCount ?? 0),
+    likesCount: profile.likesCount !== undefined ? profile.likesCount : (existingLocal?.likesCount ?? 0),
+    friendsCount: profile.friendsCount !== undefined ? profile.friendsCount : (existingLocal?.friendsCount ?? 0),
+    schemaVersion: profile.schemaVersion || existingLocal?.schemaVersion || "1.0.0",
+    createdAt: profile.createdAt || existingLocal?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
 
@@ -429,13 +484,25 @@ export async function migrateLegacyUserSubcollections(db: any, mailKey: string, 
     "extraMaps",
     "missions",
     "tarotReadings",
+    "tarotHistory",
     "numerology",
     "prosperityMaps",
     "biorhythm",
     "lunarNodes",
     "notifications",
     "subscriptions",
-    "cache"
+    "cache",
+    "premium",
+    "stellarPoints",
+    "profile",
+    "settings",
+    "statistics",
+    "compatibilityHistory",
+    "cupidoFavorites",
+    "cupidoHistory",
+    "cupidoSettings",
+    "cupidoPeople",
+    "pointsTracker"
   ];
 
   console.log(`[Migration] Iniciando migração de subcoleções de e-mail (${mailKey}) para UID (${uid})`);
@@ -1358,6 +1425,20 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
         updatedAt: new Date().toISOString()
       }), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc SUCCESS for path: ${path}`);
+
+      // Sync root user profile document so users/{docKey} always holds active birth details
+      if (chartData.birthDate && chartData.birthCity) {
+        const userRef = doc(db, "users", docKey);
+        await setDoc(userRef, sanitizeFirestoreData({
+          birthDate: chartData.birthDate,
+          birthTime: chartData.birthTime || "12:00",
+          birthCity: chartData.birthCity,
+          isUnknownTime: chartData.isUnknownTime ?? false,
+          currentChartId: chartId,
+          hasCreatedMap: true,
+          updatedAt: new Date().toISOString()
+        }), { merge: true }).catch(err => console.warn("[Sync] Root profile sync from natal chart failed:", err));
+      }
     } catch (e: any) {
       console.error(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc FAILED for path: ${path}`, {
         error: e?.message || String(e),

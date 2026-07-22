@@ -5035,13 +5035,16 @@ function translateCard(card: any, lang: string): any {
 
 // NEW API: Dynamic, Astrological, Karmic & Dharmic Daily Missions (Osíris Engine)
 app.post("/api/astrology/daily-missions", async (req, res) => {
-  const { userProfile, lang, mapData } = req.body || {};
+  const { userProfile, lang: reqLang, mapData } = req.body || {};
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
   const birthDate = userProfile?.birthDate || "1998-03-12";
   const zodiac = getZodiacFromBirthDate(birthDate);
 
+  const rawLang = reqLang || userProfile?.idioma || userProfile?.lang || 'pt';
+  const activeLang = rawLang.toString().toLowerCase();
+
   const todayStr = new Date().toISOString().split('T')[0];
-  const cacheKey = `osiris_missions_v4:${name}:${birthDate}:${todayStr}:${lang || 'pt'}`;
+  const cacheKey = `osiris_missions_v4:${name}:${birthDate}:${todayStr}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -5084,7 +5087,6 @@ Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
   const generateDynamicFallbacks = () => {
     const today = new Date();
     const seedVal = (today.getDate() + (today.getMonth() + 1) * 7 + (name.length * 3)) % 5;
-    const activeLang = (lang || 'pt').toLowerCase();
 
     // Define standard fallback pools for each language
     let dailyPool: any[] = [];
@@ -5373,7 +5375,6 @@ Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
   }
 
   try {
-    const activeLang = lang || 'pt';
     const languageNames: Record<string, string> = {
       pt: "Português",
       en: "English (Inglês)",

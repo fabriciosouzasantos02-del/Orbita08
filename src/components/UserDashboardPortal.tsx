@@ -23,6 +23,7 @@ import {
 import { generateDailyPrediction } from './dailyPredictionsEngine';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache, saveWeeklyMissionsToDatabase, loadWeeklyMissionsFromDatabase, saveProfileToDatabase } from '../lib/firebase';
+import { scanAndTranslateDOM } from '../lib/locales';
 import { getAvatarUrl } from '../lib/avatars';
 import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
@@ -1475,12 +1476,12 @@ export default function UserDashboardPortal({
       group: "Pilares do Destino",
       items: [
         { id: 'cupido', label: 'cupido_tab', icon: Heart, color: 'text-rose-400 animate-pulse', bg: 'hover:bg-rose-500/5' },
-        { id: 'prosperidade', label: 'Prosperidade e Capital', icon: DollarSign, color: 'text-emerald-400', bg: 'hover:bg-emerald-505/5' },
+        { id: 'prosperidade', label: 'Prosperidade e Capital', icon: DollarSign, color: 'text-emerald-400', bg: 'hover:bg-emerald-500/5' },
         { id: 'amor', label: 'Amor & Intimidade', icon: Heart, color: 'text-red-400', bg: 'hover:bg-red-500/5' },
         { id: 'compatibilidade_social', label: 'Sinergia Social', icon: Users, color: 'text-amber-400', bg: 'hover:bg-amber-500/5' },
         { id: 'relacionamentos', label: 'Relacionamentos', icon: Users, color: 'text-cyan-400', bg: 'hover:bg-cyan-500/5' },
-        { id: 'desenvolvimento', label: 'Desenv. Pessoal', icon: Star, color: 'text-yellow-405', bg: 'hover:bg-yellow-500/5' },
-        { id: 'energia_casa', label: 'Energia da Casa', icon: Home, color: 'text-indigo-405', bg: 'hover:bg-indigo-505/5' },
+        { id: 'desenvolvimento', label: 'Desenv. Pessoal', icon: Star, color: 'text-yellow-400', bg: 'hover:bg-yellow-500/5' },
+        { id: 'energia_casa', label: 'Energia da Casa', icon: Home, color: 'text-indigo-400', bg: 'hover:bg-indigo-500/5' },
         { id: 'sonhos', label: 'Centro de Sonhos', icon: Moon, color: 'text-pink-400', bg: 'hover:bg-pink-500/5' }
       ]
     }
@@ -1504,10 +1505,8 @@ export default function UserDashboardPortal({
   const [activeCalendarFilter, setActiveCalendarFilter] = useState<string>('todos');
   const [selectedOpportunityArea, setSelectedOpportunityArea] = useState<string>('dinheiro');
   const [universoSintonizado, setUniversoSintonizado] = useState<boolean>(false);
-
-  // Weekly Missions State
   const [weeklyMissions, setWeeklyMissions] = useState<Array<{ id: string; title: string; description: string; isCompleted: boolean; points: number; isClaimed?: boolean }>>(() => {
-    const activeLang = lang || 'pt';
+    const activeLang = (idioma || lang || 'pt').toLowerCase();
     const isEn = activeLang === 'en';
     const isEs = activeLang === 'es';
     const isDe = activeLang === 'de';
@@ -1515,13 +1514,13 @@ export default function UserDashboardPortal({
     return [
       { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify an accumulated material or bureaucratic pending issue and take action to resolve it, releasing Saturn's flow." : isEs ? "Identifique un asunto pendiente material o burocrático acumulado y tome medidas para resolverlo, liberando el flujo de Saturno." : isDe ? "Identifizieren Sie eine aufgelaufene materieller oder bürokratische Angelegenheit und ergreifen Sie Maßnahmen zu deren Klärung, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez une question en suspens matérielle ou bureaucratique accumulée et agissez pour la résoudre, libérant ainsi le flux de Saturne." : "Identifique uma pendência material ou burocrática acumulada e tome uma ação para resolvê-la, liberando fluxo de Saturno.", isCompleted: false, points: 150 },
       { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a genuine message of affection or make a gesture of consideration to someone in your inner circle." : isEs ? "Envíe un mensaje genuino de afecto o tenga un gesto de consideración hacia alguien de su círculo íntimo." : isDe ? "Senden Sie eine aufrichtige Botschaft der Zuneigung oder zeigen Sie jemandem aus Ihrem engsten Kreis eine Geste der Aufmerksamkeit." : isFr ? "Envoyez un message sincère d'affection ou faites un geste de considération envers quelqu'un de votre entourage proche." : "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo.", isCompleted: false, points: 120 },
-      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tempo ao aprendizado" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Invest at least 1 hour in a book, course or meditation audio focused on your personal development." : isEs ? "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en su desarrollo personal." : isDe ? "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio, das auf Ihre persönliche Entwicklung ausgerichtet ist." : isFr ? "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur votre développement personnel." : "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
+      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tiempo al aprendizaje" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Invest at least 1 hour in a book, course or meditation audio focused on your personal development." : isEs ? "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en su desarrollo personal." : isDe ? "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio, das auf Ihre persönliche Entwicklung ausgerichtet ist." : isFr ? "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur votre développement personnel." : "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
     ];
   });
 
   // Keep weeklyMissions translated when language prop changes
   useEffect(() => {
-    const activeLang = lang || 'pt';
+    const activeLang = (idioma || lang || 'pt').toLowerCase();
     const isEn = activeLang === 'en';
     const isEs = activeLang === 'es';
     const isDe = activeLang === 'de';
@@ -1529,11 +1528,10 @@ export default function UserDashboardPortal({
     const templates = [
       { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify an accumulated material or bureaucratic pending issue and take action to resolve it, releasing Saturn's flow." : isEs ? "Identifique un asunto pendiente material o burocrático acumulado y tome medidas para resolverlo, liberando el flujo de Saturno." : isDe ? "Identifizieren Sie eine aufgelaufene materieller oder bürokratische Angelegenheit und ergreifen Sie Maßnahmen zu deren Klärung, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez une question en suspens matérielle ou bureaucratique accumulée et agissez pour la résoudre, libérant ainsi le flux de Saturne." : "Identifique uma pendência material ou burocrática acumulada e tome uma ação para resolvê-la, liberando fluxo de Saturno.", isCompleted: false, points: 150 },
       { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a genuine message of affection or make a gesture of consideration to someone in your inner circle." : isEs ? "Envíe un mensaje genuino de afecto o tenga un gesto de consideración hacia alguien de su círculo íntimo." : isDe ? "Senden Sie eine aufrichtige Botschaft der Zuneigung oder zeigen Sie jemandem aus Ihrem engsten Kreis eine Geste der Aufmerksamkeit." : isFr ? "Envoyez un message sincère d'affection ou faites un geste de considération envers quelqu'un de votre entourage proche." : "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo.", isCompleted: false, points: 120 },
-      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tempo ao aprendizado" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semana consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Invest at least 1 hour in a book, course or meditation audio focused on your personal development." : isEs ? "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en su desarrollo personal." : isDe ? "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio, das auf Ihre persönliche Entwicklung ausgerichtet ist." : isFr ? "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur votre développement personnel." : "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
+      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tiempo al aprendizaje" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Invest at least 1 hour in a book, course or meditation audio focused on your personal development." : isEs ? "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en su desarrollo personal." : isDe ? "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio, das auf Ihre persönliche Entwicklung ausgerichtet ist." : isFr ? "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur votre desenvolvimento pessoal." : "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
     ];
-    setWeeklyMissions(prev => prev.map(m => {
-      if (!m.id.startsWith("w")) return m;
-      const tpl = templates.find(t => t.id === m.id);
+    setWeeklyMissions(prev => prev.map((m, idx) => {
+      const tpl = templates.find(t => t.id === m.id || (m.id.startsWith("w") && t.id.endsWith(m.id.slice(-1)))) || templates[idx % templates.length];
       if (tpl) {
         return {
           ...m,
@@ -1543,7 +1541,10 @@ export default function UserDashboardPortal({
       }
       return m;
     }));
-  }, [activeLang]);
+
+    scanAndTranslateDOM(activeLang);
+  }, [idioma, lang]);
+
 
   // Osiris Intelligent AI System States
   const [osirisDashboard, setOsirisDashboard] = useState<any>(null);
@@ -1713,10 +1714,8 @@ export default function UserDashboardPortal({
                 isCompleted: matched ? matched.isCompleted : false
               };
             });
-            if (dailyMissions.length === 0) {
-              setDailyMissions(updated);
-            }
-            if (!savedWeekly && Array.isArray(cachedData.weeklyMissions)) {
+            setDailyMissions(updated);
+            if (!savedWeekly && Array.isArray(cachedData.weeklyMissions) && cachedData.weeklyMissions.length > 0) {
               setWeeklyMissions(cachedData.weeklyMissions);
             }
             return;
@@ -1739,10 +1738,8 @@ export default function UserDashboardPortal({
                 isCompleted: matched ? matched.isCompleted : false
               };
             });
-            if (dailyMissions.length === 0) {
-              setDailyMissions(updated);
-            }
-            if (!savedWeekly && Array.isArray(data.weeklyMissions)) {
+            setDailyMissions(updated);
+            if (!savedWeekly && Array.isArray(data.weeklyMissions) && data.weeklyMissions.length > 0) {
               setWeeklyMissions(data.weeklyMissions);
             }
             if (email) {
@@ -1889,7 +1886,7 @@ export default function UserDashboardPortal({
               </div>
               <div className="text-slate-450 text-xs font-sans space-y-1">
                 {user.email && <p>{t("E-mail")}: <span className="font-mono text-slate-300">{user.email}</span></p>}
-                <p>Status: <span className="text-amber-400 font-bold font-mono">{t("Aguardando seu Mapa Primordial")}</span></p>
+                <p>{t("Status")}: <span className="text-amber-400 font-bold font-mono">{t("Aguardando seu Mapa Primordial")}</span></p>
               </div>
             </div>
           </div>
@@ -3929,17 +3926,17 @@ export default function UserDashboardPortal({
                         </div>
                         <div>
                           <h5 className={`text-xs font-bold text-slate-200 ${task.isClaimed ? 'line-through text-slate-500' : ''}`}>
-                            {t(task.title)}
+                            {task.title}
                           </h5>
-                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">{t(task.description)}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">{task.description}</p>
                           {task.benefit && (
                             <div className="mt-1.5 space-y-1">
                               <span className="px-1.5 py-0.5 bg-purple-500/10 border border-purple-500/20 text-[8.5px] font-mono text-purple-400 font-bold rounded inline-block">
-                                ✨ {t(task.benefit)}
+                                ✨ {task.benefit}
                               </span>
                               {task.benefitExplanation && (
                                 <p className="text-[9.5px] text-slate-500 italic block leading-normal pt-0.5">
-                                  <strong>{t("Benefício ao cumprir:")}</strong> {t(task.benefitExplanation)}
+                                  <strong>{t("Benefício ao cumprir:")}</strong> {task.benefitExplanation}
                                 </p>
                               )}
                             </div>
@@ -4009,9 +4006,9 @@ export default function UserDashboardPortal({
                         </div>
                         <div>
                           <h5 className={`text-xs font-black text-slate-200 ${task.isClaimed ? 'line-through text-slate-500' : ''}`}>
-                            "{t(task.title)}"
+                            "{task.title}"
                           </h5>
-                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed font-sans">{t(task.description)}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed font-sans">{task.description}</p>
                         </div>
                       </div>
                       
