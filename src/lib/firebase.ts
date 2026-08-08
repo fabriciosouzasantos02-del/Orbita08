@@ -301,6 +301,9 @@ export interface UserProfileData {
   isUnknownTime?: boolean;
   latitude?: number;
   longitude?: number;
+  ascendant?: string;
+  risingSign?: string;
+  mapData?: any;
   createdAt?: string;
   isSubscribed?: boolean;
   subscriptionEndDate?: string;
@@ -430,6 +433,9 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
     hasCreatedMap: profile.hasCreatedMap ?? (!!birthDateVal && !!birthCityVal),
     latitude: profile.latitude !== undefined ? profile.latitude : (existingLocal?.latitude ?? -23.55052),
     longitude: profile.longitude !== undefined ? profile.longitude : (existingLocal?.longitude ?? -46.633308),
+    ascendant: profile.ascendant || profile.risingSign || existingLocal?.ascendant || existingLocal?.risingSign || "",
+    risingSign: profile.risingSign || profile.ascendant || existingLocal?.risingSign || existingLocal?.ascendant || "",
+    mapData: profile.mapData || existingLocal?.mapData || null,
     isPremium: profile.isPremium !== undefined ? profile.isPremium : (existingLocal?.isPremium ?? false),
     followersCount: profile.followersCount !== undefined ? profile.followersCount : (existingLocal?.followersCount ?? 0),
     followingCount: profile.followingCount !== undefined ? profile.followingCount : (existingLocal?.followingCount ?? 0),
@@ -1392,9 +1398,10 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
       }), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc SUCCESS for path: ${path}`);
 
-      // Sync root user profile document so users/{docKey} always holds active birth details
+      // Sync root user profile document so users/{docKey} always holds active birth details and map data
       if (chartData.birthDate && chartData.birthCity) {
         const userRef = doc(db, "users", docKey);
+        const ascSign = chartData.mapData?.astros?.find((a: any) => a.name === "Ascendente")?.sign;
         await setDoc(userRef, sanitizeFirestoreData({
           birthDate: chartData.birthDate,
           birthTime: chartData.birthTime || "12:00",
@@ -1402,6 +1409,11 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
           isUnknownTime: chartData.isUnknownTime ?? false,
           currentChartId: chartId,
           hasCreatedMap: true,
+          latitude: chartData.mapData?.latitude ?? chartData.latitude,
+          longitude: chartData.mapData?.longitude ?? chartData.longitude,
+          ascendant: ascSign || undefined,
+          risingSign: ascSign || undefined,
+          mapData: chartData.mapData || undefined,
           updatedAt: new Date().toISOString()
         }), { merge: true }).catch(err => console.warn("[Sync] Root profile sync from natal chart failed:", err));
       }
@@ -2341,5 +2353,111 @@ export async function deleteUserAccountFirebase(email: string): Promise<void> {
     }
   }
 }
+
+// -------------------------------------------------------------------------
+// FIRESTORE CALENDAR PERSISTENCE FOR 30-DAY ASTROLOGICAL MODULES
+// -------------------------------------------------------------------------
+
+export async function saveMonthlyCalendarToDatabase(
+  userKey: string,
+  yearMonth: string,
+  lang: string,
+  calendarDays: any[]
+): Promise<void> {
+  const docKey = getUserDocKey(userKey);
+  if (!docKey || !yearMonth) return;
+
+  const nowIso = new Date().toISOString();
+  const cacheId = `calendar_${yearMonth}_${lang}`;
+
+  const payload = {
+    docId: `${yearMonth}_${lang}`,
+    yearMonth,
+    year: parseInt(yearMonth.split('-')[0], 10),
+    month: parseInt(yearMonth.split('-')[1], 10),
+    lang,
+    days: calendarDays,
+    generatedAt: nowIso,
+    updatedAt: nowIso,
+    userId: docKey
+  };
+
+  // 1. Local storage cache for offline redundancy and speed
+  const storageKey = `orbi_calendar_${docKey}_${yearMonth}_${lang}`;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(payload));
+  } catch (e) {
+    console.warn("[Calendar Cache] Storage quota or disabled:", e);
+  }
+
+  // 2. Calculation cache
+  await saveCalculationCache(userKey, cacheId, calendarDays);
+
+  // 3. Firestore subcollection: users/{uid}/calendar/{yearMonth}_{lang}
+  const db = getFirestoreDB();
+  if (db) {
+    const calendarRef = doc(db, "users", docKey, "calendar", `${yearMonth}_${lang}`);
+    try {
+      await setDoc(calendarRef, payload, { merge: true });
+      console.log(`[Calendar DB] Salvo com sucesso no Firestore: users/${docKey}/calendar/${yearMonth}_${lang}`);
+    } catch (e) {
+      console.warn(`[Calendar DB] Erro ao salvar no Firestore:`, e);
+      handleFirestoreError(e, OperationType.WRITE, `users/${docKey}/calendar/${yearMonth}_${lang}`);
+    }
+  }
+}
+
+export async function loadMonthlyCalendarFromDatabase(
+  userKey: string,
+  yearMonth: string,
+  lang: string
+): Promise<any[] | null> {
+  const docKey = getUserDocKey(userKey);
+  if (!docKey || !yearMonth) return null;
+
+  // 1. Local storage cache
+  const storageKey = `orbi_calendar_${docKey}_${yearMonth}_${lang}`;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.days) && parsed.days.length > 0) {
+        return parsed.days;
+      }
+    }
+  } catch (e) {
+    // continue
+  }
+
+  // 2. Calculation cache
+  const cacheId = `calendar_${yearMonth}_${lang}`;
+  const cachedFromCalc = await loadCalculationCache(userKey, cacheId);
+  if (cachedFromCalc && Array.isArray(cachedFromCalc) && cachedFromCalc.length > 0) {
+    return cachedFromCalc;
+  }
+
+  // 3. Firestore subcollection
+  const db = getFirestoreDB();
+  if (db) {
+    try {
+      const calendarRef = doc(db, "users", docKey, "calendar", `${yearMonth}_${lang}`);
+      const snap = await getDocWithTimeout(calendarRef, 3000);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data && Array.isArray(data.days) && data.days.length > 0) {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(data));
+          } catch (_) {}
+          return data.days;
+        }
+      }
+    } catch (e) {
+      console.warn(`[Calendar DB] Falha ao ler Firestore para users/${docKey}/calendar/${yearMonth}_${lang}`, e);
+    }
+  }
+
+  return null;
+}
+
 
 

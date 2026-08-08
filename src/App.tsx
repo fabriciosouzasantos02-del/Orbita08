@@ -26,23 +26,23 @@ import {
 } from './types';
 import { performAstroCalculation } from './components/astroMath';
 import { calculateNumerology } from './numerology';
-// Lazy load heavy computational views for faster initial loading
-const AstrologyView = React.lazy(() => import('./components/AstrologyView'));
-const NumerologyView = React.lazy(() => import('./components/NumerologyView'));
-const TransitMap = React.lazy(() => import('./components/TransitMap'));
-const CompatibilityView = React.lazy(() => import('./components/CompatibilityView'));
-const TransitHistory = React.lazy(() => import('./components/TransitHistory'));
+import AstrologyView from './components/AstrologyView';
+import AstrologyCalendarModule from './components/AstrologyCalendarModule';
+import NumerologyView from './components/NumerologyView';
+import TransitMap from './components/TransitMap';
+import CompatibilityView from './components/CompatibilityView';
+import TransitHistory from './components/TransitHistory';
 import MoonTipCard from './components/MoonTipCard';
 import AstroNotifications from './components/AstroNotifications';
 import TarotSystem from './TarotSystem';
-const LunarNodes = React.lazy(() => import('./components/LunarNodes'));
-const LunarCycle = React.lazy(() => import('./components/LunarCycle'));
-const BiorhythmView = React.lazy(() => import('./components/BiorhythmView'));
+import LunarNodes from './components/LunarNodes';
+import LunarCycle from './components/LunarCycle';
+import BiorhythmView from './components/BiorhythmView';
 import UserDashboardPortal from './components/UserDashboardPortal';
-const PremiumConversionScreen = React.lazy(() => import('./components/PremiumConversionScreen').then(m => ({ default: m.PremiumConversionScreen })));
-const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
-const OrbiaAIAndOracle = React.lazy(() => import('./components/OrbiaAIAndOracle'));
-const OraculoDosSonhosCard = React.lazy(() => import('./components/OraculoDosSonhosCard'));
+import { PremiumConversionScreen } from './components/PremiumConversionScreen';
+import AdminPanel from './components/AdminPanel';
+import OrbiaAIAndOracle from './components/OrbiaAIAndOracle';
+import OraculoDosSonhosCard from './components/OraculoDosSonhosCard';
 import { CityAutocomplete } from './components/CityAutocomplete';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST, FAQ_LIST } from './data';
 import { getAvatarUrl, getAvatarsList } from './lib/avatars';
@@ -89,40 +89,6 @@ import { generatePersonalizedProsperityMap } from './prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
 import { Language } from './lib/translations';
 import { useIdioma } from './context/IdiomaContext';
-
-export function cleanStringForChartId(val: string): string {
-  if (!val) return "";
-  return val
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]/g, "_");
-}
-
-// High-end Elite Celestial Logo Component
-export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
-  return (
-    <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
-      {/* Outer subtle rotating constellation circle */}
-      <svg className="absolute inset-0 w-full h-full animate-spin text-amber-500/20" style={{ animationDuration: '40s' }} viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="1" strokeDasharray="4 8" fill="none" />
-      </svg>
-      {/* Inner precise cosmic ring */}
-      <svg className="absolute w-[80%] h-[80%] text-amber-500/40" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="1.2" fill="none" />
-        <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
-        <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
-      </svg>
-      {/* Central gleaming geometric diamond representing cosmic precision */}
-      <div className="absolute w-[45%] h-[45%] bg-gradient-to-tr from-amber-400 via-amber-500 to-rose-500 rounded-sm rotate-45 border border-amber-300/30 flex items-center justify-center shadow-[0_0_12px_rgba(245,158,11,0.35)]">
-        <Sparkles className="w-3 text-slate-950 rotate-[-45deg] stroke-[2.5]" />
-      </div>
-      {/* Ambient orbit node */}
-      <div className="absolute w-2 h-2 bg-rose-500 rounded-full top-[10%] right-[10%] border border-slate-950 shadow-md animate-pulse" />
-    </div>
-  );
-};
 import { 
   Compass, 
   Orbit, 
@@ -164,8 +130,33 @@ import {
   Home,
   Sliders,
   Camera,
-  ExternalLink
+  ExternalLink,
+  Copy
 } from 'lucide-react';
+
+export function cleanStringForChartId(val: string): string {
+  if (!val) return "";
+  return val
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "_");
+}
+
+// Official PORTAL ORBIT Brand Logo Component
+export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
+  return (
+    <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
+      <img 
+        src="/icon.svg" 
+        alt="PORTAL ORBIT" 
+        className="w-full h-full object-contain rounded-lg drop-shadow-[0_0_10px_rgba(56,189,248,0.3)]"
+        referrerPolicy="no-referrer"
+      />
+    </div>
+  );
+};
 
 export function isPostTrialLocked(user: UserProfile): boolean {
   return false;
@@ -192,51 +183,17 @@ function getZodiacSign(dateStr: string): string {
 }
 
 function getRisingSign(dateStr: string, timeStr: string, latitude?: number, longitude?: number): string {
-  if (!dateStr) return "Sagitário";
+  if (!dateStr) return "";
   const lat = latitude !== undefined ? latitude : -23.5505;
   const lng = longitude !== undefined ? longitude : -46.6333;
 
-  const deduceTimezone = (lLatitude: number, lLongitude: number): string => {
-    if (lLatitude < 5 && lLatitude > -35 && lLongitude < -30 && lLongitude > -75) {
-      if (lLongitude < -54) {
-        if (lLongitude < -65) {
-          return "America/Rio_Branco";
-        }
-        return "America/Manaus";
-      }
-      return "America/Sao_Paulo";
-    }
-    if (lLatitude > 24 && lLatitude < 49 && lLongitude < -66 && lLongitude > -125) {
-      if (lLongitude < -114) return "America/Los_Angeles";
-      if (lLongitude < -104) return "America/Denver";
-      if (lLongitude < -85) return "America/Chicago";
-      return "America/New_York";
-    }
-    if (lLatitude > 35 && lLatitude < 70 && lLongitude > -10 && lLongitude < 40) {
-      if (lLongitude < 2) return "Europe/London";
-      if (lLongitude < 20) return "Europe/Paris";
-      return "Europe/Athens";
-    }
-    return "America/Sao_Paulo";
-  };
-
   try {
-    const tzName = deduceTimezone(lat, lng);
-    const mt = moment.tz(`${dateStr} ${timeStr || "12:00"}`, "YYYY-MM-DD HH:mm", tzName);
-    const tzOffset = mt.utcOffset() / 60;
-
-    const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng, tzOffset);
+    const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng);
     const asc = chart.astros.find(a => a.name === "Ascendente");
-    return asc ? asc.sign : "Sagitário";
+    return asc ? asc.sign : "";
   } catch (err) {
-    console.error("Error in high-precision getRisingSign fallback:", err);
-    try {
-      const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng);
-      const asc = chart.astros.find(a => a.name === "Ascendente");
-      return asc ? asc.sign : "Sagitário";
-    } catch {
-      return "Sagitário";
-    }
+    console.error("Error calculating rising sign:", err);
+    return "";
   }
 }
 
@@ -362,76 +319,33 @@ function getZodiacSignForMissions(dateString: string): string {
 
 function generateDailyRadar(user: any, activeLang?: Language, dateParam?: Date): DailyRadar {
   const currentL = activeLang || 'pt';
-  const name = user?.name ? user.name.split(" ")[0] : "Viajante";
-  const birthDate = user?.birthDate || "2000-01-01";
+  const name = user?.name || "Viajante";
+  const birthDate = user?.birthDate || "1997-02-11";
   
   const today = dateParam || new Date();
   const day = today.getDate();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
   
-  const seedVal = (day + month * 7 + year + name.length) % 5;
-  const dispositionLevel = 80 + ((day + name.length) % 18); // 80% to 98%
-  
-  const energyPoolPT = [
-    "Intuição Harmoniosa & Foco Singular",
-    "Alta Vibração Mental & Comunicação Clara",
-    "Estabilidade Prática & Retiro Espiritual",
-    "Sensibilidade Expandida & Conexão de Alma",
-    "Impulso Criativo & Força Vital Ativa"
-  ];
-  const energyPoolEN = [
-    "Harmonious Intuition & Singular Focus",
-    "High Mental Vibration & Clear Communication",
-    "Practical Stability & Spiritual Retreat",
-    "Expanded Sensitivity & Soul Connection",
-    "Creative Impulse & Active Vital Force"
-  ];
-  const energyPoolES = [
-    "Intuición Armoniosa & Enfoque Singular",
-    "Alta Vibración Mental & Comunicación Clara",
-    "Estabilidad Práctica & Retiro Espiritual",
-    "Sensibilidad Expandida & Conexión de Alma",
-    "Impulso Creativo & Fuerza Vital Activa"
-  ];
-  const energyPoolDE = [
-    "Harmonische Intuition & Einzigartiger Fokus",
-    "Hohe Mentale Schwingung & Klare Kommunikation",
-    "Praktische Stabilität & Spiritueller Rückzug",
-    "Erweiterte Sensibilität & Seelenverbindung",
-    "Kreativer Impuls & Aktive Lebenskraft"
-  ];
-  const energyPoolFR = [
-    "Intuition Harmonieuse & Focus Singulier",
-    "Haute Vibration Mentale & Communication Claire",
-    "Stabilité Pratique & Retraite Spirituelle",
-    "Sensibilité Élargie & Connexion d'Âme",
-    "Impulsion Créative & Force Vitale Active"
-  ];
-
-  let energyOfDay = energyPoolPT[seedVal];
-  if (currentL === 'en') energyOfDay = energyPoolEN[seedVal];
-  if (currentL === 'es') energyOfDay = energyPoolES[seedVal];
-  if (currentL === 'de') energyOfDay = energyPoolDE[seedVal];
-  if (currentL === 'fr') energyOfDay = energyPoolFR[seedVal];
-
-  const hourOffsets = [
-    { prod: "10:00 - 12:30", rel: "18:00 - 20:30", stud: "14:15 - 16:45", org: "08:30 - 09:45" },
-    { prod: "09:00 - 11:30", rel: "19:00 - 21:30", stud: "15:00 - 17:30", org: "07:30 - 08:45" },
-    { prod: "10:30 - 13:00", rel: "17:30 - 19:45", stud: "13:30 - 15:45", org: "09:00 - 10:15" },
-    { prod: "08:15 - 11:00", rel: "18:30 - 21:00", stud: "16:00 - 18:15", org: "11:30 - 12:45" },
-    { prod: "11:00 - 13:30", rel: "20:00 - 22:00", stud: "14:00 - 16:00", org: "08:00 - 09:15" }
-  ];
-  const times = hourOffsets[seedVal];
+  const sunSign = user?.birthDate ? getZodiacSign(user.birthDate) : "Touro";
+  const prediction = generateDailyPrediction(
+    birthDate,
+    sunSign,
+    name,
+    day - 1,
+    today,
+    currentL,
+    user?.mapData
+  );
 
   return {
     date: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
-    energyOfDay,
-    dispositionLevel,
-    bestTimeProductivity: times.prod,
-    bestTimeRelationships: times.rel,
-    bestTimeStudies: times.stud,
-    bestTimeOrganization: times.org
+    energyOfDay: prediction.predominantEnergy,
+    dispositionLevel: prediction.energyLevel,
+    bestTimeProductivity: prediction.bestPeriod,
+    bestTimeRelationships: prediction.attentionPeriod,
+    bestTimeStudies: `${String((day % 5) + 13).padStart(2, '0')}:00 - ${String((day % 5) + 15).padStart(2, '0')}:30`,
+    bestTimeOrganization: `${String((day % 4) + 7).padStart(2, '0')}:30 - ${String((day % 4) + 9).padStart(2, '0')}:30`
   };
 }
 
@@ -776,10 +690,13 @@ export default function App() {
 
   // Millionaire footer interactive modal states
   const [landingFooterModal, setLandingFooterModal] = useState<'privacy' | 'terms' | 'security' | 'about' | 'support' | null>(null);
-  const [supportCategory, setSupportCategory] = useState<string>('technical');
-  const [supportMessage, setSupportMessage] = useState<string>('');
+  const [supportName, setSupportName] = useState<string>('');
+  const [supportEmail, setSupportEmail] = useState<string>('');
+  const [supportReason, setSupportReason] = useState<string>('');
   const [supportSending, setSupportSending] = useState<boolean>(false);
   const [supportSuccessMessage, setSupportSuccessMessage] = useState<string>('');
+  const [supportTicketId, setSupportTicketId] = useState<string>('');
+  const [supportError, setSupportError] = useState<string>('');
 
   // High contrast visual accessibility states
   const [highContrast, setHighContrast] = useState<boolean>(() => {
@@ -2164,7 +2081,20 @@ export default function App() {
       const localProfileStr = localStorage.getItem("orbi_user_profile");
       let localProfile: any = null;
       try {
-        if (localProfileStr) localProfile = JSON.parse(localProfileStr);
+        if (localProfileStr) {
+          const parsed = JSON.parse(localProfileStr);
+          const isSameAccount = (!parsed.email && !parsed.uid) ||
+            (parsed.email && parsed.email.toLowerCase().trim() === emailLower) ||
+            (parsed.uid && parsed.uid === uid);
+          if (isSameAccount) {
+            localProfile = parsed;
+          } else {
+            console.log("[Account Isolation] Purging local profile from different account:", parsed.email);
+            localStorage.removeItem("orbi_user_profile");
+            localStorage.removeItem("orbi_map_data");
+            localStorage.removeItem("orbi_numerology_data");
+          }
+        }
       } catch {}
       
       const hasLocalMap = localProfile && localProfile.birthDate && localProfile.birthCity;
@@ -2497,14 +2427,20 @@ export default function App() {
   };
 
   // AI Counselor (Orbia Chat) State
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcomeMsg",
-      sender: "assistant",
-      text: "Saudações, Fabricio. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Nascido com o Sol em Aquário e Ascendente em Sagitário, você traz em sua essência um idealismo ardente e uma reverência inata pela liberdade. Como posso te orientar em seu caminho em 2026?",
-      timestamp: "02:37"
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  useEffect(() => {
+    if (chatMessages.length === 0) {
+      const userName = user?.name ? user.name.split(' ')[0] : 'Buscador';
+      setChatMessages([
+        {
+          id: "welcomeMsg",
+          sender: "assistant",
+          text: `${userName}, sinto uma luz muito especial ao ler sua energia. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Como posso te orientar em seu caminho em 2026?`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
     }
-  ]);
+  }, [user]);
   const [currentChatInput, setCurrentChatInput] = useState<string>('');
   const [isSendingChat, setIsSendingChat] = useState<boolean>(false);
 
@@ -3021,8 +2957,8 @@ export default function App() {
   }, []);
 
   const handleInstallPWA = async () => {
-    // Detect if running inside an iframe
-    const isIframe = window.self !== window.top;
+    // Detect if running inside an iframe (such as AI Studio preview iframe)
+    const isIframe = typeof window !== 'undefined' && window.self !== window.top;
     if (isIframe) {
       triggerGlobalNotification(
         t("Abrindo Portal Órbita"),
@@ -3035,42 +2971,66 @@ export default function App() {
 
     const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
     const isIos = /iphone|ipad|ipod/.test(ua);
+    const isInAppBrowser = /tiktok|musically|bytedance|instagram|fbav|fban|fb_iab|messenger|line\/|twitter|snapchat|pinterest|gsa\/|wv|webview/i.test(ua);
 
-    const promptEvent = deferredPrompt || (window as any).deferredPrompt;
-    if (!promptEvent) {
-      if (isIos) {
-        // Show PWA guide modal only for iOS (where native prompt is impossible)
-        setShowPWAInstallGuide(true);
-      } else {
-        // Android or Desktop - Rule: NEVER show any modal. Only show a clean toast notification.
+    let promptEvent = deferredPrompt || (window as any).deferredPrompt;
+
+    // If event is not ready immediately, retry for up to 800ms in case beforeinstallprompt is firing right after load
+    if (!promptEvent && !isIos && !isInAppBrowser) {
+      await new Promise<void>((resolve) => {
+        let attempts = 0;
+        const timer = setInterval(() => {
+          attempts++;
+          const captured = (window as any).deferredPrompt;
+          if (captured) {
+            promptEvent = captured;
+            clearInterval(timer);
+            resolve();
+          } else if (attempts >= 8) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, 100);
+      });
+    }
+
+    if (!promptEvent || isInAppBrowser) {
+      if (isInAppBrowser) {
         triggerGlobalNotification(
-          t("Instalação do Portal"),
-          t("O aplicativo está pronto para ser instalado! Caso o prompt não tenha surgido ainda, você pode tocar no menu de opções (três pontinhos) do seu navegador e escolher 'Instalar aplicativo' ou 'Adicionar à tela de início'."),
+          t("Navegador do TikTok/Rede Social"),
+          t("O TikTok impede a instalação direta de PWA. Siga o passo a passo na tela para abrir no Chrome ou Safari!"),
           "info"
         );
+      } else if (isInstalled) {
+        triggerGlobalNotification(
+          t("Aplicativo Já Instalado"),
+          t("Portal Órbita já está instalado e ativo em seu dispositivo!"),
+          "success"
+        );
+        return;
       }
+      setShowPWAInstallGuide(true);
       return;
     }
 
     try {
-      // Trigger the native install prompt
+      // Trigger the native install prompt immediately
       await promptEvent.prompt();
       
-      // Clear the deferred prompt immediately as it can only be prompted once
       setDeferredPrompt(null);
       (window as any).deferredPrompt = null;
 
       const choiceResult = await promptEvent.userChoice;
-      if (choiceResult.outcome === 'accepted') {
+      if (choiceResult?.outcome === 'accepted') {
         setIsInstalled(true);
         triggerGlobalNotification(
-          t("Instalação Iniciada"),
-          t("Portal Órbita está sendo instalado em seu dispositivo!"),
+          t("Instalação Concluída"),
+          t("Portal Órbita foi instalado com sucesso em seu dispositivo!"),
           "success"
         );
       }
     } catch (err) {
-      console.error('Error during PWA installation choice:', err);
+      console.error('Erro ao acionar prompt nativo PWA:', err);
       setDeferredPrompt(null);
       (window as any).deferredPrompt = null;
     }
@@ -3253,7 +3213,8 @@ export default function App() {
         console.warn("[Migration Engine] Parse error:", e);
       }
       
-      const hasLocalMapParams = localProfile && localProfile.birthDate && localProfile.birthCity;
+      const isGuestOrSameUser = localProfile && (!localProfile.email || localProfile.email.toLowerCase().trim() === emailLower) && (!localProfile.uid || localProfile.uid === uid);
+      const hasLocalMapParams = isGuestOrSameUser && localProfile.birthDate && localProfile.birthCity;
       
       let cloudCharts: any[] = [];
       try {
@@ -4238,6 +4199,8 @@ export default function App() {
   const signsZodiacList = React.useMemo(() => {
     return SIGNS_ZODIAC_LIST.map(item => ({
       ...item,
+      rawName: item.name,
+      rawElement: item.element,
       name: i18nT(item.name),
       element: i18nT(item.element),
       regente: i18nT(item.regente),
@@ -4252,7 +4215,9 @@ export default function App() {
       ...item,
       title: i18nT(item.title),
       summary: i18nT(item.summary),
-      content: i18nT(item.content)
+      content: i18nT(item.content),
+      author: i18nT(item.author),
+      date: i18nT(item.date)
     }));
   }, [i18nT]);
 
@@ -4288,15 +4253,19 @@ export default function App() {
     }
   };
 
-  const biorhythmToday = calculateBiorhythm(user.birthDate, systemDate.toISOString().split('T')[0]);
+  const biorhythmToday = React.useMemo(() => {
+    return calculateBiorhythm(user.birthDate, systemDate.toISOString().split('T')[0]);
+  }, [user.birthDate, systemDate]);
 
-  const personalProsperity = generatePersonalizedProsperityMap(
-    user?.hasCreatedMap ? user.birthDate : "1997-02-11",
-    mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
-    user?.hasCreatedMap ? user.name : "Viajante",
-    systemDate,
-    currentLang
-  );
+  const personalProsperity = React.useMemo(() => {
+    return generatePersonalizedProsperityMap(
+      user?.hasCreatedMap ? user.birthDate : "1997-02-11",
+      mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
+      user?.hasCreatedMap ? user.name : "Viajante",
+      systemDate,
+      currentLang
+    );
+  }, [user?.hasCreatedMap, user.birthDate, user.name, mapData, systemDate, currentLang]);
 
   // Automated Real-Time Biorhythm Sync Hook
   useEffect(() => {
@@ -5305,24 +5274,24 @@ export default function App() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-12 gap-3 max-w-6xl mx-auto">
               {signsZodiacList.map((sz, szIdx) => {
-                const isActive = selectedZodiacSign === sz.name;
+                const isActive = selectedZodiacSign === sz.rawName || selectedZodiacSign === sz.name;
                 let glowColor = 'from-amber-500/10 to-transparent';
                 let borderColor = isActive ? 'border-amber-500/50' : 'border-slate-800/80';
                 let textColor = isActive ? 'text-amber-300 font-bold' : 'text-slate-400';
 
-                if (sz.element === "Fogo") {
+                if (sz.rawElement === "Fogo") {
                   glowColor = isActive ? 'from-rose-500/25 to-rose-950/10' : 'from-rose-500/5 to-transparent';
                   borderColor = isActive ? 'border-rose-500/60 shadow-lg shadow-rose-500/15' : 'border-slate-800/80 hover:border-rose-500/20';
                   textColor = isActive ? 'text-rose-300 font-semibold' : 'text-slate-400 hover:text-rose-100';
-                } else if (sz.element === "Terra") {
+                } else if (sz.rawElement === "Terra") {
                   glowColor = isActive ? 'from-emerald-500/25 to-emerald-950/10' : 'from-emerald-500/5 to-transparent';
                   borderColor = isActive ? 'border-emerald-500/60 shadow-lg shadow-emerald-500/15' : 'border-slate-800/80 hover:border-emerald-500/20';
                   textColor = isActive ? 'text-emerald-300 font-semibold' : 'text-slate-400 hover:text-emerald-100';
-                } else if (sz.element === "Ar") {
+                } else if (sz.rawElement === "Ar") {
                   glowColor = isActive ? 'from-sky-500/25 to-sky-950/10' : 'from-sky-500/5 to-transparent';
                   borderColor = isActive ? 'border-sky-500/60 shadow-lg shadow-sky-500/15' : 'border-slate-800/80 hover:border-sky-500/20';
                   textColor = isActive ? 'text-sky-300 font-semibold' : 'text-slate-400 hover:text-sky-100';
-                } else if (sz.element === "Água") {
+                } else if (sz.rawElement === "Água") {
                   glowColor = isActive ? 'from-indigo-500/25 to-indigo-950/10' : 'from-indigo-500/5 to-transparent';
                   borderColor = isActive ? 'border-indigo-500/60 shadow-lg shadow-indigo-500/15' : 'border-slate-800/80 hover:border-indigo-500/20';
                   textColor = isActive ? 'text-indigo-300 font-semibold' : 'text-slate-400 hover:text-indigo-100';
@@ -5330,9 +5299,9 @@ export default function App() {
 
                 return (
                   <motion.button
-                    key={sz.name}
-                    id={`zodiac-btn-${sz.name.toLowerCase()}`}
-                    onClick={() => setSelectedZodiacSign(sz.name)}
+                    key={sz.rawName}
+                    id={`zodiac-btn-${sz.rawName.toLowerCase()}`}
+                    onClick={() => setSelectedZodiacSign(sz.rawName)}
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
@@ -5374,7 +5343,7 @@ export default function App() {
 
             {/* Selected Sign Details Card */}
             {(() => {
-              const currentSign = signsZodiacList.find(s => s.name === selectedZodiacSign);
+              const currentSign = signsZodiacList.find(s => s.rawName === selectedZodiacSign || s.name === selectedZodiacSign) || signsZodiacList[0];
               if (!currentSign) return null;
               return (
                 <motion.div 
@@ -5405,13 +5374,13 @@ export default function App() {
                             </span>
                           </h4>
                           <span className="text-[10px] uppercase tracking-widest font-mono text-slate-400">
-                            Regente Planetário: <strong className="text-amber-400">{currentSign.regente}</strong>
+                            {t("Regente Planetário")}: <strong className="text-amber-400">{currentSign.regente}</strong>
                           </span>
                         </div>
                       </div>
 
                       <div className="mt-5 space-y-1 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
-                        <strong className="text-[10px] font-mono text-amber-500/80 uppercase tracking-widest block mb-1">Assinatura Energética & Atributos</strong>
+                        <strong className="text-[10px] font-mono text-amber-500/80 uppercase tracking-widest block mb-1">{t("Assinatura Energética & Atributos")}</strong>
                         <p className="text-xs text-slate-300 leading-relaxed font-sans">{currentSign.traits}</p>
                       </div>
                     </div>
@@ -5438,7 +5407,7 @@ export default function App() {
 
                     <div className="text-[9px] text-slate-500 font-mono mt-6 border-t border-slate-850 pt-3 flex justify-between items-center">
                       <span>{t("Atualizado às 00:00 UTC")}</span>
-                      <span>Sincronizado: 2026-06-12T07:45:00Z</span>
+                      <span>{t("Sincronizado")}: 2026-06-12T07:45:00Z</span>
                     </div>
                   </div>
                 </motion.div>
@@ -5571,31 +5540,34 @@ export default function App() {
                 <h4 className="text-[10px] font-mono uppercase text-amber-500 tracking-widest mb-3 font-bold">{t("Diretrizes Legais")}</h4>
                 <ul className="text-[11px] text-slate-400 space-y-2 font-sans">
                   <li>
-                    <button 
-                      type="button" 
-                      onClick={() => setLandingFooterModal('terms')} 
-                      className="hover:text-amber-400 cursor-pointer transition text-left"
+                    <a 
+                      href="https://portal-orbita.blogspot.com/2026/08/portal-terms-of-use.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-400 cursor-pointer transition text-left block"
                     >
                       {t("Termos de Uso do Portal")}
-                    </button>
+                    </a>
                   </li>
                   <li>
-                    <button 
-                      type="button" 
-                      onClick={() => setLandingFooterModal('privacy')} 
-                      className="hover:text-amber-400 cursor-pointer transition text-left"
+                    <a 
+                      href="https://portal-orbita.blogspot.com/2026/08/privacy-policy.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-400 cursor-pointer transition text-left block"
                     >
                       {t("Políticas de Privacidade")}
-                    </button>
+                    </a>
                   </li>
                   <li>
-                    <button 
-                      type="button" 
-                      onClick={() => setLandingFooterModal('security')} 
-                      className="hover:text-amber-400 cursor-pointer transition text-left"
+                    <a 
+                      href="https://portal-orbita.blogspot.com/2026/08/security-guidelines.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-400 cursor-pointer transition text-left block"
                     >
                       {t("Diretrizes de Segurança")}
-                    </button>
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -5641,13 +5613,26 @@ export default function App() {
                       type="button" 
                       onClick={() => {
                         setSupportSuccessMessage('');
-                        setSupportMessage('');
+                        setSupportError('');
+                        setSupportName(user?.name || user?.displayName || '');
+                        setSupportEmail(user?.email || loggedEmail || '');
+                        setSupportReason('');
                         setLandingFooterModal('support');
                       }} 
                       className="hover:text-amber-400 cursor-pointer transition text-left font-semibold text-amber-500"
                     >
                       {t("✉️ Fale Conosco / Suporte")}
                     </button>
+                  </li>
+                  <li>
+                    <a 
+                      href="https://portal-orbita-delete-account.vercel.app/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-red-400 cursor-pointer transition text-left block text-slate-400 hover:underline"
+                    >
+                      {t("Excluir conta")}
+                    </a>
                   </li>
                   <li>
                     <select 
@@ -5762,91 +5747,135 @@ export default function App() {
 
                 {landingFooterModal === 'support' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Central de Incidentes")}</span>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Contato & Ajuda")}</span>
                     <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Canal de Atendimento Órbita")}</h3>
                     
                     {supportSuccessMessage ? (
                       <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-3 animate-in zoom-in-95">
                         <div className="flex items-center gap-2.5">
                           <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-400">✓</span>
-                          <span className="text-sm font-bold text-emerald-300">{t("Mensagem Recebida com Sucesso!")}</span>
+                          <span className="text-sm font-bold text-emerald-300">{t("Mensagem Enviada com Sucesso!")}</span>
                         </div>
                         <p className="text-xs text-slate-300 leading-normal">
                           {supportSuccessMessage}
                         </p>
-                        <p className="text-[10px] font-mono text-slate-500">
-                          {t("ID de Rastreamento:")} <strong className="text-amber-400 font-bold">ORB-TKT-{(Math.random()*100000).toFixed(0)}-2026</strong>
-                        </p>
+                        {supportTicketId && (
+                          <p className="text-[10px] font-mono text-slate-400">
+                            {t("ID do Atendimento:")} <strong className="text-amber-400 font-bold">{supportTicketId}</strong>
+                          </p>
+                        )}
                         <button 
                           type="button"
                           onClick={() => setLandingFooterModal(null)}
                           className="px-4 py-2 bg-emerald-500 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-emerald-400 transition cursor-pointer"
                         >
-                          {t("Entendido, Fechar Canal")}
+                          {t("Entendido, Fechar")}
                         </button>
                       </div>
                     ) : (
                       <form 
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => {
                           e.preventDefault();
-                          if (!supportMessage.trim()) return;
+                          if (!supportName.trim() || !supportEmail.trim() || !supportReason.trim()) return;
                           setSupportSending(true);
-                          setTimeout(() => {
+                          setSupportError('');
+                          try {
+                            const response = await fetch('/api/enviar', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'X-App-Lang': lang
+                              },
+                              body: JSON.stringify({
+                                nome: supportName,
+                                email: supportEmail,
+                                motivo: supportReason,
+                                lang: lang,
+                                confirmed: true
+                              })
+                            });
+                            const data = await response.json();
                             setSupportSending(false);
-                            setSupportSuccessMessage(t("Seu chamado técnico foi catalogado no Consórcio de Engenheiros Estelares. Uma resposta personalizada contendo a resposta astrológica ou suporte técnico correspondente será enviada ao seu e-mail cadastrado em um prazo máximo de 12 horas úteis."));
-                          }, 1100);
+                            if (data.success) {
+                              setSupportTicketId(data.id || `ORB-TKT-${Math.floor(Math.random() * 100000)}-2026`);
+                              setSupportSuccessMessage(t("Sua mensagem foi entregue com sucesso ao nosso suporte. Em breve você receberá uma resposta diretamente no seu e-mail cadastrado."));
+                            } else {
+                              setSupportError(data.error || t("Erro ao enviar mensagem. Tente novamente mais tarde."));
+                            }
+                          } catch (err: any) {
+                            setSupportSending(false);
+                            setSupportError(t("Erro ao enviar mensagem. Tente novamente mais tarde."));
+                          }
                         }}
                         className="space-y-4"
                       >
-                        <p className="text-xs text-slate-400">
-                          {t("Preencha a categoria correspondente e detalhe sua solicitação técnico-astrológica. Nossa guilda investigará imediatamente.")}
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          {t("Preencha seus dados e descreva sua solicitação ou dúvida abaixo. Nossa equipe analisará e responderá diretamente ao seu e-mail.")}
                         </p>
- 
+
+                        {supportError && (
+                          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-semibold">
+                            ⚠️ {supportError}
+                          </div>
+                        )}
+
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Categoria do Chamado")}</label>
-                          <select 
-                            value={supportCategory}
-                            onChange={(e) => setSupportCategory(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-300 cursor-pointer text-slate-300"
-                          >
-                            <option value="technical">{t("Suporte Técnico de Calculadora")}</option>
-                            <option value="map_help">{t("Dúvidas sobre Nodos Lunares / Plácidus")}</option>
-                            <option value="firebase_issue">{t("Problema de Login / Firebase")}</option>
-                            <option value="collaboration">{t("Parceria de Negócios / Imprensa")}</option>
-                          </select>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Seu Nome")}</label>
+                          <input 
+                            type="text"
+                            required
+                            placeholder={t("Digite seu nome completo")}
+                            value={supportName}
+                            onChange={(e) => setSupportName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
+                          />
                         </div>
- 
+
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Sua Mensagem / Relatório")}</label>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Seu E-mail")}</label>
+                          <input 
+                            type="email"
+                            required
+                            placeholder={t("Digite seu e-mail para contato")}
+                            value={supportEmail}
+                            onChange={(e) => setSupportEmail(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Motivo do Contato / Mensagem")}</label>
                           <textarea 
                             required
-                            placeholder={t("Descreva sua questão em detalhes...")}
-                            value={supportMessage}
-                            onChange={(e) => setSupportMessage(e.target.value)}
+                            placeholder={t("Descreva em detalhes sua dúvida, problema de login, questão de pagamento ou solicitação...")}
+                            value={supportReason}
+                            onChange={(e) => setSupportReason(e.target.value)}
                             rows={4}
                             className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
                           />
                         </div>
- 
+
                         <div className="flex justify-end gap-3 pt-2">
                           <button 
                             type="button" 
                             onClick={() => setLandingFooterModal(null)}
-                            className="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-705 text-xs font-bold rounded-xl cursor-pointer"
+                            className="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold rounded-xl cursor-pointer"
                           >
                             {t("Cancelar")}
                           </button>
                           <button 
                             type="submit" 
                             disabled={supportSending}
-                            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                           >
                             {supportSending ? (
                               <>
                                 <span className="w-3 h-3 rounded-full border border-slate-950 border-t-transparent animate-spin inline-block" />
-                                {t("Transmitindo...")}
+                                {t("Enviando...")}
                               </>
-                            ) : t("Enviar Chamado seguro")}
+                            ) : (
+                              t("Enviar Mensagem ao Suporte")
+                            )}
                           </button>
                         </div>
                       </form>
@@ -7305,8 +7334,8 @@ export default function App() {
                   }>
                     <LunarCycle 
                       userName={user?.name} 
-                      userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Aquário")} 
-                      userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude) : "Sagitário")}
+                      userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "")} 
+                      userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude) : "")}
                       lang={currentLang}
                     />
                   </React.Suspense>
@@ -7347,188 +7376,15 @@ export default function App() {
                   </div>
 
                   {/* Calendário dos Próximos 30 dias */}
-                  <div className="bg-slate-900/30 p-6 rounded-3xl border border-slate-800 space-y-4 col-span-1 lg:col-span-2">
-                    <div className="pb-2 border-b border-slate-800 flex justify-between items-center sm:flex-nowrap flex-wrap gap-2">
-                      <div>
-                        <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{t("Mapa dos Próximos 30 Dias (Calendário de Trânsitos)")}</h3>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{t("Clique nos dias sinalizados para abrir e analisar os detalhes e trânsitos reais.")}</p>
-                      </div>
-                      {selectedProsperityDay !== null && (
-                        <button 
-                          onClick={() => setSelectedProsperityDay(null)}
-                          className="px-2 py-1 text-[9px] font-mono uppercase bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-md border border-red-500/20 transition cursor-pointer"
-                        >
-                          {t("Fechar Detalhes")}
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-5 sm:grid-cols-7 lg:grid-cols-10 gap-2 max-w-2xl mx-auto">
-                      {Array.from({ length: 30 }).map((_, idx) => {
-                        const dayNum = idx + 1;
-                        const isSelected = selectedProsperityDay === dayNum;
-                        
-                        // Assign color tags to certain days
-                        let dayColor = "bg-slate-900/40 border-slate-850 text-slate-500 hover:border-slate-700";
-                        let tagText = "Tranquilo";
-                        
-                        if ([2, 9, 16, 23, 30].includes(dayNum)) {
-                          dayColor = "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 font-bold hover:border-emerald-500/40";
-                          tagText = "Favorável";
-                        } else if ([5, 12, 19, 26].includes(dayNum)) {
-                          dayColor = "bg-rose-500/10 border-rose-500/20 text-rose-400 font-bold hover:border-rose-500/40";
-                          tagText = "Atenção";
-                        } else if ([7, 14, 21, 28].includes(dayNum)) {
-                          dayColor = "bg-amber-500/10 border-amber-500/20 text-amber-500 font-bold hover:border-amber-500/40";
-                          tagText = "Produtivo";
-                        } else if ([4, 11, 18, 25].includes(dayNum)) {
-                          dayColor = "bg-sky-500/10 border-sky-500/20 text-sky-400 font-bold hover:border-sky-500/40";
-                          tagText = "Descanso";
-                        }
-
-                        if (isSelected) {
-                          dayColor = "bg-sky-500/20 border-sky-400 text-sky-200 ring-1 ring-sky-550 font-black shadow-md";
-                        }
-
-                        return (
-                          <button 
-                            key={idx} 
-                            type="button"
-                            onClick={() => setSelectedProsperityDay(isSelected ? null : dayNum)}
-                            title={`${t("Dia")} ${dayNum}: ${t("energia de foco")} ${t(tagText)}`}
-                            className={`p-2 rounded-xl border text-center transition cursor-pointer flex flex-col justify-between items-center h-12 ${dayColor}`}
-                          >
-                            <span className="block font-mono text-xs font-bold leading-none">{dayNum.toString().padStart(2, '0')}</span>
-                            <span className="text-[7.5px] font-mono block leading-none uppercase tracking-tight">{t(tagText).slice(0, 3)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Expandable Details Panel for Selected Day */}
-                    {selectedProsperityDay !== null && (() => {
-                      const prediction = generateDailyPrediction(
-                        user?.birthDate || "1997-02-11",
-                        mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
-                        user?.name || "Viajante",
-                        selectedProsperityDay - 1,
-                        systemDate,
-                        currentLang,
-                        mapData
-                      );
-                      
-                      return (
-                        <div className="p-5 bg-slate-950/95 rounded-2xl border border-sky-500/20 text-left space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
-                          <div className="flex justify-between items-center pb-2 border-b border-slate-850 flex-wrap gap-2 leading-none">
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse" />
-                              <span className="text-sm font-bold uppercase font-mono text-slate-100">
-                                {prediction.dateFormatted} ({t("Dia")} {selectedProsperityDay})
-                              </span>
-                            </div>
-                            <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-mono border ${prediction.tagColorClass}`}>
-                              {t("Vibração:")} {prediction.tagText}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
-                            {/* Column 1 - Astrological details and energies */}
-                            <div className="space-y-3">
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Influência Astrológica:")}</span>
-                                <p className="text-slate-205 mt-1 leading-normal font-sans font-medium">{prediction.astroInfluence}</p>
-                              </div>
-
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Aspectos Planetários do Dia:")}</span>
-                                <p className="text-slate-200 mt-1 leading-normal font-sans">{prediction.aspects}</p>
-                              </div>
-
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Trânsito Lunar & Setores:")}</span>
-                                <p className="text-slate-300 mt-1 leading-normal font-sans italic">{prediction.transit}</p>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Energia Predominante:")}</span>
-                                  <span className="text-[11px] font-bold text-sky-400 block mt-1">{prediction.predominantEnergy}</span>
-                                </div>
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Nível Energético:")}</span>
-                                  <div className="flex items-center gap-1.5 mt-1">
-                                    <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                                      <div className="h-full bg-emerald-500" style={{ width: `${prediction.energyLevel}%` }} />
-                                    </div>
-                                    <span className="font-mono text-[10px] text-emerald-400 font-bold">{prediction.energyLevel}%</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-emerald-500 uppercase tracking-wider block font-bold">{t("Áreas Favorecidas:")}</span>
-                                  <p className="text-emerald-400 mt-1 font-bold truncate">{prediction.favoredAreas.join(', ')}</p>
-                                </div>
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-rose-500/60">
-                                  <span className="text-[8px] font-mono text-rose-500 uppercase tracking-wider block font-bold">{t("Áreas de Atenção:")}</span>
-                                  <p className="text-rose-400 mt-1 font-bold truncate">{prediction.attentionAreas.join(', ')}</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Column 2 - Personal action, opportunities, challenges & advice */}
-                            <div className="space-y-3">
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Mensagem Personalizada do Usuário:")}</span>
-                                <p className="text-slate-200 mt-1 leading-normal italic">"{prediction.personalizedMessage}"</p>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-emerald-500/15">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-emerald-400">{t("Oportunidades:")}</span>
-                                  <p className="text-slate-300 mt-1 leading-normal font-sans">{prediction.opportunities}</p>
-                                </div>
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-rose-500/15">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-rose-400">{t("Desafios:")}</span>
-                                  <p className="text-slate-300 mt-1 leading-normal font-sans">{prediction.challenges}</p>
-                                </div>
-                              </div>
-
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Conselho Personalizado:")}</span>
-                                <p className="text-slate-200 mt-1 leading-normal font-medium">"{prediction.personalizedAdvice}"</p>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60 flex items-center gap-2">
-                                  <span className="w-4 h-4 rounded-full border border-white/10 shrink-0 shadow-xs" style={{ backgroundColor: prediction.favorableColor === "Verde Esmeralda" ? "#16a34a" : prediction.favorableColor === "Azul Celeste" ? "#38bdf8" : prediction.favorableColor === "Violeta Púrpura" ? "#a855f7" : prediction.favorableColor === "Dourado Sol" ? "#eab308" : prediction.favorableColor === "Turquesa Fluido" ? "#06b6d4" : prediction.favorableColor === "Vermelho Rubi" ? "#dc2626" : "#f472b6" }} />
-                                  <div>
-                                    <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">{t("Cor Favorável")}</span>
-                                    <span className="text-[10px] text-slate-300 font-bold font-sans mt-0.5 block">{prediction.favorableColor}</span>
-                                  </div>
-                                </div>
-                                <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">{t("Número da Sorte")}</span>
-                                  <span className="text-sm font-black text-amber-400 block font-mono text-left">{prediction.favorableNumber}</span>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-500 block uppercase">{t("Melhor Período")}</span>
-                                  <span className="text-[10px] text-emerald-400 font-bold block font-mono mt-0.5">{prediction.bestPeriod}</span>
-                                </div>
-                                <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-100 block uppercase text-rose-500">{t("Período de Atenção")}</span>
-                                  <span className="text-[10px] text-rose-400 font-bold block font-mono mt-0.5">{prediction.attentionPeriod}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                  <div className="col-span-1 lg:col-span-2">
+                    <AstrologyCalendarModule
+                      userBirthDate={user?.hasCreatedMap ? user.birthDate : "1997-02-11"}
+                      userSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro")}
+                      userName={user?.hasCreatedMap ? user.name : "Viajante"}
+                      currentDate={systemDate}
+                      mapData={mapData}
+                      lang={currentLang as any}
+                    />
                   </div>
 
                 </div>
@@ -7777,11 +7633,11 @@ export default function App() {
                             type="button"
                             onClick={() => {
                               if (!settingsBirthCity || !settingsBirthCity.includes(',')) {
-                                alert("Por favor, digite e selecione uma cidade válida da lista de sugestões (contendo Cidade e Estado/País) para obter coordenadas precisas.");
+                                alert(t("Por favor, digite e selecione uma cidade válida da lista de sugestões (contendo Cidade e Estado/País) para obter coordenadas precisas."));
                                 return;
                               }
                               if (!settingsBirthDate || !settingsBirthTime) {
-                                alert("Por favor, preencha a data e a hora de nascimento corretamente.");
+                                alert(t("Por favor, preencha a data e a hora de nascimento corretamente."));
                                 return;
                               }
                               handleUpdateUserProfile({
@@ -7791,7 +7647,7 @@ export default function App() {
                                 latitude: settingsLatitude,
                                 longitude: settingsLongitude
                               });
-                              alert("Seu mapa astral e dados de nascimento foram recalculados com sucesso com coordenadas e fuso horário de alta precisão!");
+                              alert(t("Seu mapa astral e dados de nascimento foram recalculados com sucesso com coordenadas e fuso horário de alta precisão!"));
                             }}
                             className="w-full py-2.5 rounded-xl bg-linear-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-sans font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md shadow-amber-950/20 active:scale-98 cursor-pointer"
                           >
@@ -7927,13 +7783,14 @@ export default function App() {
                       {tLocal('logout_app_btn')}
                     </button>
 
-                    <button 
-                      onClick={() => setShowDeleteConfirm(true)}
-                      type="button"
-                      className="w-full py-3 bg-rose-950/35 hover:bg-rose-950/50 border border-rose-500/20 hover:border-rose-500/30 rounded-2xl text-xs font-bold text-rose-400 font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer"
+                    <a 
+                      href="https://portal-orbita-delete-account.vercel.app/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-rose-950/35 hover:bg-rose-950/50 border border-rose-500/20 hover:border-rose-500/30 rounded-2xl text-xs font-bold text-rose-400 font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer block text-center"
                     >
                       {tLocal('delete_acc_btn')}
-                    </button>
+                    </a>
                   </div>
                 </div>
 
@@ -8351,7 +8208,40 @@ export default function App() {
         const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
         const isIos = /iphone|ipad|ipod/.test(ua);
         const isAndroid = /android/.test(ua);
+        const isInAppBrowser = /tiktok|musically|bytedance|instagram|fbav|fban|fb_iab|messenger|line\/|twitter|snapchat|pinterest|gsa\/|wv|webview/i.test(ua);
         const isDesktop = !isIos && !isAndroid;
+
+        const handleCopyAppLink = () => {
+          const appUrl = typeof window !== 'undefined' ? window.location.origin : "https://portalorbit.vercel.app";
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(appUrl).then(() => {
+              triggerGlobalNotification(
+                t("Link Copiado"),
+                guide.copyLinkSuccess,
+                "success"
+              );
+            }).catch(() => {
+              triggerGlobalNotification(t("Link do App"), appUrl, "info");
+            });
+          } else {
+            triggerGlobalNotification(t("Link do App"), appUrl, "info");
+          }
+        };
+
+        const handleOpenExternalBrowser = () => {
+          const appUrl = typeof window !== 'undefined' ? window.location.href : "https://portalorbit.vercel.app";
+          if (isAndroid) {
+            // Chrome Intent URL for Android to force Chrome to open out of TikTok Webview
+            const cleanHost = appUrl.replace(/^https?:\/\//, '');
+            const intentUrl = `intent://${cleanHost}#Intent;scheme=https;package=com.android.chrome;end;`;
+            window.location.href = intentUrl;
+            setTimeout(() => {
+              window.open(appUrl, '_system');
+            }, 500);
+          } else {
+            window.open(appUrl, '_system');
+          }
+        };
 
         return (
           <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[500] flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-300">
@@ -8375,17 +8265,69 @@ export default function App() {
               <div className="px-3 py-1.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between text-[11px]">
                 <span className="text-slate-400 font-medium">{guide.detectedDevice}:</span>
                 <span className="font-mono font-bold text-amber-400 uppercase">
-                  {isIos ? "iOS / iPhone" : isAndroid ? "Android" : "Desktop / Computer"}
+                  {isInAppBrowser 
+                    ? "TikTok / Rede Social (Navegador Interno)" 
+                    : isIos 
+                    ? "iOS / iPhone" 
+                    : isAndroid 
+                    ? "Android" 
+                    : "Desktop / Computer"}
                 </span>
               </div>
+
+              {/* In-App Browser / TikTok Warning Card */}
+              {(isInAppBrowser || true) && (
+                <div className={`p-4 rounded-2xl border ${isInAppBrowser ? 'bg-gradient-to-br from-rose-500/15 via-amber-500/10 to-slate-950 border-rose-500/40 shadow-lg' : 'bg-slate-950/40 border-slate-850 opacity-90'}`}>
+                  <h4 className="text-xs font-black text-rose-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    {guide.tiktokTitle}
+                    {isInAppBrowser && <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-mono font-bold animate-pulse">DETECTADO</span>}
+                  </h4>
+                  <p className="text-xs text-slate-200 mb-3 leading-relaxed font-sans">
+                    {guide.tiktokDesc}
+                  </p>
+                  <ul className="text-xs text-slate-300 space-y-1.5 font-sans leading-relaxed mb-4">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold shrink-0">1.</span>
+                      <span>{guide.tiktokStep1}</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold shrink-0">2.</span>
+                      <span>{guide.tiktokStep2}</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold shrink-0">3.</span>
+                      <span>{guide.tiktokStep3}</span>
+                    </li>
+                  </ul>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleCopyAppLink}
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{guide.copyLinkBtn}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenExternalBrowser}
+                      className="px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 text-xs font-black uppercase rounded-xl transition cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>{guide.androidTitle.includes('Android') ? 'Abrir no Chrome' : 'Abrir no Safari/Chrome'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Guide Accordions or Blocks */}
               <div className="space-y-4">
                 {/* iOS section */}
-                <div className={`p-4 rounded-2xl border ${isIos ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                <div className={`p-4 rounded-2xl border ${isIos && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
                   <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     {guide.iosTitle}
-                    {isIos && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                    {isIos && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
                   </h4>
                   <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
                     <li>{guide.iosStep1}</li>
@@ -8395,10 +8337,10 @@ export default function App() {
                 </div>
 
                 {/* Android section */}
-                <div className={`p-4 rounded-2xl border ${isAndroid ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                <div className={`p-4 rounded-2xl border ${isAndroid && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
                   <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     {guide.androidTitle}
-                    {isAndroid && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                    {isAndroid && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
                   </h4>
                   <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
                     <li>{guide.androidStep1}</li>

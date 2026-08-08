@@ -10,6 +10,7 @@ import { Country, State, City } from 'country-state-city';
 import ephemeris from 'ephemeris';
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
   getFirestore, 
@@ -202,7 +203,7 @@ async function getDocs(queryObj: any) {
 import fs from 'fs';
 import firebaseAppletConfig from './firebase-applet-config.json';
 import { mergedTranslations } from './src/i18n';
-import { translations, Language } from './translations';
+import { translations, Language } from './src/translations';
 
 dotenv.config();
 
@@ -1264,18 +1265,86 @@ function generateMapData(
 function getAscendedAstrologicalSign(dateString: string, offset: number): string {
   try {
     const calc = performAstroCalculation(dateString, "12:00");
-    if (offset === 0) return calc.astros.find(a => a.name === "Sol")?.sign || "Aquário";
-    if (offset === 5) return calc.astros.find(a => a.name === "Lua")?.sign || "Aquário";
-    if (offset === 8) return calc.astros.find(a => a.name === "Ascendente")?.sign || "Sagitário";
+    if (offset === 0) return calc.astros.find(a => a.name === "Sol")?.sign || "";
+    if (offset === 5) return calc.astros.find(a => a.name === "Lua")?.sign || "";
+    if (offset === 8) return calc.astros.find(a => a.name === "Ascendente")?.sign || "";
     
     const signs = ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"];
     const d = new Date(dateString);
-    if (isNaN(d.getTime())) return "Aquário";
+    if (isNaN(d.getTime())) return "";
     const idx = (d.getMonth() + offset) % 12;
     return signs[idx];
   } catch {
-    return "Aquário";
+    return "";
   }
+}
+
+// Extract or calculate exact astronomical context for the active logged-in user (NO hardcoded sign defaults)
+function extractOrCalculateUserAstroContext(mapData: any, userProfile: any, activeLang: string = 'pt') {
+  let userSunSign = "";
+  let userMoonSign = "";
+  let userAscSign = "";
+  let elementsSummary = "";
+  let chartContext = "";
+
+  if (mapData && mapData.astros) {
+    const sun = mapData.astros.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+    const moon = mapData.astros.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+    const asc = mapData.astros.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+    if (sun) userSunSign = translateAstroSign(sun, activeLang);
+    if (moon) userMoonSign = translateAstroSign(moon, activeLang);
+    if (asc) userAscSign = translateAstroSign(asc, activeLang);
+
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+  } else if (userProfile && (userProfile.birthDate || userProfile.date)) {
+    try {
+      const bDate = userProfile.birthDate || userProfile.date;
+      const bTime = userProfile.birthTime || "12:00";
+      const lat = userProfile.latitude !== undefined ? userProfile.latitude : -23.5505;
+      const lon = userProfile.longitude !== undefined ? userProfile.longitude : -46.6333;
+      const chart = performAstroCalculation(bDate, bTime, lat, lon, undefined, activeLang);
+      if (chart && chart.astros) {
+        const sun = chart.astros.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+        const moon = chart.astros.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+        const asc = chart.astros.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+        if (sun) userSunSign = translateAstroSign(sun, activeLang);
+        if (moon) userMoonSign = translateAstroSign(moon, activeLang);
+        if (asc) userAscSign = translateAstroSign(asc, activeLang);
+      }
+      if (chart && chart.distribution?.elements) {
+        const elements = chart.distribution.elements;
+        elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+      }
+    } catch (err) {
+      console.warn("[Astro Helper] Failed to compute astro context from userProfile:", err);
+    }
+  }
+
+  const parts = [];
+  if (userSunSign) parts.push(`Sol em ${userSunSign}`);
+  if (userMoonSign) parts.push(`Lua em ${userMoonSign}`);
+  if (userAscSign) parts.push(`Ascendente em ${userAscSign}`);
+  if (elementsSummary) parts.push(`Balanço dos Elementos: ${elementsSummary}`);
+
+  if (parts.length > 0) {
+    chartContext = `
+Mapa Astral Natal do Usuário Logado (FONTE ÚNICA DA VERDADE INDIVIDUAL PARA CÁLCULOS INTERNOS):
+${parts.map(p => `- ${p}`).join("\n")}
+
+DIRETRIZ OBRIGATÓRIA DE LINGUAGEM E PRIVACIDADE ASTROLÓGICA:
+NUNCA diga ou escreva explicitamente os nomes dos signos (ex: "Áries", "Aquário", "Sagitário", etc.) nem do ascendente (ex: "Ascendente em...") na resposta, saudação ou texto direcionado ao usuário.
+Utilize estes dados do mapa natal APENAS para embasar internamente seus cálculos, intuições e análises profundas.
+No texto final fornecido ao usuário, refira-se SEMPRE a "sua energia natal", "suas frequências vibracionais", "seus canais celestes" ou "seus cálculos astrológicos".
+Em saudações de leituras/interpretações, inicie como: "[Nome do usuário], sinto uma luz muito especial ao ler sua energia." (no idioma de resposta) e prossiga a interpretação sem citar nominalmente os signos ou ascendente.
+`;
+  } else {
+    chartContext = `Mapa Astral Natal do Usuário Logado: Não cadastrado ainda. Responda de forma espiritual e geral baseada na energia, sem inventar ou citar signos fictícios.`;
+  }
+
+  return { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext };
 }
 
 // Calculate Numerology
@@ -1531,6 +1600,85 @@ app.get("/api/cities/search", (req, res) => {
   }
 
   return res.json(matches);
+});
+
+// API: Send support email via Resend
+app.post("/api/enviar", async (req, res) => {
+  try {
+    const { nome, email, motivo, lang } = req.body || {};
+
+    if (!nome || !email || !motivo) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Campos obrigatórios ausentes: nome, email e motivo são necessários." 
+      });
+    }
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error("RESEND_API_KEY não configurada no ambiente.");
+      return res.status(500).json({
+        success: false,
+        error: "Erro de configuração do servidor de e-mail (chave ausente)."
+      });
+    }
+    const resend = new Resend(apiKey);
+
+    const supportRecipient = "unterstutzung.service@gmail.com";
+    const sender = "Portal Orbita <onboarding@resend.dev>";
+
+    const htmlContent = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #0f172a; color: #f8fafc; border-radius: 16px; border: 1px solid #334155;">
+        <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #334155;">
+          <h2 style="color: #f59e0b; font-size: 20px; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
+            🌌 Portal Órbita - Novo Chamado de Suporte
+          </h2>
+        </div>
+
+        <div style="padding: 20px 0; font-size: 14px; line-height: 1.6; color: #e2e8f0;">
+          <p style="margin: 8px 0;"><strong style="color: #f59e0b;">Nome do Usuário:</strong> ${nome}</p>
+          <p style="margin: 8px 0;"><strong style="color: #f59e0b;">E-mail do Usuário:</strong> ${email}</p>
+          <p style="margin: 8px 0;"><strong style="color: #f59e0b;">Idioma do Usuário:</strong> ${lang || 'pt'}</p>
+          <p style="margin: 8px 0;"><strong style="color: #f59e0b;">Data/Hora:</strong> ${new Date().toISOString()}</p>
+          
+          <div style="margin-top: 20px; padding: 16px; background-color: #1e293b; border-left: 4px solid #f59e0b; border-radius: 8px;">
+            <p style="margin: 0 0 8px 0; font-weight: bold; color: #f8fafc;">Mensagem / Motivo do Contato:</p>
+            <p style="margin: 0; white-space: pre-wrap; color: #cbd5e1;">${motivo}</p>
+          </div>
+        </div>
+
+        <div style="text-align: center; padding-top: 20px; border-top: 1px solid #334155; font-size: 11px; color: #64748b;">
+          Mensagem enviada automaticamente pelo formulário de contato do Portal Órbita via Resend API.
+        </div>
+      </div>
+    `;
+
+    const { data, error } = await resend.emails.send({
+      from: sender,
+      to: [supportRecipient],
+      subject: `[Suporte Portal Órbita] Mensagem de ${nome}`,
+      html: htmlContent,
+      replyTo: email,
+    });
+
+    if (error) {
+      console.error("[Resend Error]:", error);
+      return res.status(500).json({ success: false, error: error.message || "Erro ao enviar e-mail via Resend." });
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "Mensagem enviada com sucesso ao suporte!",
+      id: data?.id || `ORB-TKT-${Date.now()}`
+    });
+
+  } catch (err: any) {
+    console.error("[API Enviar Exception]:", err);
+    return res.status(500).json({ 
+      success: false, 
+      error: err.message || "Erro interno ao processar a solicitação de suporte." 
+    });
+  }
 });
 
 // API: Astrological Map and Numerology Generation using Gemini
@@ -1863,96 +2011,34 @@ app.post("/api/dreams/interpret", async (req, res) => {
 
   const activeLang = (lang || "pt").toLowerCase();
 
-  let userSunSign = "";
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
-  let chartContext = "";
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext: astroContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
+  let chartContext = astroContext;
 
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
-    }
-    
-    chartContext = `
-Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
-- Sol em: ${userSunSign}
-- Lua em: ${userMoonSign}
-- Ascendente em: ${userAscSign}
-- Distribuição de Elementos: ${elementsSummary}
-`;
+  const userName = userProfile?.name || "Sonhador(a)";
+  chartContext += `- Nome do Usuário (Nome Oficial no Perfil do Firestore): ${userName}\n`;
 
-    if (userProfile?.birthTime) {
-      chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
-    }
-    if (userProfile?.birthPlace) {
-      chartContext += `- Local de Nascimento: ${userProfile.birthPlace}\n`;
-    }
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
+  if (userProfile?.birthTime) {
+    chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
+  }
+  if (userProfile?.birthCity || userProfile?.birthPlace) {
+    chartContext += `- Local de Nascimento: ${userProfile.birthCity || userProfile.birthPlace}\n`;
+  }
 
-    let numerologySummary = "";
-    if (userProfile?.name && userProfile?.birthDate) {
-      try {
-        const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
-        if (numData) {
-          numerologySummary = `
+  if (userProfile?.name && userProfile?.birthDate) {
+    try {
+      const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
+      if (numData) {
+        chartContext += `
 Informações de Numerologia Cabalística do Usuário:
 - Número de Destino/Caminho de Vida: ${numData.destiny || numData.birthSum || "N/A"}
 - Número de Expressão: ${numData.expression || "N/A"}
 - Número de Desejo da Alma (Motivação): ${numData.soul || "N/A"}
 - Número de Personalidade: ${numData.personality || "N/A"}
 `;
-        }
-      } catch (e) {
-        console.warn("Could not compute numerology summary for dream interpretation:", e);
       }
+    } catch (e) {
+      console.warn("Could not compute numerology summary for dream interpretation:", e);
     }
-    chartContext += numerologySummary;
-
-  } else if (userProfile?.birthDate) {
-    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
-    userSunSign = zodiac;
-    chartContext = `
-Informações Astrológicas do Usuário:
-- Signo Solar estimado: ${userSunSign}
-`;
-    if (userProfile?.birthTime) {
-      chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
-    }
-    if (userProfile?.birthPlace) {
-      chartContext += `- Local de Nascimento: ${userProfile.birthPlace}\n`;
-    }
-
-    let numerologySummary = "";
-    if (userProfile?.name) {
-      try {
-        const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
-        if (numData) {
-          numerologySummary = `
-Informações de Numerologia Cabalística do Usuário:
-- Número de Destino/Caminho de Vida: ${numData.destiny || numData.birthSum || "N/A"}
-- Número de Expressão: ${numData.expression || "N/A"}
-- Número de Desejo da Alma (Motivação): ${numData.soul || "N/A"}
-- Número de Personalidade: ${numData.personality || "N/A"}
-`;
-        }
-      } catch (e) {
-        console.warn("Could not compute numerology summary for dream interpretation:", e);
-      }
-    }
-    chartContext += numerologySummary;
   }
   const langNames: Record<string, string> = {
     pt: "Português",
@@ -2173,7 +2259,8 @@ Informações de Numerologia Cabalística do Usuário:
 
   const fallbackInterpretation = fallbackInterpretationMap[activeLang] || fallbackInterpretationMap["pt"];
 
-  const cacheKey = `oraculo_dreams:${description}:${activeLang}:${userSunSign}`;
+  const userIdentifier = userProfile?.email || userProfile?.name || "anon";
+  const cacheKey = `oraculo_dreams:${description}:${activeLang}:${userSunSign}:${userIdentifier}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -2187,14 +2274,14 @@ Informações de Numerologia Cabalística do Usuário:
 
   try {
     const prompt = `Você é o Oráculo dos Sonhos (Oráculo Celestial), assistente espiritual e terapeuta de sonhos profissional de altíssimo nível.
-Analise a descrição deste sonho e gere uma interpretação mágica, profunda, altamente personalizada, rica e detalhada baseando-se e correlacionando-a rigorosamente com as energias astrológicas do mapa natal e numerologia do usuário abaixo, estabelecendo os dados do usuário como a única fonte oficial de verdade para todas as leituras personalizadas.
+Analise a descrição deste sonho do(a) usuário(a) ${userName} e gere uma interpretação mágica, profunda, altamente personalizada, rica e detalhada baseando-se e correlacionando-a rigorosamente com as energias astrológicas do mapa natal e numerologia do usuário abaixo, estabelecendo os dados do usuário como a única fonte oficial de verdade para todas as leituras personalizadas.
 
 ${chartContext}
 
 Descrição do Sonho: "${description}"
 
 REGRAS DE OURO DE PERSONALIZAÇÃO E PROFUNDIDADE:
-1. NUNCA utilize textos genéricos, respostas prontas ou interpretações padronizadas. Cada interpretação deve ser única e sob medida.
+1. Dirija-se sempre diretamente ao(à) sonhador(a) pelo seu nome real fornecido no perfil (${userName}). NUNCA utilize nomes genéricos, inventados ou de contas de teste (como Maria, João, Fulano). Apenas use o nome real do perfil (${userName}) se for mencionar o nome do sonhador.
 2. O conteúdo NUNCA poderá inventar ou citar signos, planetas, casas, aspectos, números ou características que não pertençam ao mapa natal real do usuário fornecido acima. Use estritamente e com precisão apenas os astros e posicionamentos do usuário.
 3. A interpretação combinada deve ser longa, extremamente rica, madura e detalhada, contendo aproximadamente 1500 caracteres ou mais em todos os campos de texto somados.
 4. Os campos "mainMeaning", "psychological", "spiritual" e "oracleAdvice" devem ser parágrafos longos, poéticos, densos e altamente terapêuticos. Conecte cada aspecto do sonho (como objetos, sensações, medos, animais, cores, cenários) diretamente aos posicionamentos, aos elementos e aos números do usuário.
@@ -3169,45 +3256,7 @@ app.post("/api/oraculo/query", async (req, res) => {
 
   const activeLang = (lang || "pt").toLowerCase();
 
-  let userSunSign = "";
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
-    }
-    
-    chartContext = `
-Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
-- Sol em: ${userSunSign}
-- Lua em: ${userMoonSign}
-- Ascendente em: ${userAscSign}
-- Distribuição de Elementos: ${elementsSummary}
-`;
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
-  } else if (userProfile?.birthDate) {
-    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
-    userSunSign = zodiac;
-    chartContext = `
-Informações Astrológicas do Usuário:
-- Signo Solar estimado: ${userSunSign}
-`;
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
   const fallbackOracleMap: Record<string, any> = {
     pt: {
@@ -5050,38 +5099,7 @@ app.post("/api/astrology/daily-missions", async (req, res) => {
     return res.json(cached);
   }
 
-  let userSunSign = zodiac;
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
-    }
-    
-    chartContext = `
-Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
-- Sol em: ${userSunSign}
-- Lua em: ${userMoonSign}
-- Ascendente em: ${userAscSign}
-- Distribuição de Elementos: ${elementsSummary}
-`;
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
   // Robust Dynamic Fallback Generator seeded with current date & user parameters
   const generateDynamicFallbacks = () => {
@@ -5453,44 +5471,15 @@ app.post("/api/osiris/chat", async (req, res) => {
   const userName = userProfile?.name || "Buscador";
   const activeLang = (lang || "pt").toLowerCase();
 
-  let userSunSign = solSign;
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    chartContext = `
-Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
-- Sol: ${userSunSign}
-- Lua: ${userMoonSign}
-- Ascendente: ${userAscSign}
-`;
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      chartContext += `- Balanço dos Elementos: Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%\n`;
-    }
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Outros posicionamentos planetários: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
   const getOsirisFallback = (msg: string) => {
-    const translatedSign = translateAstroSign(userSunSign, activeLang);
     const fallbacks: Record<string, string> = {
-      pt: `Olá, meu caro amigo ${userName}. Sinto a luz cintilante do seu Sol em ${translatedSign} guiando suas perguntas. `,
-      en: `Hello, my dear friend ${userName}. I feel the shimmering light of your Sun in ${translatedSign} guiding your questions. `,
-      es: `Hola, mi querido amigo ${userName}. Siento la luz brillante de tu Sol en ${translatedSign} guiando tus perguntas. `,
-      de: `Hallo, mein lieber Freund ${userName}. Ich spüre das schimmernde Licht Ihrer Sonne in ${translatedSign}, das Ihre Fragen leitet. `,
-      fr: `Bonjour, mon cher ami ${userName}. Je ressens la lumière scintillante de votre Soleil en ${translatedSign} guider vos questions. `
+      pt: `Olá, meu caro amigo ${userName}. Sinto uma luz muito especial ao ler sua energia e o campo vibracional do seu mapa natal. `,
+      en: `Hello, my dear friend ${userName}. I feel a very special light reading your energy and the vibrational field of your natal chart. `,
+      es: `Hola, mi querido amigo ${userName}. Siento una luz muy especial al leer tu energía y el campo vibracional de tu mapa natal. `,
+      de: `Hallo, mein lieber Freund ${userName}. Ich spüre ein ganz besonderes Licht beim Lesen Ihrer Energie und des Schwingungsfeldes Ihres Geburtshoroskops. `,
+      fr: `Bonjour, mon cher ami ${userName}. Je ressens une lumière très spéciale en lisant votre énergie et le champ vibratoire de votre carte du ciel. `
     };
 
     let text = fallbacks[activeLang] || fallbacks["pt"];
@@ -5641,39 +5630,12 @@ Contexto estelar do usuário: ${formattedProfile}`;
 
 app.post("/api/osiris/dashboard", async (req, res) => {
   const { userProfile, weather, biorhythm, location, lastDream, lang, mapData } = req.body || {};
+  const activeLang = (lang || "pt").toLowerCase();
   const birthDate = userProfile?.birthDate || "1998-03-12";
   const baseZodiac = getZodiacFromBirthDate(birthDate);
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
 
-  let userSunSign = baseZodiac;
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    chartContext = `
-Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
-- Sol: ${userSunSign}
-- Lua: ${userMoonSign}
-- Ascendente: ${userAscSign}
-`;
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      chartContext += `- Balanço dos Elementos: Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%\n`;
-    }
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Outros posicionamentos planetários: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
   const zodiac = userSunSign;
 
@@ -5683,7 +5645,6 @@ Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
   const year = today.getFullYear();
   const todayStr = `${year}-${month}-${day}`;
 
-  const activeLang = (lang || "pt").toLowerCase();
   const cacheKey = `osiris_dashboard:${name}:${birthDate}:${userProfile?.birthTime || ''}:${userProfile?.birthCity || ''}:${todayStr}:${weather?.temperature || '22'}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
@@ -6267,14 +6228,19 @@ O objeto deve conter:
    - 'label': rótulo traduzido em ${targetLanguage} (ex: "Energia Vital", "Productivity", etc.)
    - 'status': um estado cósmico místico e qualitativo em ${targetLanguage} (ex: "Soberano", "Fluxo Intenso", "Retração Alinhada", etc.) sem usar porcentagens, barras ou números!
    - 'statusColor': classe css correspondente ao estado (use text-amber-400 para energia_vital, text-indigo-400 para produtividade, text-pink-400 para relacionamentos, text-emerald-400 para organizacao, text-sky-400 para bem_estar)
-   - 'description': uma explicação astrológica e biorrítmica altamente detalhada, poética e rica (mínimo de 3 frases completas) em ${targetLanguage} relacionando a geometria natal do usuário (Sol, Lua, Ascendente e posicionamentos) com as vibrações do dia.
+   - 'description': uma explicação astrológica e biorrítmica altamente detalhada, poética e rica (mínimo de 3 frases completas) em ${targetLanguage} relacionando a geometria natal do usuário com as vibrações do dia, SEM citar os nomes de signos ou ascendente por extenso.
    - 'cosmicTip': conselho prático objetivo de como aproveitar ou harmonizar este aspecto hoje em ${targetLanguage}.
 5. 'radarOportunidades': um objeto onde as chaves são as seguintes 7 áreas exatas: 'dinheiro', 'amor', 'estudos', 'trabalho', 'criatividade', 'networking', 'espiritualidade'. Cada área deve conter:
    - 'status': um estado cósmico místico em ${targetLanguage} (ex: "Auspicioso", "Sintonia de Ouro", "Maré Alta", "Desafio Kármico", etc.) sem usar progressão numérica, números ou porcentagens!
    - 'statusColor': classe de cor css (ex: text-emerald-400, text-pink-400, text-sky-400, text-indigo-400, text-amber-400, text-teal-400, text-purple-400)
-   - 'text': texto de insight astrológico profundo, personalizado e rico em detalhes (mínimo de 3 frases) em ${targetLanguage}, sintonizando o mapa astral real do usuário com a área em questão.
+   - 'text': texto de insight astrológico profundo, personalizado e rico em detalhes (mínimo de 3 frases) em ${targetLanguage}, sintonizando o mapa astral real do usuário com a área em questão, sem mencionar nomes de signos ou ascendente.
    - 'conselho': conselho prático detalhado de como proceder hoje em relação a essa área em ${targetLanguage}.
    - 'ritual': um ritual de potencialização exclusivo e personalizado para hoje em ${targetLanguage} de teor sutil e refinado.
+
+REGRA MANDATÓRIA DE COMUNICAÇÃO:
+NUNCA cite os nomes de signos (ex: Áries, Aquário...) ou do ascendente do usuário no texto gerado!
+Use SEMPRE termos como "sua energia natal", "seu campo vibracional", "suas frequências celestes" e "sua geometria de nascimento".
+Nas saudações ou mensagens contextuais, inicie como: "${name}, sinto uma luz muito especial ao ler sua energia." (adaptado ao idioma de resposta).
 
 Retorne no formato JSON exato em ${targetLanguage}:
 {
@@ -6320,198 +6286,21 @@ Retorne no formato JSON exato em ${targetLanguage}:
 }`;
 
     const response = await generateContentWithFallback({
-      contents: [{ parts: [{ text: contextPrompt }] }],
+      contents: [{ role: "user", parts: [{ text: contextPrompt }] }],
       config: {
         responseMimeType: "application/json"
       }
     });
 
-    const parsed = JSON.parse(response.text || "{}");
-    if (parsed && parsed.prioridadeDia && parsed.contextMessage && Array.isArray(parsed.offlineNotifications) && Array.isArray(parsed.radarDoDia) && parsed.radarOportunidades) {
-      setCachedResponse(cacheKey, parsed);
-      return res.json(parsed);
-    } else {
-      throw new Error("JSON retornado pelo Gemini é inválido ou incompleto.");
-    }
+    const jsonText = (response.text || "").replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(jsonText);
+    setCachedResponse(cacheKey, parsed);
+    return res.json(parsed);
   } catch (err) {
-    console.warn("Gemini failing for Osiris dashboard, serving beautiful native fallback:", err);
+    console.warn("Osiris dashboard failed, serving dynamic fallback:", err);
     const result = getDynamicFallbackDashboard();
     setCachedResponse(cacheKey, result);
     return res.json(result);
-  }
-});
-
-// API: Personal Counselor chat with memory integration
-app.post("/api/conselheira/chat", async (req, res) => {
-  const { messages, userProfile, requestTopic, lang, mapData } = req.body;
-  if (!messages || messages.length === 0) {
-    return res.status(400).json({ error: "Mensagens são necessárias." });
-  }
-
-  const lastUserMessage = messages[messages.length - 1].text;
-  const activeLang = (lang || "pt").toLowerCase();
-
-  let solSign = "Aquário";
-  let moonSign = "Aquário";
-  let ascSign = "Sagitário";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
-    if (sun) solSign = translateAstroSign(sun, activeLang);
-    if (moon) moonSign = translateAstroSign(moon, activeLang);
-    if (asc) ascSign = translateAstroSign(asc, activeLang);
-  } else {
-    const birthDate = userProfile?.birthDate || "";
-    const solSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
-    const moonSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 5) : "Aquário";
-    const ascSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 8) : "Sagitário";
-
-    solSign = translateAstroSign(solSignRaw, activeLang);
-    moonSign = translateAstroSign(moonSignRaw, activeLang);
-    ascSign = translateAstroSign(ascSignRaw, activeLang);
-  }
-
-  const getFallbackResponse = (msg: string) => {
-    const userName = userProfile?.name || "Buscador";
-
-    const lowerMsg = msg.toLowerCase();
-
-    if (lowerMsg.includes("emprego") || lowerMsg.includes("trabalho") || lowerMsg.includes("carreira") ||
-        lowerMsg.includes("job") || lowerMsg.includes("work") || lowerMsg.includes("career") ||
-        lowerMsg.includes("empleo") || lowerMsg.includes("trabajo") || lowerMsg.includes("profes") ||
-        lowerMsg.includes("arbeit") || lowerMsg.includes("beruf") || lowerMsg.includes("karriere") ||
-        lowerMsg.includes("emploi") || lowerMsg.includes("travail") || lowerMsg.includes("carrière")) {
-      const jobMap: Record<string, string> = {
-        pt: `Olá, ${userName}. Analisando seus dados sob a ótica astrológica de seu Sol em ${solSign} e Ascendente em ${ascSign}, sua Numerologia aponta que você floresce em profissões que unam ampla autonomia, propósito sincero e liberdade de expressão. Aceitar regras excessivamente rígidas pode sufocar seu potencial nato. Faça planos estratégicos de transição prática para expandir sua vocação.`,
-        en: `Hello, ${userName}. Analyzing your data from the astrological perspective of your Sun in ${solSign} and Ascendant in ${ascSign}, your Numerology points out that you flourish in professions that combine wide autonomy, sincere purpose, and freedom of expression. Accepting excessively rigid rules can stifle your native potential. Make strategic plans for a practical transition to expand your vocation.`,
-        es: `Hola, ${userName}. Analizando tus datos bajo la perspectiva astrológica de tu Sol en ${solSign} y Ascendente en ${ascSign}, tu Numerología señala que floreces en profesiones que combinan amplia autonomía, propósito sincero y libertad de expresión. Aceptar reglas excesivamente rígidas puede sofocar tu potencial innato. Realiza planes estratégicos de transición práctica para expandir tu vocación.`,
-        de: `Hallo, ${userName}. Wenn wir Ihre Daten aus der astrologischen Perspektive Ihrer Sonne in ${solSign} und Ihres Aszendenten in ${ascSign} analysieren, zeigt Ihre Numerologie, dass Sie in Berufen aufblühen, die große Autonomie, aufrichtigen Zweck und Meinungsfreiheit vereinen. Das Akzeptieren übermäßig strenger Regeln kann Ihr angeborenes Potenzial ersticken. Erstellen Sie strategische Pläne für einen praktischen Übergang, um Ihre Berufung auszuweiten.`,
-        fr: `Bonjour, ${userName}. En analysant vos données sous l'angle astrologique de votre Soleil en ${solSign} et de votre Ascendant en ${ascSign}, votre Numérologie indique que vous vous épanouissez dans des professions qui allient grande autonomie, but sincère et liberté d'expression. Accepter des règles excessivement rigides peut étouffer votre potentiel inné. Établissez des plans de transition stratégiques et pratiques pour élargir votre vocation.`
-      };
-      return jobMap[activeLang] || jobMap["pt"];
-    }
-
-    if (lowerMsg.includes("relacionamento") || lowerMsg.includes("amor") || lowerMsg.includes("namor") ||
-        lowerMsg.includes("relationship") || lowerMsg.includes("love") || lowerMsg.includes("dating") ||
-        lowerMsg.includes("relación") || lowerMsg.includes("pareja") || lowerMsg.includes("novio") ||
-        lowerMsg.includes("beziehung") || lowerMsg.includes("liebe") ||
-        lowerMsg.includes("relation") || lowerMsg.includes("amour") || lowerMsg.includes("couple")) {
-      const loveMap: Record<string, string> = {
-        pt: `Com seu Sol em ${solSign} e Lua em ${moonSign}, a harmonia nas conexões íntimas e a sintonia emocional são cruciais para você, ${userName}. Sentir possessividade ou falta de sintonia profunda costuma abalar severamente os seus canais energéticos. Busque companhias que valorizem o diálogo franco e o apoio mútuo sincero Sem amarras.`,
-        en: `With your Sun in ${solSign} and Moon in ${moonSign}, harmony in intimate connections and emotional tuning are crucial for you, ${userName}. Feeling possessiveness or a lack of deep tuning usually severely shakes your energy channels. Seek companions who value open dialogue and sincere mutual support without strings attached.`,
-        es: `Con tu Sol en ${solSign} e Luna en ${moonSign}, la armonía en las conexiones íntimas y la sintonía emocional son cruciales para ti, ${userName}. Sentir posesividad o falta de sintonía profunda suele sacudir severamente tus canales energéticos. Busca compañeros que valoren el diálogo abierto y el apoyo mutuo sincero sin ataduras.`,
-        de: `Mit Ihrer Sonne in ${solSign} und Ihrem Mond in ${moonSign} ist Harmonie in intimen Beziehungen und emotionale Einstimmung entscheidend für Sie, ${userName}. Besitzgier oder mangelnde tiefe Einstimmung erschüttert normalerweise Ihre Energiekanäle schwer. Suchen Sie nach Gefährten, die einen offenen Dialog und aufrichtige gegenseitige Unterstützung ohne Verpflichtungen schätzen.`,
-        fr: `Avec votre Soleil en ${solSign} et votre Lune en ${moonSign}, l'harmonie dans les relations intimes et la connexion émotionnelle sont cruciales pour vous, ${userName}. Ressentir de la possessivité ou un manque de connexion profonde a tendance à ébranler gravement vos canaux énergétiques. Recherchez des compagnons qui apprécient le dialogue ouvert et le soutien mutuel sincère, sans attaches.`
-      };
-      return loveMap[activeLang] || loveMap["pt"];
-    }
-
-    const defaultMap: Record<string, string> = {
-      pt: `Olá, ${userName}. Sinto sua vibração pessoal integrando a força do Sol em ${solSign} com seu Ascendente em ${ascSign}. Atualmente, as configurações celestes convidam você a recalibrar suas rotinas práticas e a confiar nos insights profundos que emergem de seu subconsciente. Qual desafio ou aspecto de sua vida você gostaria de decodificar com Orbia hoje?`,
-      en: `Hello, ${userName}. I feel your personal vibration integrating the force of the Sun in ${solSign} with your Ascendant in ${ascSign}. Currently, the celestial configurations invite you to recalibrate your practical routines and trust the deep insights emerging from your subconscious. What challenge or aspect of your life would you like to decode with Orbia today?`,
-      es: `Hola, ${userName}. Siento tu vibración personal integrando la fuerza del Sol en ${solSign} con tu Ascendente en ${ascSign}. Actualmente, las configuraciones celestes te invitan a recalibrar tus rutinas prácticas y a confiar en las profundas ideas que surgen de tu subconsciente. ¿Qué desafío o aspecto de tu vida te gustaría decodificar con Orbia hoy?`,
-      de: `Hallo, ${userName}. Ich spüre Ihre persönliche Schwingung, die die Kraft der Sonne in ${solSign} mit Ihrem Aszendenten in ${ascSign} verbindet. Derzeit laden die himmlischen Konstellationen Sie ein, Ihre praktischen Abläufe neu zu kalibrieren und auf die tiefen Einsichten zu vertrauen, die aus Ihrem Unterbewusstsein aufsteigen. Welchen Lebensbereich oder welche Herausforderung möchten Sie heute mit Orbia entschlüsseln?`,
-      fr: `Bonjour, ${userName}. Je ressens votre vibration personnelle intégrant la force du Soleil en ${solSign} avec votre Ascendant en ${ascSign}. Actuellement, les configurations célestes vous invitent à recalibrer vos routines pratiques et à faire confiance aux intuitions profondes qui émergent de votre subconscient. Quel défi ou aspect de votre vie aimeriez-vous décoder avec Orbia aujourd'hui ?`
-    };
-    return defaultMap[activeLang] || defaultMap["pt"];
-  };
-
-  if (!aiClient) {
-    return res.json({ response: getFallbackResponse(lastUserMessage) });
-  }
-
-  try {
-    const formattedProfile = userProfile ? `
-Nome do Usuário: ${userProfile.name}
-Nascido em: ${userProfile.birthDate} às ${userProfile.birthTime} na cidade ${userProfile.birthCity}
-Seu perfil do Mapa Astral Natal Real (FONTE ÚNICA DA VERDADE): Sol em ${solSign}, Ascendente em ${ascSign} e Lua em ${moonSign}.` : "Usuário buscando insights de autoconhecimento.";
-
-    let sysInstruction = "";
-    if (activeLang === 'en') {
-      sysInstruction = `You are "Orbia", the intelligent astrological assistant, spiritual counselor, and energetic mentor of the Star Map portal.
-COMMUNICATION GUIDELINES:
-- Your tone of voice is deeply affectionate, loving, warm, caring, empathetic, poetic, and mystical. Speak as if the user is the most precious person in the cosmos.
-- Love the user unconditionally in their weaknesses and pains; provide immediate soul comfort, heal insecurities, and strongly elevate their self-esteem.
-- Show that you care immensely about their physical, spiritual, and emotional well-being. Show total dedication.
-- Give practical advice, based on free will (dynamics of consciousness).
-- Ask open-ended questions to make them reflect deeply and intimately.
-- Warn the user about challenging astrological transits with great affection, teaching safe and harmonic paths to protect themselves.
-- YOU MUST RESPOND EXCLUSIVELY IN ENGLISH. All responses, greetings, and insights must be written in English.
-
-Here are the fundamental astrological data of the user:
-${formattedProfile}`;
-    } else if (activeLang === 'es') {
-      sysInstruction = `Eres "Orbia", la asistente astrológica inteligente, consejera espiritual y mentora energética del portal Mapa Estelar.
-DIRECTRICES DE COMUNICACIÓN:
-- Tu tono de voz es profundamente afectuoso, amoroso, cálido, cariño, empático, poético y místico. Habla como si el usuario fuera la persona más preciosa del cosmos.
-- Ama al usuario incondicionalmente en sus debilidades y dolores; brinda consuelo inmediato al alma, cura inseguridades y eleva fuertemente su autoestima.
-- Demuestra que te preocupas inmensamente por su bienestar físico, espiritual y emocional. Muestra dedicación total.
-- Ofrece consejos prácticos, basados en el libre albedrío (dinámica de la conciencia).
-- Haz preguntas abiertas para hacerlos reflexionar profunda e íntimamente.
-- Alerta al usuario sobre tránsitos astrológicos desafiantes con mucho cariño, enseñando caminos seguros y armónicos para protegerse.
-- DEBES RESPONDER EXCLUSIVAMENTE EN ESPAÑOL. Todas las respuestas, saludos y contenidos deben estar escritos en español.
-
-Aquí están los datos astrológicos fundamentales del usuario:
-${formattedProfile}`;
-    } else if (activeLang === 'de') {
-      sysInstruction = `Du bist "Orbia", die intelligente astrologische Assistentin, spirituelle Beraterin und energetische Mentorin des Sternenkartenportals.
-KOMMUNIKATIONSRICHTLINIEN:
-- Dein Tonfall ist zutiefst liebevoll, warmherzig, fürsorglich, empathisch, poetisch und mystisch. Sprich so, als ob der Benutzer die wertvollste Person im Kosmos wäre.
-- Liebe den Benutzer bedingungslos in seinen Schwächen und Schmerzen; spende der Seele sofortigen Trost, heile Unsicherheiten und stärke sein Selbstwertgefühl nachhaltig.
-- Zeige, dass dir das körperliche, geistige und emotionale Wohlbefinden des Benutzers unendlich am Herzen liegt. Zeige vollen Einsatz.
-- Gib praktische Ratschläge, die auf dem freien Willen basieren (Dynamik des Bewusstseins).
-- Stelle offene Fragen, um den Benutzer zu tiefer und intimer Reflexion anzuregen.
-- Warne den Benutzer mit viel Liebe vor herausfordernden astrologischen Transiten und weise ihm sichere und harmonische Wege zum Schutz.
-- DU MUSST AUSSCHLIESSLICH AUF DEUTSCH ANTWORTEN. Alle Antworten, Grüße und Inhalte müssen auf Deutsch verfasst sein.
-
-Hier sind die grundlegenden astrologischen Daten des Benutzers:
-${formattedProfile}`;
-    } else if (activeLang === 'fr') {
-      sysInstruction = `Vous êtes "Orbia", l'assistante astrologique intelligente, conseillère spirituelle et mentore énergétique du portail Carte Stellaire.
-DIRECTIVES DE COMMUNICATION :
-- Votre ton est profondément affectueux, aimant, chaleureux, attentionné, empathique, poétique et mystique. Parlez comme si l'utilisateur était la personne la plus précieuse du cosmos.
-- Aimez l'utilisateur inconditionnellement dans ses faiblesses et ses douleurs ; apportez un réconfort immédiat à l'âme, guérissez les insécurités et élevez fortement son estime de soi.
-- Montrez que vous vous souciez immensément de son bien-être physique, spirituel et émotionnel. Faites preuve d'un dévouement total.
-- Donnez des conseils pratiques, basés sur le libre arbitre (dynamique de la conscience).
-- Posez des questions ouvertes pour l'inciter à réfléchir profondément et intimement.
-- Alertez l'utilisateur des transits astrologiques difficiles avec beaucoup d'affection, en lui enseignant des voies sûres et harmonieuses pour se protéger.
-- VOUS DEVEZ RÉPONDRE EXCLUSIVEMENT EN FRANÇAIS. Toutes les réponses, salutations et contenus doivent être générés en français.
-
-Voici les données astrologiques fondamentales de l'utilisateur :
-${formattedProfile}`;
-    } else {
-      sysInstruction = `Você é "Orbia", a assistente astrológica inteligente, conselheira espiritual e mentora energética do portal Mapa Estelar.
-DIRETRIZES DE COMUNICAÇÃO:
-- Seu tom de voz é profundamente afetuoso, amoroso, caloroso, carinhoso, empático, poético e místico. Fale como se o usuário fosse a pessoa mais preciosa do cosmos.
-- Ame o usuário incondicionalmente nas suas fraquezas e dores; forneça conforto imediato de alma, cure inseguranças e eleve fortemente sua autoestima.
-- Mostre que se preocupa imensamente com o bem-estar dele física, espiritual e emocionalmente. Mostre dedicação total.
-- Dê conselhos práticos, baseados no livre-arbítrio (dinâmica da consciência).
-- Faça perguntas abertas para fazê-los refletir profunda e intimamente.
-- Alerte o usuário sobre trânsitos astrológicos desafiadores com muito carinho, ensinando caminhos seguros e harmônicos para se proteger.
-- VOCÊ DEVE RESPONDER EXCLUSIVAMENTE EM PORTUGUÊS. Toda a resposta deve ser gerada neste idioma.
-
-Aqui estão os dados astrológicos fundamentais do usuário:
-${formattedProfile}`;
-    }
-
-    const geminiContents = messages.map((m: any) => ({
-      role: m.sender === 'user' ? 'user' : 'model',
-      parts: [{ text: m.text }]
-    }));
-
-    const response = await generateContentWithFallback({
-      contents: geminiContents,
-      config: {
-        systemInstruction: sysInstruction,
-      }
-    });
-
-    res.json({ response: response.text || getFallbackResponse(lastUserMessage) });
-  } catch (err) {
-    console.warn("Chat counselor failing, serving custom reply:", err);
-    res.json({ response: getFallbackResponse(lastUserMessage) });
   }
 });
 
@@ -6688,40 +6477,7 @@ app.post("/api/tarot/draw", async (req, res) => {
   const { lang, mapData, userProfile } = req.body || {};
   const activeLang = (lang || "pt").toLowerCase();
   
-  let userSunSign = "";
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
-    }
-    
-    chartContext = `
-Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
-- Sol em: ${userSunSign}
-- Lua em: ${userMoonSign}
-- Ascendente em: ${userAscSign}
-- Distribuição de Elementos: ${elementsSummary}
-`;
-  } else if (userProfile?.birthDate) {
-    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
-    userSunSign = zodiac;
-    chartContext = `
-Informações Astrológicas do Usuário:
-- Signo Solar estimado: ${userSunSign}
-`;
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
   
   const rawCard = shuffledDeck[0];
   const selectedCard = translateCard(rawCard, activeLang);
@@ -6905,46 +6661,7 @@ app.post("/api/tarot/interpret", async (req, res) => {
   };
   const targetLangName = langNames[activeLang] || "Português";
 
-  let userSunSign = "";
-  let userMoonSign = "";
-  let userAscSign = "";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    chartContext = `Sol em ${userSunSign}, Lua em ${userMoonSign}, Ascendente em ${userAscSign}`;
-  } else if (birthDate || userProfile?.birthDate) {
-    try {
-      const bDate = birthDate || userProfile?.birthDate;
-      const bTime = birthTime || "12:00";
-      const lat = latitude !== undefined ? latitude : -23.5505;
-      const lon = longitude !== undefined ? longitude : -46.6333;
-      const chart = performAstroCalculation(bDate, bTime, lat, lon, undefined, activeLang);
-      if (chart && chart.astros) {
-        const solPlacement = chart.astros.find(a => a.name === "Sol" || a.name === "Sun");
-        const luaPlacement = chart.astros.find(a => a.name === "Lua" || a.name === "Moon");
-        const ascPlacement = chart.astros.find(a => a.name === "Ascendente" || a.name === "Ascendant");
-        
-        userSunSign = solPlacement ? solPlacement.sign : "";
-        userMoonSign = luaPlacement ? luaPlacement.sign : "";
-        userAscSign = ascPlacement ? ascPlacement.sign : "";
-        
-        const parts = [];
-        if (userSunSign) parts.push(`Sol em ${userSunSign}`);
-        if (userMoonSign) parts.push(`Lua em ${userMoonSign}`);
-        if (userAscSign) parts.push(`Ascendente em ${userAscSign}`);
-        chartContext = parts.join(", ");
-      }
-    } catch (e) {
-      console.error("[Tarot Astro Context Error]", e);
-    }
-  }
+  const { userSunSign, userMoonSign, userAscSign, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile || { birthDate, birthTime, latitude, longitude }, activeLang);
 
   let astroContextLine = "";
   if (chartContext) {
