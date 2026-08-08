@@ -306,31 +306,29 @@ function translateServerMessage(key: string, lang: Language, replacements?: Reco
   return text;
 }
 
-// Global Language Middleware
+// Global Language Middleware (Unified Backend Resolution)
 app.use((req: any, res, next) => {
-  let lang: any = req.headers['x-app-lang'] || req.headers['x-language'];
+  let rawLang: any = req.headers['x-app-lang'] || req.headers['x-language'];
   
-  if (!lang) {
-    lang = req.body?.lang || req.query?.lang;
+  if (!rawLang) {
+    rawLang = req.body?.lang || req.body?.language || req.body?.idioma || req.query?.lang || req.query?.language || req.query?.idioma;
   }
   
-  if (!lang && req.body?.userProfile?.lang) {
-    lang = req.body.userProfile.lang;
+  if (!rawLang) {
+    rawLang = req.body?.userProfile?.lang || req.body?.userProfile?.language || req.body?.userProfile?.idioma || 
+              req.body?.profile?.lang || req.body?.profile?.language || req.body?.profile?.idioma;
   }
   
-  if (!lang) {
+  if (!rawLang) {
     const acceptLang = req.headers['accept-language'];
     if (typeof acceptLang === 'string') {
-      const preferred = acceptLang.split(',')[0].split(';')[0].split('-')[0].trim().toLowerCase();
-      if (['pt', 'en', 'es', 'de', 'fr'].includes(preferred)) {
-        lang = preferred;
-      }
+      rawLang = acceptLang.split(',')[0].split(';')[0].trim();
     }
   }
   
   let resolvedLang: Language = 'pt';
-  if (lang && typeof lang === 'string') {
-    const cleanLang = lang.trim().toLowerCase();
+  if (rawLang && typeof rawLang === 'string') {
+    const cleanLang = rawLang.split('-')[0].split('_')[0].trim().toLowerCase();
     if (['pt', 'en', 'es', 'de', 'fr'].includes(cleanLang)) {
       resolvedLang = cleanLang as Language;
     }
@@ -1684,7 +1682,9 @@ app.post("/api/enviar", async (req, res) => {
 // API: Astrological Map and Numerology Generation using Gemini
 app.post("/api/astrology/generate", async (req, res) => {
   try {
-    const { name, email, birthDate, birthTime, birthCity, isUnknownTime, latitude, longitude, lang } = req.body || {};
+    const { name, email, birthDate, birthTime, birthCity, isUnknownTime, latitude, longitude } = req.body || {};
+    const activeLang = (req as any).lang || 'pt';
+
     if (!name) {
       return res.status(400).json({ error: (req as any).t('api.astrology.name_required') });
     }
@@ -1718,7 +1718,7 @@ app.post("/api/astrology/generate", async (req, res) => {
       safeBirthCity = "São Paulo";
     }
 
-    const cacheKey = `astrology:${name}:${safeBirthDate}:${safeBirthTime}:${safeBirthCity}:${isUnknownTime}:${lang || 'pt'}`;
+    const cacheKey = `astrology:${name}:${safeBirthDate}:${safeBirthTime}:${safeBirthCity}:${isUnknownTime}:${activeLang}`;
     const cached = getCachedResponse(cacheKey);
     if (cached) {
       return res.json(cached);
@@ -1756,9 +1756,9 @@ app.post("/api/astrology/generate", async (req, res) => {
       astroDate, 
       astroTime,
       timezoneOffsetHours,
-      lang
+      activeLang
     );
-    (localMap as any).lang = lang || 'pt';
+    (localMap as any).lang = activeLang;
 
     if (!aiClient) {
       // Return high-quality calculated local mapping if Gemini is unavailable
@@ -1771,8 +1771,6 @@ app.post("/api/astrology/generate", async (req, res) => {
     const { existingMap, existingNumerology } = req.body || {};
     let existingMapData = existingMap;
     let existingNumerologyData = existingNumerology;
-
-    const activeLang = lang || 'pt';
 
     if (!existingMapData) {
       // 1. Check in-memory cache for any other language version of the same natal chart
@@ -1861,7 +1859,6 @@ app.post("/api/astrology/generate", async (req, res) => {
     const housesSummary = localMap.houses.map(h => `- Casa ${h.number}: em ${h.sign} ${h.planet ? `(contém o(s) planeta(s): ${h.planet})` : ''}`).join('\n');
     const aspectsSummary = localMap.aspects.map(asp => `- ${asp.planet1} ${asp.aspectType} com ${asp.planet2} (Orbe: ${asp.orb})`).join('\n');
 
-    const activeLang = lang || 'pt';
     const languageNames: Record<string, string> = {
       pt: "Português",
       en: "English (Inglês)",
@@ -2357,9 +2354,9 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     companionBirthTime,
     companionBirthCity,
     companionBirthCountry,
-    category,
-    lang
-  } = req.body;
+    category
+  } = req.body || {};
+  const activeLang = (req as any).lang || 'pt';
 
   if (!name || !companionName) {
     return res.status(400).json({ error: (req as any).t('api.compatibility.both_names_required') });
@@ -2410,10 +2407,10 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     coords2.longitude,
     tzOffset1,
     tzOffset2,
-    lang
+    activeLang
   );
 
-  const cacheKey = `compatibility:${name}:${birthDate}:${companionName}:${companionBirthDate}:${category || 'love'}:${lang || 'pt'}`;
+  const cacheKey = `compatibility:${name}:${birthDate}:${companionName}:${companionBirthDate}:${category || 'love'}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json({ compatibility: cached });
@@ -2432,7 +2429,7 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
       de: "Alemão (German)",
       fr: "Francês (French)"
     };
-    const targetLangName = langNames[lang] || langNames.pt;
+    const targetLangName = langNames[activeLang] || langNames.pt;
 
     // Create a copy of compResult without categories for Gemini input to save massive amounts of tokens
     // and keep Gemini focused on rewriting the main evaluation fields.
@@ -2744,7 +2741,7 @@ function getLocalizedCupidoFallback(user: any, person: any, lang: string, compRe
 
 // API: Cupido Astrológico • Radar Afetivo & Diário
 app.post("/api/cupido/radar", async (req, res) => {
-  let resolvedLang = 'pt';
+  let resolvedLang = (req as any).lang || 'pt';
   let user: any = null;
   let person: any = null;
   let compResult: any = null;
@@ -2752,10 +2749,9 @@ app.post("/api/cupido/radar", async (req, res) => {
   try {
     user = req.body.user;
     person = req.body.person;
-    const { lang = 'pt' } = req.body;
 
     if (!user || !person) {
-      return res.status(400).json({ error: "Parâmetros 'user' e 'person' são obrigatórios." });
+      return res.status(400).json({ error: (req as any).t('api.compatibility.both_names_required') });
     }
 
     // Resolve coordinates & timezone for user
@@ -2803,13 +2799,8 @@ app.post("/api/cupido/radar", async (req, res) => {
       coords2.longitude,
       tzOffset1,
       tzOffset2,
-      lang
+      resolvedLang
     );
-
-    resolvedLang = (lang || 'pt').toLowerCase().split('-')[0].trim();
-    if (!['pt', 'en', 'es', 'fr', 'de'].includes(resolvedLang)) {
-      resolvedLang = 'pt';
-    }
 
     const cupidoPromptTemplates: Record<string, any> = {
       pt: {
@@ -3242,19 +3233,19 @@ Denken Sie daran, NUR das JSON in der entsprechenden Sprache "de" zurückzugeben
       res.json({ radar: fallbackData });
     } catch (fallbackError) {
       console.error("Critical error building Cupido local fallback:", fallbackError);
-      res.status(500).json({ error: "Falha ao gerar o Radar do Dia do Cupido." });
+      res.status(500).json({ error: (req as any).t('api.astrology.internal_error') });
     }
   }
 });
 
 // API: Daily Oracle limit checking + prompt calculation
 app.post("/api/oraculo/query", async (req, res) => {
-  const { question, lang, mapData, userProfile } = req.body;
+  const { question, mapData, userProfile } = req.body || {};
   if (!question) {
     return res.status(400).json({ error: (req as any).t('api.oraculo.question_required') });
   }
 
-  const activeLang = (lang || "pt").toLowerCase();
+  const activeLang = (req as any).lang || "pt";
 
   const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
@@ -6857,7 +6848,7 @@ app.delete("/api/admin/users/delete", (req, res) => {
   const initialLen = mockUsers.length;
   mockUsers = mockUsers.filter(u => u.id !== id);
   if (mockUsers.length === initialLen) {
-    return res.status(404).json({ error: "Usuário não encontrado." });
+    return res.status(404).json({ error: (req as any).t('api.admin.user_not_found') });
   }
   res.json({ success: true, message: (req as any).t('api.admin.user_deleted') });
 });
@@ -6926,7 +6917,7 @@ app.delete("/api/admin/content/delete", (req, res) => {
   const initialLen = mockContents.length;
   mockContents = mockContents.filter(c => c.id !== id);
   if (mockContents.length === initialLen) {
-    return res.status(404).json({ error: "Conteúdo não encontrado." });
+    return res.status(404).json({ error: (req as any).t('api.admin.content_not_found') });
   }
   res.json({ success: true, message: (req as any).t('api.admin.content_deleted') });
 });

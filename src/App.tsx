@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import moment from 'moment-timezone';
 import { motion } from 'motion/react';
 import i18n from './lib/i18n';
@@ -619,10 +619,9 @@ export default function App() {
     // Only redirect or trigger premium conversion screens if the user is definitely NOT premium
     // and we are NOT in the middle of a database synchronization.
     if (!isPremiumActive && isAuthInitialized && !isSyncingSession) {
-      const isRestrictedTab = activeTab === 'constelacoes' || activeTab === 'planetas' || activeTab === 'tarot';
       const isRestrictedSubTab = activeTab === 'mapa' && (mapSubTab === 'area_usuario');
       
-      if (isRestrictedTab || isRestrictedSubTab) {
+      if (isRestrictedSubTab) {
         setActiveTab('mapa');
         setMapSubTab('meu_mapa');
         setShowPremiumModal(true);
@@ -1600,8 +1599,104 @@ export default function App() {
       const keySuffix = (isLoggedIn && loggedEmail) ? loggedEmail.toLowerCase().trim() : "guest";
       localStorage.setItem(`orbi_map_data_${keySuffix}`, JSON.stringify(mapData));
       localStorage.setItem("orbi_map_data", JSON.stringify(mapData));
+    } else if (user?.birthDate) {
+      try {
+        const chart = performAstroCalculation(user.birthDate, user.birthTime || "12:00", user.latitude || -23.5505, user.longitude || -46.6333);
+        const mapObj: AstrologyMap = {
+          chartId: `map_${user.name}_${user.birthDate}`,
+          distribution: chart.distribution,
+          astros: chart.astros.map(p => ({
+            name: p.name,
+            sign: p.sign,
+            degree: `${p.degree}°${p.minute.toString().padStart(2, "0")}'`,
+            extraInfo: p.extraInfo,
+            description: p.description
+          })),
+          houses: chart.houses.map(h => ({
+            number: h.number,
+            sign: h.sign,
+            interpretation: h.interpretation,
+            planet: h.planets.join(", ") || undefined
+          })),
+          aspects: chart.aspects.map(a => ({
+            planet1: a.planet1,
+            planet2: a.planet2,
+            aspectType: a.aspectType as any,
+            orb: a.orb.replace('°', ''),
+            interpretation: a.interpretation
+          })),
+          welcomeMessage: `Olá ${user.name || 'Buscador'}, seu mapa astral foi sincronizado!`,
+          personalityTraits: {
+            harmonious: ["Intuitivo", "Consciente", "Independente"],
+            disharmonious: ["Inquieto", "Disperso"]
+          }
+        };
+        setMapData(mapObj);
+      } catch (err) {
+        console.error("Error generating mapData fallback:", err);
+      }
     }
-  }, [mapData, loggedEmail, isLoggedIn]);
+  }, [mapData, user?.birthDate, user?.birthTime, user?.latitude, user?.longitude, loggedEmail, isLoggedIn]);
+
+  const effectiveMapData = useMemo(() => {
+    if (mapData && mapData.astros && mapData.astros.length > 0) {
+      return mapData;
+    }
+    try {
+      const birthDateClean = user?.birthDate || "1995-05-15";
+      const birthTimeClean = user?.birthTime || "12:00";
+      const latClean = user?.latitude ?? -23.5505;
+      const lngClean = user?.longitude ?? -46.6333;
+      const chart = performAstroCalculation(birthDateClean, birthTimeClean, latClean, lngClean, -3, currentLang);
+      return {
+        chartId: `map_effective_${user?.name || 'guest'}_${birthDateClean}`,
+        distribution: chart.distribution,
+        astros: chart.astros.map(p => ({
+          name: p.name,
+          sign: p.sign,
+          degree: `${p.degree}°${p.minute.toString().padStart(2, "0")}'`,
+          extraInfo: p.extraInfo,
+          description: p.description
+        })),
+        houses: chart.houses.map(h => ({
+          number: h.number,
+          sign: h.sign,
+          interpretation: h.interpretation,
+          planet: h.planets.join(", ") || undefined
+        })),
+        aspects: chart.aspects.map(a => ({
+          planet1: a.planet1,
+          planet2: a.planet2,
+          aspectType: a.aspectType as any,
+          orb: a.orb.replace('°', ''),
+          interpretation: a.interpretation
+        })),
+        welcomeMessage: `Olá ${user?.name || 'Buscador'}, seu mapa astral está pronto!`,
+        personalityTraits: {
+          harmonious: ["Intuitivo", "Consciente", "Independente"],
+          disharmonious: ["Inquieto", "Disperso"]
+        }
+      };
+    } catch (err) {
+      console.error("Error generating effectiveMapData:", err);
+      return mapData || {
+        chartId: "map_fallback_empty",
+        distribution: {
+          elements: { fire: 25, earth: 25, air: 25, water: 25 },
+          qualities: { cardinal: 34, fixed: 33, mutable: 33 },
+          polarization: { yang: 50, yin: 50 }
+        },
+        personalityTraits: {
+          harmonious: ["Intuitivo", "Consciente"],
+          disharmonious: ["Inquieto"]
+        },
+        astros: [],
+        houses: [],
+        aspects: [],
+        welcomeMessage: "Bem-vindo!"
+      };
+    }
+  }, [mapData, user?.name, user?.birthDate, user?.birthTime, user?.latitude, user?.longitude, currentLang]);
 
   useEffect(() => {
     if (numerology) {
@@ -7405,13 +7500,7 @@ export default function App() {
 
             {/* TAB 3: PLANETAS (AI Conselheira Orbia, Dreams Interpretation, Tarot, Daily Oracle) */}
             {activeTab === 'planetas' && (
-              !hasUserCreatedMap(user) ? (
-                renderLockedSection(
-                  "Portal de Planetas e Assistência Orbia",
-                  "Seu horóscopo celestial detalhado, a interpretação de sonhos complexos e o acesso à conselheira de inteligência artificial Orbia dependem das coordenadas geométricas do seu nascimento. Sincronize seu mapa para desbloquear."
-                )
-              ) : (
-                <div className="space-y-8 animate-in fade-in duration-300">
+              <div className="space-y-8 animate-in fade-in duration-300">
 
                 {/* Header Banner */}
                 <div className="p-6 rounded-3xl bg-linear-to-r from-rose-950/40 via-slate-950 to-slate-900 border border-rose-500/10 shadow-2xl relative overflow-hidden">
@@ -7429,21 +7518,33 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* D3 Real-time Transit Map Alignment */}
-                {mapData ? (
-                  <React.Suspense fallback={
-                    <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
-                      <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                      <div>{t("Injetando efemérides astronômicas em tempo real...")}</div>
+                {!hasUserCreatedMap(user) && (
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-200">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🪐</span>
+                      <span>{t("Exibindo alinhamentos celestes e trânsitos em tempo real. Crie seu mapa natal no menu 'Meu Mapa' para personalizar seus aspectos exatos.")}</span>
                     </div>
-                  }>
-                    <TransitMap mapData={mapData} />
-                  </React.Suspense>
-                ) : (
-                  <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse">
-                    {t("Calculando trânsitos em tempo real e aspectos com seu mapa...")}
+                    <button
+                      onClick={() => {
+                        setActiveTab('mapa');
+                        setMapSubTab('criar_meu_mapa');
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors whitespace-nowrap cursor-pointer text-xs"
+                    >
+                      {t("Sincronizar Meu Mapa")}
+                    </button>
                   </div>
                 )}
+
+                {/* D3 Real-time Transit Map Alignment */}
+                <React.Suspense fallback={
+                  <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
+                    <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                    <div>{t("Injetando efemérides astronômicas em tempo real...")}</div>
+                  </div>
+                }>
+                  <TransitMap mapData={effectiveMapData} />
+                </React.Suspense>
 
                 {/* Monthly Celestial Transits History Panel */}
                 <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
@@ -7509,7 +7610,7 @@ export default function App() {
                 </div>
 
               </div>
-            ))}
+            )}
 
             {/* TAB: TAROT COSIMCO */}
             {activeTab === 'tarot' && (
@@ -7706,11 +7807,11 @@ export default function App() {
                         onChange={(e) => setLang(e.target.value as any)}
                         className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden"
                       >
-                        <option value="pt">Português (BR)</option>
-                        <option value="en">English (US)</option>
-                        <option value="es">Español (ES)</option>
-                        <option value="de">Deutsch (DE)</option>
-                        <option value="fr">Français (FR)</option>
+                        <option value="pt">{tLocal('lang_pt_name')}</option>
+                        <option value="en">{tLocal('lang_en_name')}</option>
+                        <option value="es">{tLocal('lang_es_name')}</option>
+                        <option value="de">{tLocal('lang_de_name')}</option>
+                        <option value="fr">{tLocal('lang_fr_name')}</option>
                       </select>
                     </div>
                   </div>
@@ -7800,7 +7901,7 @@ export default function App() {
                     <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
                       <div className="text-center space-y-3 animate-pulse">
                         <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                        <p className="text-xs text-slate-400 font-mono">Iniciando Portal de Assinaturas Estelares...</p>
+                        <p className="text-xs text-slate-400 font-mono">{t("Iniciando Portal de Assinaturas Estelares...")}</p>
                       </div>
                     </div>
                   }>
@@ -7996,7 +8097,7 @@ export default function App() {
                       <button 
                         onClick={() => setIsAvatarModalOpen(false)}
                         className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition p-1.5 rounded-full hover:bg-slate-800 cursor-pointer z-50"
-                        title="Fechar"
+                        title={t("Fechar")}
                       >
                         <X className="w-5 h-5" />
                       </button>
@@ -8004,16 +8105,16 @@ export default function App() {
                       {/* Left Block: Celestial Carousel Grid */}
                       <div className="flex-1 space-y-4">
                         <div>
-                          <span className="text-[9px] uppercase font-mono tracking-widest text-[#E5C158] font-bold">Consagração</span>
-                          <h3 className="text-base font-black text-slate-100 font-sans mt-0.5">Selecione seu Avatar Místico</h3>
+                          <span className="text-[9px] uppercase font-mono tracking-widest text-[#E5C158] font-bold">{t("Consagração")}</span>
+                          <h3 className="text-base font-black text-slate-100 font-sans mt-0.5">{t("Selecione seu Avatar Místico")}</h3>
                           <p className="text-[11px] text-slate-400 mt-1">
-                            Sintonize sua identidade estelar escolhendo um dos símbolos celestiais consagrados abaixo.
+                            {t("Sintonize sua identidade estelar escolhendo um dos símbolos celestiais consagrados abaixo.")}
                           </p>
                         </div>
 
                         {/* Avatar Category groups */}
                         <div className="space-y-4">
-                          {["Astrologia", "Cosmos", "Misticismo"].map(cat => {
+                          {[t("Astrologia"), t("Cosmos"), t("Misticismo")].map(cat => {
                             const avatars = getAvatarsList().filter(a => a.category === cat);
                             return (
                               <div key={cat} className="space-y-2">
@@ -8130,13 +8231,7 @@ export default function App() {
 
             {/* Constelações Tab activator */}
             <button
-              onClick={() => {
-                if (!isPremiumActive) {
-                  setShowPremiumModal(true);
-                } else {
-                  setActiveTab('constelacoes');
-                }
-              }}
+              onClick={() => setActiveTab('constelacoes')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'constelacoes' 
                   ? 'text-emerald-400 bg-emerald-500/10' 
@@ -8149,13 +8244,7 @@ export default function App() {
 
             {/* Planetas Tab activator */}
             <button
-              onClick={() => {
-                if (!isPremiumActive) {
-                  setShowPremiumModal(true);
-                } else {
-                  setActiveTab('planetas');
-                }
-              }}
+              onClick={() => setActiveTab('planetas')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'planetas' 
                   ? 'text-rose-450 bg-rose-500/10' 
@@ -8168,13 +8257,7 @@ export default function App() {
 
             {/* Tarot Tab activator */}
             <button
-              onClick={() => {
-                if (!isPremiumActive) {
-                  setShowPremiumModal(true);
-                } else {
-                  setActiveTab('tarot');
-                }
-              }}
+              onClick={() => setActiveTab('tarot')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'tarot' 
                   ? 'text-amber-500 bg-amber-500/10' 
@@ -8280,7 +8363,7 @@ export default function App() {
                 <div className={`p-4 rounded-2xl border ${isInAppBrowser ? 'bg-gradient-to-br from-rose-500/15 via-amber-500/10 to-slate-950 border-rose-500/40 shadow-lg' : 'bg-slate-950/40 border-slate-850 opacity-90'}`}>
                   <h4 className="text-xs font-black text-rose-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     {guide.tiktokTitle}
-                    {isInAppBrowser && <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-mono font-bold animate-pulse">DETECTADO</span>}
+                    {isInAppBrowser && <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-mono font-bold animate-pulse">{t("DETECTADO")}</span>}
                   </h4>
                   <p className="text-xs text-slate-200 mb-3 leading-relaxed font-sans">
                     {guide.tiktokDesc}
@@ -8315,7 +8398,7 @@ export default function App() {
                       className="px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 text-xs font-black uppercase rounded-xl transition cursor-pointer shadow-md flex items-center justify-center gap-1.5"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      <span>{guide.androidTitle.includes('Android') ? 'Abrir no Chrome' : 'Abrir no Safari/Chrome'}</span>
+                      <span>{guide.androidTitle.includes('Android') ? t('Abrir no Chrome') : t('Abrir no Safari/Chrome')}</span>
                     </button>
                   </div>
                 </div>
@@ -8327,7 +8410,7 @@ export default function App() {
                 <div className={`p-4 rounded-2xl border ${isIos && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
                   <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     {guide.iosTitle}
-                    {isIos && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                    {isIos && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
                   </h4>
                   <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
                     <li>{guide.iosStep1}</li>
@@ -8340,7 +8423,7 @@ export default function App() {
                 <div className={`p-4 rounded-2xl border ${isAndroid && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
                   <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     {guide.androidTitle}
-                    {isAndroid && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                    {isAndroid && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
                   </h4>
                   <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
                     <li>{guide.androidStep1}</li>
@@ -8352,7 +8435,7 @@ export default function App() {
                 <div className={`p-4 rounded-2xl border ${isDesktop ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
                   <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     {guide.desktopTitle}
-                    {isDesktop && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                    {isDesktop && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
                   </h4>
                   <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
                     <li>{guide.desktopStep1}</li>
@@ -8391,7 +8474,7 @@ export default function App() {
             <React.Suspense fallback={
               <div className="p-8 text-center bg-[#070c17] rounded-3xl border border-slate-800 space-y-3 animate-pulse">
                 <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                <p className="text-xs text-slate-400 font-mono">Sincronizando registros de depuração e auditoria de tráfego...</p>
+                <p className="text-xs text-slate-400 font-mono">{t("Sincronizando registros de depuração e auditoria de tráfego...")}</p>
               </div>
             }>
               <AdminPanel 
