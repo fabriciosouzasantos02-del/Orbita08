@@ -1,0 +1,561 @@
+{
+  "hardcoded_count": 11673,
+  "hardcoded_lines": [
+    [
+      "src/App.tsx",
+      168,
+      "if (!dateStr) return \"Aquário\";"
+    ],
+    [
+      "src/App.tsx",
+      172,
+      "if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return \"Aquário\";"
+    ],
+    [
+      "src/App.tsx",
+      174,
+      "if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return \"Áries\";"
+    ],
+    [
+      "src/App.tsx",
+      176,
+      "if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return \"Gêmeos\";"
+    ],
+    [
+      "src/App.tsx",
+      177,
+      "if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return \"Câncer\";"
+    ],
+    [
+      "src/App.tsx",
+      178,
+      "if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return \"Leão\";"
+    ],
+    [
+      "src/App.tsx",
+      181,
+      "if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return \"Escorpião\";"
+    ],
+    [
+      "src/App.tsx",
+      182,
+      "if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return \"Sagitário\";"
+    ],
+    [
+      "src/App.tsx",
+      183,
+      "return \"Capricórnio\";"
+    ],
+    [
+      "src/App.tsx",
+      213,
+      "case 1: return \"Liderança nata, pioneirismo fecundo e forte iniciativa realizadora original.\";"
+    ],
+    [
+      "src/App.tsx",
+      214,
+      "case 2: return \"Diplomacia empática, sensibilidade aguçada e acolhimento pacífico.\";"
+    ],
+    [
+      "src/App.tsx",
+      215,
+      "case 3: return \"Expressão criativa fervorosa, comunicação estelar e magnetismo social genuíno.\";"
+    ],
+    [
+      "src/App.tsx",
+      216,
+      "case 4: return \"Trabalho virtuoso, estabilidade prática, método, paciência e estrutura robusta.\";"
+    ],
+    [
+      "src/App.tsx",
+      217,
+      "case 5: return \"Busca incansável pela liberdade, expedições intelectuais e incrível adaptabilidade.\";"
+    ],
+    [
+      "src/App.tsx",
+      219,
+      "case 7: return \"Análise espiritual, sabedoria oculta, introspecção mística e intuição refinada.\";"
+    ],
+    [
+      "src/App.tsx",
+      220,
+      "case 8: return \"Poder pessoal materializador, autoridade executiva sábia e ressonância de justiça.\";"
+    ],
+    [
+      "src/App.tsx",
+      222,
+      "case 11: return \"Idealismo clarividente, inspiração superior e canalização de ideais originais.\";"
+    ],
+    [
+      "src/App.tsx",
+      224,
+      "case 33: return \"O guia espiritual supremo voltado ao amor incondicional no plano físico.\";"
+    ],
+    [
+      "src/App.tsx",
+      254,
+      "if (!tz) return \"Localização Geral\";"
+    ],
+    [
+      "src/App.tsx",
+      257,
+      "if (!city) return \"Localização Geral\";"
+    ],
+    [
+      "src/App.tsx",
+      261,
+      "if (cleanCity === \"Sao Paulo\") return \"São Paulo, SP\";"
+    ],
+    [
+      "src/App.tsx",
+      268,
+      "if (cleanCity === \"Cuiaba\") return \"Cuiabá, MT\";"
+    ],
+    [
+      "src/App.tsx",
+      269,
+      "if (cleanCity === \"Belem\") return \"Belém, PA\";"
+    ],
+    [
+      "src/App.tsx",
+      271,
+      "if (cleanCity === \"Araguaina\") return \"Araguaína, TO\";"
+    ],
+    [
+      "src/App.tsx",
+      273,
+      "if (cleanCity === \"Maceio\") return \"Maceió, AL\";"
+    ],
+    [
+      "src/App.tsx",
+      277,
+      "return \"Sua Região\";"
+    ],
+    [
+      "src/App.tsx",
+      301,
+      "if (!dateString) return \"Aquário\";"
+    ],
+    [
+      "src/App.tsx",
+      303,
+      "if (parts.length < 3) return \"Aquário\";"
+    ],
+    [
+      "src/App.tsx",
+      306,
+      "if (isNaN(month) || isNaN(day)) return \"Aquário\";"
+    ],
+    [
+      "src/App.tsx",
+      307,
+      "if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return \"Áries\";"
+    ],
+    [
+      "src/App.tsx",
+      309,
+      "if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return \"Gêmeos\";"
+    ],
+    [
+      "src/App.tsx",
+      310,
+      "if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return \"Câncer\";"
+    ],
+    [
+      "src/App.tsx",
+      311,
+      "if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return \"Leão\";"
+    ],
+    [
+      "src/App.tsx",
+      314,
+      "if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return \"Escorpião\";"
+    ],
+    [
+      "src/App.tsx",
+      315,
+      "if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return \"Sagitário\";"
+    ],
+    [
+      "src/App.tsx",
+      316,
+      "if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return \"Capricórnio\";"
+    ],
+    [
+      "src/App.tsx",
+      317,
+      "if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return \"Aquário\";"
+    ],
+    [
+      "src/App.tsx",
+      376,
+      "title: tM(\"Consagração de {zodiac} para {name}\").replace(\"{zodiac}\", zodiac).replace(\"{name}\", name),"
+    ],
+    [
+      "src/App.tsx",
+      377,
+      "description: tM(\"Dedique 3 minutos respirando conscientemente para ativar o equilíbrio cósmico para sua essência de {zodiac}.\").replace(\"{zodiac}\", zodiac),"
+    ],
+    [
+      "src/App.tsx",
+      383,
+      "title: tM(\"Harmonização de Mercúrio\"),"
+    ],
+    [
+      "src/App.tsx",
+      384,
+      "description: tM(\"Escreva algo que te aflige e depois risque no papel, transmutando restrições mentais.\"),"
+    ],
+    [
+      "src/App.tsx",
+      390,
+      "title: tM(\"Toque de Gratidão Vital\"),"
+    ],
+    [
+      "src/App.tsx",
+      391,
+      "description: tM(\"Fortaleça conexões e envie uma mensagem curta com um elogio sincero para alguém importante em sua jornada.\"),"
+    ],
+    [
+      "src/App.tsx",
+      400,
+      "description: tM(\"Escreva no Oráculo dos Sonhos tudo que se lembrar da noite anterior, decifrando avisos do seu guia onírico.\"),"
+    ],
+    [
+      "src/App.tsx",
+      407,
+      "description: tM(\"Organize sua área de estudos ou e-mails importantes hoje para desbloquear estagnações kármicas.\"),"
+    ],
+    [
+      "src/App.tsx",
+      413,
+      "title: tM(\"Cura Líquida Purificadora\"),"
+    ],
+    [
+      "src/App.tsx",
+      414,
+      "description: tM(\"Mentalize paz e tome um copo cheio de água fresca, promovendo purificação de cansaço acumulado.\"),"
+    ],
+    [
+      "src/App.tsx",
+      422,
+      "title: tM(\"Foco de Vênus para {name}\").replace(\"{name}\", name),"
+    ],
+    [
+      "src/App.tsx",
+      423,
+      "description: tM(\"Olhe-se no espelho por 1 minuto sintonizando a resiliência e auto-aceitação para seu signo solar de {zodiac}.\").replace(\"{zodiac}\", zodiac),"
+    ],
+    [
+      "src/App.tsx",
+      429,
+      "title: tM(\"Doação Elemental Prática\"),"
+    ],
+    [
+      "src/App.tsx",
+      430,
+      "description: tM(\"Considere doar ou arrumar duas coisas materiais sem uso em seu ambiente para fluxo cósmico.\"),"
+    ],
+    [
+      "src/App.tsx",
+      436,
+      "title: tM(\"Oração Vibracional Cósmica\"),"
+    ],
+    [
+      "src/App.tsx",
+      437,
+      "description: tM(\"Mentalize e envie ondas silenciosas de pura compaixão por três pessoas que cruzarem sua mente hoje.\"),"
+    ],
+    [
+      "src/App.tsx",
+      452,
+      "title: tM(\"Ritual Solar da Gratidão\"),"
+    ],
+    [
+      "src/App.tsx",
+      453,
+      "description: tM(\"Agradeça mentalmente por três bênçãos invisíveis que estão florescendo na sua jornada diária.\"),"
+    ],
+    [
+      "src/App.tsx",
+      459,
+      "title: tM(\"Clareza Onírica de {zodiac}\").replace(\"{zodiac}\", zodiac),"
+    ],
+    [
+      "src/App.tsx",
+      460,
+      "description: tM(\"Abandone o celular por 1 hora antes de deitar ou repousar para equilibrar sua frequência teta.\"),"
+    ],
+    [
+      "src/App.tsx",
+      1635,
+      "welcomeMessage: `Olá ${user.name || 'Buscador'}, seu mapa astral foi sincronizado!`,"
+    ],
+    [
+      "src/App.tsx",
+      1681,
+      "welcomeMessage: `Olá ${user?.name || 'Buscador'}, seu mapa astral está pronto!`,"
+    ],
+    [
+      "src/App.tsx",
+      1822,
+      "message: \"Falha de Sincronização de Perfil\","
+    ],
+    [
+      "src/App.tsx",
+      1845,
+      "message: \"Falha de Sincronização de Mapas Extras\","
+    ],
+    [
+      "src/App.tsx",
+      1878,
+      "message: \"Falha de Sincronização de Sonhos\","
+    ],
+    [
+      "src/App.tsx",
+      1973,
+      "? \"Você retornou do Portal de Gerenciamento da Stripe com sucesso.\""
+    ],
+    [
+      "src/App.tsx",
+      1989,
+      "throw new Error('Falha na resposta de verificação do Stripe');"
+    ],
+    [
+      "src/App.tsx",
+      2037,
+      "currentLang === 'pt' ? \"Sua assinatura premium da Stripe está sintonizada.\" : \"Your premium Stripe subscription is active.\","
+    ],
+    [
+      "src/App.tsx",
+      2042,
+      "? 'Confirmação do Stripe ainda pendente. Por favor, aguarde.'"
+    ],
+    [
+      "src/App.tsx",
+      2065,
+      "currentLang === 'pt' ? \"Por favor, faça login para gerenciar sua assinatura.\" : \"Please log in to manage your subscription.\","
+    ],
+    [
+      "src/App.tsx",
+      2479,
+      "const [selectedZodiacSign, setSelectedZodiacSign] = useState<string>(\"Aquário\");"
+    ],
+    [
+      "src/App.tsx",
+      2529,
+      "const shareText = `🔮 *Oráculo dos Sonhos - Antigravity Build* 🔮\\n\\n*Sonho:* \"${dream.description.slice(0, 100)}...\"\\n*Revelação:* ${dream.interpretation.title}\\n\\n*Significado:* ${dream.interpretation.mainMeaning}\\n\\n*Conselho:* ${dream.interpretation.oracleAdvice || \"\"}\\n\\n*Mensagem do Universo:* \"${dream.interpretation.universeMessage}\"`;"
+    ],
+    [
+      "src/App.tsx",
+      2547,
+      "? `${userName}, siento una luz muy especial al leer tu energía. Soy Orbia, tu Consejera Astrológica y Terapeuta Personal de Inteligencia Celestial. ¿Cómo puedo guiarte en tu camino en 2026?`"
+    ],
+    [
+      "src/App.tsx",
+      2549,
+      "? `${userName}, je ressens une lumière très spéciale en lisant votre énergie. Je suis Orbia, votre Conseillère Astrologique et Thérapeute Personnelle d'Intelligence Céleste. Comment puis-je vous guider sur votre chemin en 2026 ?`"
+    ],
+    [
+      "src/App.tsx",
+      2550,
+      ": `${userName}, sinto uma luz muito especial ao ler sua energia. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Como posso te orientar em seu caminho em 2026?`;"
+    ],
+    [
+      "src/App.tsx",
+      2824,
+      "{ id: \"w1\", title: isEn ? \"This week try to resolve an old pending matter\" : isEs ? \"Esta semana intente resolver un asunto pendiente antiguo\" : isDe ? \"Versuchen Sie diese Woche, eine alte Angelegenheit zu klären\" : isFr ? \"Cette semaine essayez de résoudre une affaire en suspens ancienne\" : \"Esta semana tente resolver uma pendência antiga\", description: isEn ? \"Identify a long-standing commitment and take the first step to resolve it, releasing Saturn's flow.\" : isEs ? \"Identifique un compromiso pendiente desde hace mucho tempo y dé el primer paso para resolverlo, liberando el flujo de Saturno.\" : isDe ? \"Identifizieren Sie eine seit langem ausstehende Verpflichtung und machen Sie den ersten Schritt, um sie zu lösen, um den Fluss Saturns freizusetzen.\" : isFr ? \"Identifiez un engagement de longue date et faites le premier pas pour le résoudre, libérant ainsi le flux de Saturne.\" : \"Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.\", isCompleted: false, points: 120 },"
+    ],
+    [
+      "src/App.tsx",
+      2825,
+      "{ id: \"w2\", title: isEn ? \"This week strengthen an important relationship\" : isEs ? \"Esta semana fortalezca una relación importante\" : isDe ? \"Stärken Sie diese Woche eine wichtige Beziehung\" : isFr ? \"Cette semaine renforcez une relation importante\" : \"Esta semana fortaleça um relacionamento importante\", description: isEn ? \"Send a sincere message of gratitude or make a light conversation invitation to someone you care about.\" : isEs ? \"Envíe un mensaje sincero de gratitud o invite a una conversación ligera a alguien que aprecia.\" : isDe ? \"Senden Sie eine aufrichtige Botschaft der Dankbarkeit oder laden Sie jemanden, den Sie schätzen, zu einem leichten Gespräch ein.\" : isFr ? \"Envoyez un message sincère de gratitude ou invitez quelqu'un que vous appréciez à une conversation légère.\" : \"Envie uma mensagem sincera de gratidão ou faça um convite de conversa leve a quem você quer bem.\", isCompleted: false, points: 150 },"
+    ],
+    [
+      "src/App.tsx",
+      2826,
+      "{ id: \"w3\", title: isEn ? \"This week dedicate time to learning\" : isEs ? \"Esta semana dedique tempo ao aprendizado\" : isDe ? \"Widmen Sie diese Woche Zeit dem Lernen\" : isFr ? \"Cette semaine consacrez du temps à l'apprentissage\" : \"Esta semana dedique tempo ao aprendizado\", description: isEn ? \"Set aside a focused time to study astrological symbols or techniques for mental clarity and meditation.\" : isEs ? \"Reserve un tempo concentrado para estudar símbolos astrológicos ou técnicas de claridad mental y meditación.\" : isDe ? \"Nehmen Sie sich eine konzentrierte Zeit, um astrologische Symbole oder Techniken zur mentalen Klarheit und Meditation zu studieren.\" : isFr ? \"Réservez un temps concentré pour étudier les symboles astrologiques ou des techniques de clarté mentale et de méditation.\" : \"Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação.\", isCompleted: false, points: 100 }"
+    ],
+    [
+      "src/App.tsx",
+      2837,
+      "{ id: \"w1\", title: isEn ? \"This week try to resolve an old pending matter\" : isEs ? \"Esta semana intente resolver un asunto pendiente antiguo\" : isDe ? \"Versuchen Sie diese Woche, eine alte Angelegenheit zu klären\" : isFr ? \"Cette semaine essayez de résoudre une affaire en suspens ancienne\" : \"Esta semana tente resolver uma pendência antiga\", description: isEn ? \"Identify a long-standing commitment and take the first step to resolve it, releasing Saturn's flow.\" : isEs ? \"Identifique un compromisso pendente desde há muito tempo e dê o primeiro passo para resolverlo, liberando o fluxo de Saturno.\" : isDe ? \"Identifizieren Sie eine seit langem ausstehende Verpflichtung und machen Sie den ersten Schritt, um sie zu lösen, um den Fluss Saturns freizusetzen.\" : isFr ? \"Identifiez un engagement de longue date et faites le premier pas pour le résoudre, libérant ainsi le flux de Saturne.\" : \"Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.\", isCompleted: false, points: 120 },"
+    ],
+    [
+      "src/App.tsx",
+      2838,
+      "{ id: \"w2\", title: isEn ? \"This week strengthen an important relationship\" : isEs ? \"Esta semana fortalezca una relación importante\" : isDe ? \"Stärken Sie diese Woche eine wichtige Beziehung\" : isFr ? \"Cette semaine renforcez une relation importante\" : \"Esta semana fortaleça um relacionamento importante\", description: isEn ? \"Send a sincere message of gratitude or make a light conversation invitation to someone you care about.\" : isEs ? \"Envíe un mensaje sincero de gratitud o invite a una conversación ligera a alguien que aprecia.\" : isDe ? \"Senden Sie eine aufrichtige Botschaft der Dankbarkeit oder laden Sie jemanden, den Sie schätzen, zu einem leichten Gespräch ein.\" : isFr ? \"Envoyez un message sincère de gratitude ou invitez quelqu'un que vous appréciez à une conversation légère.\" : \"Envie uma mensagem sincera de gratidão ou faça um convite de conversa leve a quem você quer bem.\", isCompleted: false, points: 150 },"
+    ],
+    [
+      "src/App.tsx",
+      2839,
+      "{ id: \"w3\", title: isEn ? \"This week dedicate time to learning\" : isEs ? \"Esta semana dedique tempo ao aprendizado\" : isDe ? \"Widmen Sie diese Woche Zeit dem Lernen\" : isFr ? \"Cette semaine consacrez du temps à l'apprentissage\" : \"Esta semana dedique tempo ao aprendizado\", description: isEn ? \"Set aside a focused time to study astrological symbols or techniques for mental clarity and meditation.\" : isEs ? \"Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação.\" : isDe ? \"Nehmen Sie sich eine konzentrierte Zeit, um astrologische Symbole oder Techniken zur mentalen Klarheit und Meditation zu studieren.\" : isFr ? \"Réservez un temps concentré pour étudier les symboles astrologiques ou des techniques de clarté mentale et de méditation.\" : \"Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação.\", isCompleted: false, points: 100 }"
+    ],
+    [
+      "src/App.tsx",
+      3245,
+      "pt: `Olá ${name}, suas efemérides científicas foram calculadas sob o sistema Placidus e sintonizadas no dispositivo local com sucesso!`,"
+    ],
+    [
+      "src/App.tsx",
+      3247,
+      "es: `¡Hola ${name}, sus efemérides científicas se han calculado bajo el sistema Placidus y se han sintonizado en su dispositivo local con éxito!`,"
+    ],
+    [
+      "src/App.tsx",
+      3249,
+      "fr: `Bonjour ${name}, vos éphémérides scientifiques ont été calculées sous le système Placidus et réglées avec succès sur votre appareil local !`"
+    ],
+    [
+      "src/App.tsx",
+      3255,
+      "harmonious: [\"Socialmente consciente\", \"Inventivo\", \"Esperançoso\", \"Amigável\", \"Independente\", \"Intuitivo\"],"
+    ],
+    [
+      "src/App.tsx",
+      3256,
+      "disharmonious: [\"Temperamental\", \"Disperso\", \"Imprevisível\", \"Teimoso\", \"Inquieto\"]"
+    ],
+    [
+      "src/App.tsx",
+      3271,
+      "harmonious: [\"Socialement conscient\", \"Inventif\", \"Plein d'espoir\", \"Amical\", \"Indépendant\", \"Intuitif\"],"
+    ],
+    [
+      "src/App.tsx",
+      3272,
+      "disharmonious: [\"Capricieux\", \"Dispersé\", \"Imprévisible\", \"Têtu\", \"Inquiet\"]"
+    ],
+    [
+      "src/App.tsx",
+      3499,
+      "const defaultBirthCity = details.birthCity || user.birthCity || \"São Paulo\";"
+    ],
+    [
+      "src/App.tsx",
+      3595,
+      "pushRealNotification(`Você (${details.name || user.name || \"Buscador\"}) sintonizou seu Mapa Principal carregado da Nuvem Astrológica! 🪐`);"
+    ],
+    [
+      "src/App.tsx",
+      3617,
+      "pushRealNotification(`Você (${details.name || user.name || \"Buscador\"}) sintonizou seu novo Mapa Astral diretamente do Cache Celestial Inteligente! 🪐`);"
+    ],
+    [
+      "src/App.tsx",
+      3652,
+      "throw new Error(\"Astro API respondeu com código de erro \" + response.status);"
+    ],
+    [
+      "src/App.tsx",
+      3762,
+      "\"Sofía (Buenos Aires, Argentina) acaba de calcular su Carta Astral completa! 🇦🇷\","
+    ],
+    [
+      "src/App.tsx",
+      3763,
+      "\"Chloé (Paris, France) a interprété son rêve d'eau avec l'aide d'Orbia! 🇫🇷\","
+    ],
+    [
+      "src/App.tsx",
+      3765,
+      "\"Afonso (Lisboa, Portugal) acabou de obter a previsão da sua Revolução Solar! 🇵🇹\","
+    ],
+    [
+      "src/App.tsx",
+      3766,
+      "\"Elena (Madrid, Spain) ha consultado el Oráculo sobre su caminho de vida! 🇪🇸\","
+    ],
+    [
+      "src/App.tsx",
+      3768,
+      "\"Mateo (Bogotá, Colombia) acaba de sincronizar las energías en el Radar Diario! 🇨🇴\","
+    ],
+    [
+      "src/App.tsx",
+      3772,
+      "\"João Victor (São Paulo) tirou 'A Imperatriz' no Tarô da Semana Premium! 🇧🇷\","
+    ],
+    [
+      "src/App.tsx",
+      3892,
+      "\"Áries\": \"uma chama de liderança e coragem que queima com intensidade realizadora\","
+    ],
+    [
+      "src/App.tsx",
+      3894,
+      "\"Gêmeos\": \"uma curiosidade viva e uma mente ágil capaz de conectar múltiplas realidades\","
+    ],
+    [
+      "src/App.tsx",
+      3895,
+      "\"Câncer\": \"uma sensibilidade intuitiva e protetora, intimamente ligada às marés da alma\","
+    ],
+    [
+      "src/App.tsx",
+      3896,
+      "\"Leão\": \"um brilho generoso e magnético que irradia autoconfiança de forma calorosa\","
+    ],
+    [
+      "src/App.tsx",
+      3897,
+      "\"Virgem\": \"uma mente atenta e refinada dedicada ao aprimoramento contínuo da vida\","
+    ]
+  ],
+  "t_literal_count": 1761,
+  "t_semantic_count": 689,
+  "by_file": {
+    "src/App.tsx": 203,
+    "src/TarotSystem.tsx": 97,
+    "src/astrology.ts": 33,
+    "src/components/AdminPanel.tsx": 1,
+    "src/components/AstroTab.tsx": 9,
+    "src/components/AstrologyCalendarModule.tsx": 52,
+    "src/components/AstrologyView.tsx": 150,
+    "src/components/BiorhythmView.tsx": 11,
+    "src/components/CircularChart.tsx": 8,
+    "src/components/CompatibilityView.tsx": 234,
+    "src/components/CosmicChakras.tsx": 8,
+    "src/components/CupidoRadarView.tsx": 2,
+    "src/components/DashboardTab.tsx": 105,
+    "src/components/DreamsTab.tsx": 51,
+    "src/components/ExemploIdioma.tsx": 1,
+    "src/components/InteractiveAstroMapEngine.tsx": 403,
+    "src/components/LunarCycle.tsx": 190,
+    "src/components/LunarNodes.tsx": 390,
+    "src/components/NumerologyTab.tsx": 84,
+    "src/components/NumerologyView.tsx": 2,
+    "src/components/OraculoDosSonhosCard.tsx": 102,
+    "src/components/OrbiaAIAndOracle.tsx": 46,
+    "src/components/PremiumConversionScreen.tsx": 12,
+    "src/components/ProfileSettingsTab.tsx": 44,
+    "src/components/SocialCompatibility.tsx": 30,
+    "src/components/SocialNetworkView.tsx": 184,
+    "src/components/SocialViralityCard.tsx": 17,
+    "src/components/TransitHistory.tsx": 148,
+    "src/components/TransitMap.tsx": 186,
+    "src/components/TransitsTab.tsx": 30,
+    "src/components/UserDashboardPortal.tsx": 803,
+    "src/components/astroMath.ts": 195,
+    "src/components/compatibilityCategoriesData.ts": 296,
+    "src/components/compatibilityEngine.ts": 201,
+    "src/components/compatibilityTemplates.ts": 123,
+    "src/components/dailyPredictionsEngine.ts": 581,
+    "src/components/numerologyTranslations.ts": 517,
+    "src/data.ts": 82,
+    "src/lib/autoAuditPatch.ts": 2565,
+    "src/lib/avatars.ts": 36,
+    "src/lib/cupidoFallback.ts": 93,
+    "src/lib/firebase.ts": 7,
+    "src/lib/locales.ts": 147,
+    "src/lib/lunarTranslations.ts": 302,
+    "src/lib/nodeTranslations.ts": 305,
+    "src/lib/translationPatch.ts": 566,
+    "src/numerology.ts": 4,
+    "src/prosperityEngine.ts": 647,
+    "src/tarot.ts": 103,
+    "src/test-translate.ts": 1,
+    "src/types.ts": 6,
+    "server.ts": 1260
+  }
+}

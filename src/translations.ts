@@ -1,7 +1,8 @@
 import i18next from 'i18next';
 import { mergedTranslations, getDeviceLanguage } from './i18n';
+import { Language } from './i18n/types';
 
-export type Language = 'pt' | 'en' | 'es' | 'de' | 'fr';
+export type { Language };
 
 export const translations: Record<Language, Record<string, string>> = mergedTranslations;
 export const staticTranslations = mergedTranslations;
@@ -26,7 +27,14 @@ export function getCurrentLang(): Language {
 
 export function translateUiText(key: string, lang?: Language): string {
   const targetLang = lang || getCurrentLang();
-  const dict = mergedTranslations[targetLang] || mergedTranslations.pt;
-  return dict[key] || mergedTranslations.pt[key] || key;
+  if (i18next && i18next.isInitialized && i18next.exists(key, { lng: targetLang })) {
+    const val = i18next.t(key, { lng: targetLang });
+    if (typeof val === 'string' && val) return val;
+  }
+  const dict = mergedTranslations[targetLang];
+  if (dict && dict[key]) {
+    return dict[key];
+  }
+  return key;
 }
 

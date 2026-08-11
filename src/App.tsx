@@ -3,7 +3,7 @@ import moment from 'moment-timezone';
 import { motion } from 'motion/react';
 import i18n from './lib/i18n';
 import { useTranslation } from 'react-i18next';
-import { localLangDict, pwaGuideTranslations } from './lib/locales';
+import { pwaGuideTranslations } from './lib/locales';
 import { 
   UserProfile, 
   AstrologyMap, 
@@ -41,6 +41,7 @@ import BiorhythmView from './components/BiorhythmView';
 import UserDashboardPortal from './components/UserDashboardPortal';
 import { PremiumConversionScreen } from './components/PremiumConversionScreen';
 import AdminPanel from './components/AdminPanel';
+import ErrorBoundary from './components/ErrorBoundary';
 import OrbiaAIAndOracle from './components/OrbiaAIAndOracle';
 import OraculoDosSonhosCard from './components/OraculoDosSonhosCard';
 import { CityAutocomplete } from './components/CityAutocomplete';
@@ -485,8 +486,8 @@ export default function App() {
   const [firebaseUid, setFirebaseUid] = useState<string>("");
 
   // Central Page Translation Helper
-  const t = (text: string): string => {
-    return i18nT(text);
+  const t = (text: string, defaultValue?: string): string => {
+    return i18nT(text, { defaultValue });
   };
 
   const [user, _setUser] = useState<UserProfile>(() => {
@@ -573,6 +574,12 @@ export default function App() {
   const currentLang = idioma as Language;
   // 'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes' as specified by the bottom-bar prompt!
   const [activeTab, setActiveTab] = useState<'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes'>('mapa');
+  const userNavigatedTabRef = useRef<'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes' | null>(null);
+
+  const handleUserSelectTab = (tab: 'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes') => {
+    userNavigatedTabRef.current = tab;
+    setActiveTab(tab);
+  };
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
 
@@ -2349,12 +2356,14 @@ export default function App() {
         saveRegisteredAccounts(accounts);
       }
       
-      // Navigate to correct tab
+      // Navigate to correct tab only if user hasn't explicitly navigated elsewhere
       if (updatedUser.hasCreatedMap || (updatedUser.birthDate && updatedUser.birthCity)) {
         setMapSubTab('meu_mapa');
-        setActiveTab('mapa');
       } else {
         setMapSubTab('criar_meu_mapa');
+      }
+      
+      if (!userNavigatedTabRef.current) {
         setActiveTab('mapa');
       }
       
@@ -2375,11 +2384,15 @@ export default function App() {
             setLoggedEmail(parsed.email || firebaseUser.email || "");
             if (parsed.hasCreatedMap) {
               setMapSubTab('meu_mapa');
-              setActiveTab('mapa');
+              if (!userNavigatedTabRef.current) {
+                setActiveTab('mapa');
+              }
               triggerGenerateMainMap(parsed);
             } else {
               setMapSubTab('criar_meu_mapa');
-              setActiveTab('mapa');
+              if (!userNavigatedTabRef.current) {
+                setActiveTab('mapa');
+              }
             }
           }
         } catch {}
@@ -2524,18 +2537,29 @@ export default function App() {
   // AI Counselor (Orbia Chat) State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   useEffect(() => {
-    if (chatMessages.length === 0) {
-      const userName = user?.name ? user.name.split(' ')[0] : 'Buscador';
+    const defaultSeeker = currentLang === 'de' ? 'Sucher' : currentLang === 'en' ? 'Seeker' : currentLang === 'es' ? 'Buscador' : currentLang === 'fr' ? 'Chercheur' : 'Buscador';
+    const userName = user?.name ? user.name.split(' ')[0] : defaultSeeker;
+    const welcomeText = currentLang === 'de'
+      ? `${userName}, ich spüre ein ganz besonderes Licht, wenn ich deine Energie lese. Ich bin Orbia, deine astrologische Beraterin und persönliche Therapeutin der himmlischen Intelligenz. Wie kann ich dich 2026 auf deinem Weg leiten?`
+      : currentLang === 'en'
+      ? `${userName}, I feel a very special light reading your energy. I am Orbia, your Astrological Counselor and Personal Therapist of Celestial Intelligence. How can I guide you on your path in 2026?`
+      : currentLang === 'es'
+      ? `${userName}, siento una luz muy especial al leer tu energía. Soy Orbia, tu Consejera Astrológica y Terapeuta Personal de Inteligencia Celestial. ¿Cómo puedo guiarte en tu camino en 2026?`
+      : currentLang === 'fr'
+      ? `${userName}, je ressens une lumière très spéciale en lisant votre énergie. Je suis Orbia, votre Conseillère Astrologique et Thérapeute Personnelle d'Intelligence Céleste. Comment puis-je vous guider sur votre chemin en 2026 ?`
+      : `${userName}, sinto uma luz muito especial ao ler sua energia. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Como posso te orientar em seu caminho em 2026?`;
+
+    if (chatMessages.length === 0 || (chatMessages.length === 1 && chatMessages[0].id === "welcomeMsg")) {
       setChatMessages([
         {
           id: "welcomeMsg",
           sender: "assistant",
-          text: `${userName}, sinto uma luz muito especial ao ler sua energia. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Como posso te orientar em seu caminho em 2026?`,
+          text: welcomeText,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
     }
-  }, [user]);
+  }, [user, currentLang]);
   const [currentChatInput, setCurrentChatInput] = useState<string>('');
   const [isSendingChat, setIsSendingChat] = useState<boolean>(false);
 
@@ -2926,21 +2950,7 @@ export default function App() {
 
   // Local helper to get static translations for settings on the fly
   const tLocal = (key: string, replacement?: any): string => {
-    const activeL = currentLang || 'pt';
-    const translated = i18nT(key);
-    if (translated && translated !== key) {
-      let str = translated;
-      if (replacement !== undefined) {
-        str = str.replace('{count}', String(replacement));
-      }
-      return str;
-    }
-    const dict = localLangDict[activeL] || localLangDict['pt'];
-    let str = dict[key] || '';
-    if (!str) {
-      const fallbackDict = localLangDict['pt'];
-      str = fallbackDict[key] || key;
-    }
+    let str = i18nT(key);
     if (replacement !== undefined) {
       str = str.replace('{count}', String(replacement));
     }
@@ -4535,19 +4545,19 @@ export default function App() {
             <div className="hidden lg:flex gap-6 text-xs font-semibold text-slate-400">
               <button onClick={() => {
                 document.getElementById('auth-card')?.scrollIntoView({ behavior: 'smooth' });
-              }} className="hover:text-amber-400 transition cursor-pointer">Sintonizar Mapa Astral</button>
+              }} className="hover:text-amber-400 transition cursor-pointer">{t("ui.navigation.tuneChart", "Sintonizar Mapa Astral")}</button>
               <button className="hover:text-amber-400 transition cursor-pointer" onClick={() => {
                 document.getElementById('advantages-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}>Por que a Órbita?</button>
+              }}>{t("ui.navigation.whyOrbita", "Por que a Órbita?")}</button>
               <button className="hover:text-amber-400 transition cursor-pointer" onClick={() => {
                 document.getElementById('signs-selection')?.scrollIntoView({ behavior: 'smooth' });
-              }}>12 Constelações</button>
+              }}>{t("ui.navigation.constellations", "12 Constelações")}</button>
               <button className="hover:text-amber-400 transition cursor-pointer" onClick={() => {
                 document.getElementById('blog-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}>Estudos Estelares</button>
+              }}>{t("ui.navigation.stellarStudies", "Estudos Estelares")}</button>
               <button className="hover:text-amber-400 transition cursor-pointer" onClick={() => {
                 document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}>Dúvidas Comuns</button>
+              }}>{t("ui.navigation.faq", "Dúvidas Comuns")}</button>
             </div>
 
             {/* PWA & Language Controls */}
@@ -4557,17 +4567,17 @@ export default function App() {
                 onChange={(e) => setLang(e.target.value as any)}
                 className="px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-900 text-[10px] sm:text-xs text-slate-400 focus:outline-hidden cursor-pointer hover:border-amber-500/30 transition font-sans bg-slate-950"
               >
-                <option value="pt">🇧🇷 PT</option>
-                <option value="en">🇺🇸 EN</option>
-                <option value="es">🇪🇸 ES</option>
-                <option value="de">🇩🇪 DE</option>
-                <option value="fr">🇫🇷 FR</option>
+                <option value="pt">{t("common.languages.ptLabel")}</option>
+                <option value="en">{t("common.languages.enLabel")}</option>
+                <option value="es">{t("common.languages.esLabel")}</option>
+                <option value="de">{t("common.languages.deLabel")}</option>
+                <option value="fr">{t("common.languages.frLabel")}</option>
               </select>
 
               {isInstalled ? (
                 <div className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] sm:text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-1 sm:gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                   <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>{t("Instalado")}</span>
+                  <span>{t("app.status.installed")}</span>
                 </div>
               ) : (
                 <button
@@ -4648,19 +4658,19 @@ export default function App() {
                   
                   {/* Subtle orbiting planet nodes */}
                   <circle cx="138" cy="80" r="2.5" className="fill-slate-100" />
-                  <text x="144" y="82" className="fill-slate-500 text-[6px] font-mono">SOL</text>
+                  <text x="144" y="82" className="fill-slate-500 text-[6px] font-mono">{t("app.system.sol")}</text>
 
                   <circle cx="68" cy="120" r="2" className="fill-indigo-400" />
-                  <text x="54" y="126" className="fill-slate-500 text-[6px] font-mono">LUA</text>
+                  <text x="54" y="126" className="fill-slate-500 text-[6px] font-mono">{t("app.system.lua")}</text>
 
-                  <text x="100" y="24" textAnchor="middle" className="fill-amber-400 text-[6px] font-mono font-black tracking-widest">PLACIDUS HOUSE MC</text>
-                  <text x="100" y="180" textAnchor="middle" className="fill-slate-500 text-[6px] font-mono tracking-widest">NADI FLOOR IC</text>
+                  <text x="100" y="24" textAnchor="middle" className="fill-amber-400 text-[6px] font-mono font-black tracking-widest">{t("app.system.placidusMc")}</text>
+                  <text x="100" y="180" textAnchor="middle" className="fill-slate-500 text-[6px] font-mono tracking-widest">{t("app.system.nadiIc")}</text>
                 </svg>
 
                 {/* Information readout overlays */}
                 <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-[7.5px] font-mono text-slate-500 border-t border-slate-900/40 pt-2 pointer-events-none">
-                  <span>SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026</span>
-                  <span className="text-amber-500 font-bold">ALGORITMO GEOCÊNTRICO ATIVO</span>
+                  <span>{t("app.system.placidus2026")}</span>
+                  <span className="text-amber-500 font-bold">{t("ALGORITMO GEOCÊNTRICO ATIVO")}</span>
                 </div>
               </div>
 
@@ -4671,7 +4681,7 @@ export default function App() {
                 </div>
                 <div>
                   <div className="text-base font-mono font-black text-amber-400">+21.608.314</div>
-                  <div className="text-[9px] font-mono text-slate-400 uppercase tracking-widest leading-none mt-1">Mapas astronômicos sincronizados</div>
+                  <div className="text-[9px] font-mono text-slate-400 uppercase tracking-widest leading-none mt-1">{t("Mapas astronômicos sincronizados")}</div>
                 </div>
               </div>
             </div>
@@ -4686,18 +4696,18 @@ export default function App() {
                   <div className="flex items-start gap-2 text-rose-300">
                     <AlertCircle className="w-5 h-5 shrink-0 text-rose-400 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wide">Domínio Não Autorizado no Firebase Auth</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide">{t("Domínio Não Autorizado no Firebase Auth")}</h4>
                       <p className="text-[11px] text-slate-300 leading-normal">
-                        O Firebase bloqueou o login social porque o domínio atual não está registrado como domínio autorizado nas configurações do seu projeto Firebase.
+                        {t("O Firebase bloqueou o login social porque o domínio atual não está registrado como domínio autorizado nas configurações do seu projeto Firebase.")}
                       </p>
                     </div>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-rose-955/20 text-[10.5px] space-y-1.5 leading-snug">
                     <p className="text-slate-400 font-mono text-[9px] break-all select-all">
-                      Domínio atual: <strong className="text-amber-400 text-[10px]">{typeof window !== 'undefined' ? window.location.hostname : 'localhost'}</strong>
+                      {t("Domínio atual:")} <strong className="text-amber-400 text-[10px]">{typeof window !== 'undefined' ? window.location.hostname : 'localhost'}</strong>
                     </p>
                     <p className="text-slate-400 font-mono text-[9px]">
-                      👉 Para corrigir isso, acesse o Console do Firebase, vá em <strong>Build &gt; Authentication &gt; Settings &gt; Authorized domains</strong> e adicione o domínio exibido acima.
+                      👉 {t("Para corrigir isso, acesse o Console do Firebase, vá em Build > Authentication > Settings > Authorized domains e adicione o domínio exibido acima.")}
                     </p>
                   </div>
                   <div className="flex gap-2.5 pt-1">
@@ -4706,7 +4716,7 @@ export default function App() {
                       onClick={() => setUnauthorizedDomainError(false)}
                       className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-750 text-[10px] font-bold text-slate-100 rounded-lg cursor-pointer transition"
                     >
-                      Dispensar
+                      {t("Dispensar")}
                     </button>
                     <button 
                       type="button" 
@@ -4716,7 +4726,7 @@ export default function App() {
                       }}
                       className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-955 text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition"
                     >
-                      Criar via E-mail
+                      {t("Criar via E-mail")}
                     </button>
                   </div>
                 </div>
@@ -4728,15 +4738,15 @@ export default function App() {
                   <div className="flex items-start gap-2 text-amber-300">
                     <AlertCircle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wide">Login Social Bloqueado/Cancelado</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide">{t("Login Social Bloqueado/Cancelado")}</h4>
                       <p className="text-[11px] text-slate-300 leading-normal">
-                        Você está no ambiente de visualização do AI Studio. Navegadores costumam bloquear ou fechar popups de login de terceiros (Google/Facebook) automaticamente dentro de iframes por segurança.
+                        {t("Você está no ambiente de visualização do AI Studio. Navegadores costumam bloquear ou fechar popups de login de terceiros (Google/Facebook) automaticamente dentro de iframes por segurança.")}
                       </p>
                     </div>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-amber-900/20 text-[10.5px] space-y-1.5 leading-snug">
                     <p className="text-slate-400 font-mono text-[9px]">
-                      💡 <strong>Solução ideal:</strong> Clique no botão abaixo para abrir o aplicativo diretamente em uma aba cheia fora do iframe, onde o login do Google funcionará perfeitamente e sem restrições.
+                      💡 <strong>{t("Solução ideal:")}</strong> {t("Clique no botão abaixo para abrir o aplicativo diretamente em uma aba cheia fora do iframe, onde o login do Google funcionará perfeitamente e sem restrições.")}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2.5 pt-1">
@@ -4747,7 +4757,7 @@ export default function App() {
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-955 text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-amber-400 hover:to-amber-500 transition cursor-pointer"
                     >
                       <ExternalLink className="w-3" />
-                      Abrir em Nova Aba
+                      {t("Abrir em Nova Aba")}
                     </a>
                     <button 
                       type="button" 
@@ -4757,14 +4767,14 @@ export default function App() {
                       }}
                       className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-755 text-[10px] font-bold text-slate-100 rounded-lg cursor-pointer transition"
                     >
-                      Usar E-mail e Senha
+                      {t("Usar E-mail e Senha")}
                     </button>
                     <button 
                       type="button"
                       onClick={() => setPopupClosedError(false)}
                       className="px-3 py-1.5 bg-transparent hover:bg-slate-900 text-[10px] text-slate-400 hover:text-slate-200 transition cursor-pointer"
                     >
-                      Dispensar
+                      {t("Dispensar")}
                     </button>
                   </div>
                 </div>
@@ -4776,22 +4786,22 @@ export default function App() {
                   <div className="flex items-start gap-2 text-amber-300">
                     <AlertCircle className="w-5 h-5 shrink-0 text-amber-450 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wide">Método de E-mail/Senha desativado</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide">{t("Método de E-mail/Senha desativado")}</h4>
                       <p className="text-[11px] text-slate-300 leading-normal">
-                        O Firebase retornou o erro <strong className="font-mono text-[9px] text-rose-300">auth/operation-not-allowed</strong>. O provedor de login com Email e Senha não foi habilitado nas configurações de autenticação do seu projeto.
+                        {t("O Firebase retornou o erro")} <strong className="font-mono text-[9px] text-rose-300">auth/operation-not-allowed</strong>. {t("O provedor de login com Email e Senha não foi habilitado nas configurações de autenticação do seu projeto.")}
                       </p>
                     </div>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-amber-900/20 text-[10.5px] space-y-2 leading-snug text-slate-300 font-sans">
-                    <p className="text-xs font-bold text-slate-200">🛠️ Como ativar e corrigir:</p>
+                    <p className="text-xs font-bold text-slate-200">🛠️ {t("Como ativar e corrigir:")}</p>
                     <ol className="list-decimal list-inside space-y-1 text-[10.5px] text-slate-400 font-mono">
-                      <li>Acesse o <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline hover:text-amber-300">Console do Firebase</a></li>
-                      <li>Vá em <strong>Build &gt; Authentication &gt; Sign-in method</strong></li>
-                      <li>Clique em <strong>Add new provider (Adicionar novo provedor)</strong></li>
-                      <li>Selecione <strong>Email/Password (E-mail/Senha)</strong>, ative-o e salve.</li>
+                      <li>{t("Acesse o")} <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline hover:text-amber-300">{t("Console do Firebase")}</a></li>
+                      <li>{t("Vá em")} <strong>{t("Build > Authentication > Sign-in method")}</strong></li>
+                      <li>{t("Clique em")} <strong>{t("Add new provider (Adicionar novo provedor)")}</strong></li>
+                      <li>{t("Selecione")} <strong>{t("Email/Password (E-mail/Senha)")}</strong>{t(", ative-o e salve.")}</li>
                     </ol>
                     <p className="text-[10px] text-amber-500/90 font-mono mt-1">
-                      💡 <strong>Nota:</strong> Seus dados salvos localmente continuam gravados offline perfeitamente até ativar o provedor em nuvem!
+                      💡 <strong>{t("Nota:")}</strong> {t("Seus dados salvos localmente continuam gravados offline perfeitamente até ativar o provedor em nuvem!")}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
@@ -4800,7 +4810,7 @@ export default function App() {
                       onClick={() => setOperationNotAllowedError(false)}
                       className="px-3.5 py-1.5 bg-amber-500 text-slate-950 hover:bg-amber-400 text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition"
                     >
-                      Entendido / Dispensar
+                      {t("Entendido / Dispensar")}
                     </button>
                   </div>
                 </div>
@@ -4929,7 +4939,7 @@ export default function App() {
                         type="button"
                         onClick={() => setShowAscExplain(true)}
                         className="p-1 text-xs text-amber-400 font-bold hover:text-amber-300 transition-all font-sans cursor-pointer shrink-0"
-                        title="Saiba mais"
+                        title={t("ui.common.learnMore", "Saiba mais")}
                       >
                         [?]
                       </button>
@@ -5735,11 +5745,11 @@ export default function App() {
                       onChange={(e) => setLang(e.target.value as any)}
                       className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-900 text-[10px] text-slate-400 focus:outline-hidden cursor-pointer w-full mt-2"
                     >
-                      <option value="pt">Português (Brasil)</option>
-                      <option value="en">English (United States)</option>
-                      <option value="es">Español (Castellano)</option>
-                      <option value="de">Deutsch (DE)</option>
-                      <option value="fr">Français (France)</option>
+                      <option value="pt">{t('lang_pt_name', 'Português (Brasil)')}</option>
+                      <option value="en">{t('lang_en_name', 'English (United States)')}</option>
+                      <option value="es">{t('lang_es_name', 'Español (Castellano)')}</option>
+                      <option value="de">{t('lang_de_name', 'Deutsch (DE)')}</option>
+                      <option value="fr">{t('lang_fr_name', 'Français (France)')}</option>
                     </select>
                   </li>
                 </ul>
@@ -5980,8 +5990,8 @@ export default function App() {
 
                 {/* Return button */}
                 <div className="border-t border-slate-800 pt-4 flex justify-between items-center text-[9px] font-mono text-slate-500">
-                  <span>SSL SECURE TRACE</span>
-                  <span>© CONSÓRCIO ÓRBITA</span>
+                  <span>{t("app.system.sslSecureTrace")}</span>
+                  <span>{t("app.system.consortiumOrbita")}</span>
                 </div>
 
               </div>
@@ -5992,7 +6002,7 @@ export default function App() {
           <div className="fixed bottom-6 left-6 z-40 max-w-sm p-4 bg-slate-900 border border-amber-500/20 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300 text-left">
             <span className="p-2 h-9 w-9 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm">🔔</span>
             <div className="space-y-0.5">
-              <span className="text-[8px] font-mono uppercase text-amber-500 block leading-none">Ressonância Ativa</span>
+              <span className="text-[8px] font-mono uppercase text-amber-500 block leading-none">{t("Ressonância Ativa")}</span>
               <p className="text-[10.5px] text-slate-300 font-sans leading-snug">{bubbleNotification}</p>
             </div>
           </div>
@@ -6017,8 +6027,8 @@ export default function App() {
             </div>
 
             <div className="space-y-2">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-extrabold block">Ativação de Conta Estelar</span>
-              <h2 className="text-2xl font-sans font-black tracking-tight text-white">Verifique seu E-mail</h2>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-extrabold block">{t("Ativação de Conta Estelar")}</span>
+              <h2 className="text-2xl font-sans font-black tracking-tight text-white">{t("Verifique seu E-mail")}</h2>
               <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xs mx-auto">
                 Enviamos um link oficial de confirmação para o endereço <strong className="text-slate-200">{user.email}</strong>. Abra sua caixa de entrada, clique no link e então clique no botão de liberação abaixo para sincronizar seu biocampo.
               </p>
@@ -6165,10 +6175,10 @@ export default function App() {
                 </div>
 
                 <div className="space-y-3">
-                  <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-extrabold block">Coordenadas Primordiais</span>
-                  <h2 className="text-2xl font-sans font-extrabold text-slate-50 tracking-tight">Bem-vindo ao Star Map</h2>
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-extrabold block">{t("Coordenadas Primordiais")}</span>
+                  <h2 className="text-2xl font-sans font-extrabold text-slate-50 tracking-tight">{t("Bem-vindo ao Star Map")}</h2>
                   <p className="text-xs text-slate-350 leading-relaxed font-sans max-w-sm mx-auto">
-                    Crie seu mapa astral e descubra informações exclusivas sobre sua personalidade, relacionamentos, prosperidade, ciclos e tendências futuras de forma 100% personalizada.
+                    {t("Crie seu mapa astral e descubra informações exclusivas sobre sua personalidade, relacionamentos, prosperidade, ciclos e tendências futuras de forma 100% personalizada.")}
                   </p>
                 </div>
 
@@ -6177,15 +6187,15 @@ export default function App() {
                   <div className="p-2.5 bg-slate-950/60 border border-slate-850 rounded-xl flex items-start gap-2">
                     <span className="text-amber-500 mt-0.5">✨</span>
                     <div>
-                      <span className="font-bold text-slate-205 block font-sans">DNA Cósmico</span>
-                      <span className="text-slate-400 text-[9px] font-sans">Placidus completo</span>
+                      <span className="font-bold text-slate-205 block font-sans">{t("DNA Cósmico")}</span>
+                      <span className="text-slate-400 text-[9px] font-sans">{t("Placidus completo")}</span>
                     </div>
                   </div>
                   <div className="p-2.5 bg-slate-955/60 border border-slate-850 rounded-xl flex items-start gap-2">
                     <span className="text-rose-455 mt-0.5">💖</span>
                     <div>
-                      <span className="font-bold text-slate-205 block font-sans">Sinergia Social</span>
-                      <span className="text-slate-400 text-[9px] font-sans">Compatibilidade real</span>
+                      <span className="font-bold text-slate-205 block font-sans">{t("Sinergia Social")}</span>
+                      <span className="text-slate-400 text-[9px] font-sans">{t("Compatibilidade real")}</span>
                     </div>
                   </div>
                 </div>
@@ -6240,7 +6250,7 @@ export default function App() {
                 <div 
                   onClick={() => setIsAvatarModalOpen(true)}
                   className="relative group cursor-pointer shrink-0" 
-                  title="Clique para escolher seu avatar místico"
+                  title={t("ui.profile.chooseAvatarTooltip", "Clique para escolher seu avatar místico")}
                 >
                   <div 
                     className="w-10 h-10 rounded-full overflow-hidden border border-slate-750 bg-linear-to-tr from-amber-500 to-rose-600 text-slate-950 flex items-center justify-center font-bold text-sm relative hover:opacity-90 transition-opacity"
@@ -6259,12 +6269,12 @@ export default function App() {
                       Avatar
                     </span>
                   </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950" title="Ativo" />
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950" title={t("ui.common.active", "Ativo")} />
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-nowrap">
-                    <h3 className="text-xs font-bold text-slate-205 truncate max-w-[100px] sm:max-w-[200px]" title={user.name || "Buscador Estelar"}>{user.name || "Buscador Estelar"}</h3>
+                    <h3 className="text-xs font-bold text-slate-205 truncate max-w-[100px] sm:max-w-[200px]" title={user.name || t("ui.profile.defaultSeeker", "Buscador Estelar")}>{user.name || t("ui.profile.defaultSeeker", "Buscador Estelar")}</h3>
                     {user.isSubscribed || user.isPremium ? (
                       <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-sm text-[8px] uppercase font-mono tracking-wider text-amber-400 font-black shrink-0">
                         Premium
@@ -6369,7 +6379,7 @@ export default function App() {
                 {isLoadingMain ? (
                   <div className="flex flex-col items-center justify-center py-20 text-slate-500">
                     <RefreshCw className="w-10 h-10 animate-spin text-amber-500 mb-4" />
-                    <p className="text-xs font-mono">Calculando Placidus em tempo real...</p>
+                    <p className="text-xs font-mono">{t("Calculando Placidus em tempo real...")}</p>
                   </div>
                 ) : (
                   <>
@@ -6425,7 +6435,7 @@ export default function App() {
                               <button 
                                 onClick={() => setIsAvatarModalOpen(true)}
                                 className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-gradient-to-br from-amber-500 to-rose-500 hover:from-amber-450 hover:to-rose-550 rounded-full border-2 border-slate-950 text-slate-950 cursor-pointer shadow-lg transition active:scale-95 flex items-center justify-center w-8 h-8 group-hover:scale-105 z-20 animate-pulse"
-                                title="Escolher avatar místico"
+                                title={t("ui.profile.chooseAvatarButton", "Escolher avatar místico")}
                               >
                                 <Sparkles className="w-4 h-4 text-slate-950" />
                               </button>
@@ -6592,7 +6602,7 @@ export default function App() {
                                   <div className="space-y-4 font-sans">
                                     {/* Energy Description badge */}
                                     <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850/60">
-                                      <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">Frequência Dominante Celular</span>
+                                      <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{t("Frequência Dominante Celular")}</span>
                                       <span className="text-xs font-black text-rose-450 block tracking-wide mt-1">
                                         {dailyRadar.energyOfDay}
                                       </span>
@@ -6629,9 +6639,9 @@ export default function App() {
                                     <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center">
                                       <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-2">
                                         <Calendar className="w-4 h-4 text-amber-500" />
-                                        Próximos eventos
+                                        {t("Próximos eventos")}
                                       </h3>
-                                      <span className="text-[9px] font-mono text-slate-500">Céu Ativo 2026</span>
+                                      <span className="text-[9px] font-mono text-slate-500">{t("Céu Ativo 2026")}</span>
                                     </div>
 
                                     <div className="space-y-3">
@@ -6667,8 +6677,8 @@ export default function App() {
                                             <span className="text-[8px] uppercase block mt-1">{ev.date.split('/')[1]?.trim()}</span>
                                           </div>
                                           <div className="space-y-0.5">
-                                            <h4 className="text-[11px] font-bold text-slate-200">{ev.title}</h4>
-                                            <p className="text-[9.5px] text-slate-400 leading-normal">{ev.desc}</p>
+                                            <h4 className="text-[11px] font-bold text-slate-200">{t(ev.title)}</h4>
+                                            <p className="text-[9.5px] text-slate-400 leading-normal">{t(ev.desc)}</p>
                                           </div>
                                         </div>
                                       ))}
@@ -6679,13 +6689,13 @@ export default function App() {
                                   <div className="p-5 bg-slate-950/80 rounded-3xl border border-slate-850 space-y-3 text-left">
                                     <div className="flex items-center gap-1.5 pb-2 border-b border-slate-900">
                                       <Sparkles className="w-4 h-4 text-amber-400" />
-                                      <h4 className="text-[11px] font-bold uppercase font-mono text-amber-400">Detalhes Leitura do Dia</h4>
+                                      <h4 className="text-[11px] font-bold uppercase font-mono text-amber-400">{t("Detalhes Leitura do Dia")}</h4>
                                     </div>
                                     <p className="text-[11px] text-slate-350 leading-relaxed font-sans">
-                                      Hoje, a harmonia magnética entre o seu Sol em Aquário e a ativação cósmica geral estimula seu mental analítico. Com a <strong>Energia em 92%</strong>, você está em perfeito ponto de ignição para se expressar e criar. 
+                                      {t("Hoje, a harmonia magnética entre o seu Sol em Aquário e a ativação cósmica geral estimula seu mental analítico. Com a")} <strong>{t("Energia em 92%")}</strong>, {t("você está em perfeito ponto de ignição para se expressar e criar.")} 
                                     </p>
                                     <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
-                                      O <strong>Caminho de Vida 8</strong> ancora seu foco prático (<strong>Organização em 81%</strong>). Aproveite as janelas de calmaria mental para purificar seu canal respiratório de meditação e alinhar seu bem-estar profundo.
+                                      {t("O")} <strong>{t("Caminho de Vida 8")}</strong> {t("ancora seu foco prático")} (<strong>{t("Organização em 81%")}</strong>). {t("Aproveite as janelas de calmaria mental para purificar seu canal respiratório de meditação e alinhar seu bem-estar profundo.")}
                                     </p>
                                   </div>
                                 </div>
@@ -6701,9 +6711,9 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <Award className="w-4 h-4 text-amber-500" />
-                                      Missão do Dia & Evolução Cósmica
+                                      {t("Missão do Dia & Evolução Cósmica")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">Cumpra suas tarefas transcendentais do dia para ganhar pontos de evolução da alma.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Cumpra suas tarefas transcendentais do dia para ganhar pontos de evolução da alma.")}</p>
                                   </div>
 
                                   <div className="flex items-center gap-2">
@@ -6726,13 +6736,13 @@ export default function App() {
                                            Lvl {currentLvl}
                                          </div>
                                          <div className="space-y-0.5">
-                                           <span className="text-[9px] font-mono text-slate-500 uppercase block font-bold">Nível Cósmico</span>
-                                           <span className="text-xs font-bold text-slate-200 font-sans">Viajante das Estrelas</span>
+                                           <span className="text-[9px] font-mono text-slate-500 uppercase block font-bold">{t("Nível Cósmico")}</span>
+                                           <span className="text-xs font-bold text-slate-200 font-sans">{t("Viajante das Estrelas")}</span>
                                          </div>
                                        </div>
                                        <div className="md:col-span-8 space-y-1">
                                          <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 font-bold">
-                                           <span>Progresso de Evolução (XP)</span>
+                                           <span>{t("Progresso de Evolução (XP)")}</span>
                                            <span>{xpInCurrentLvl} / {xpNeededForNextLvl} XP (Total: {scorePoints} pts)</span>
                                          </div>
                                          <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-850/50">
@@ -6772,10 +6782,10 @@ export default function App() {
 
                                       {/* Detalhes leitura (Mission Astrological Details Explanation) */}
                                       <div className="pl-8 pt-1.5 border-t border-slate-900/60 text-[9.5px] text-slate-500 leading-normal font-sans italic">
-                                        <strong className="text-slate-400 not-italic uppercase text-[8px] font-mono block mb-0.5">Detalhes da leitura:</strong>
-                                        {task.id === 'm1' && "A ressonância de Vênus em Aquário clareia a visão de fraternidade. Meditar ativa os canais sutis de sua receptividade intelectual."}
-                                        {task.id === 'm2' && "Registrando seus sonhos você cria pontes de cinza prateada rumo aos arquivos ocultos de Netuno em Peixes na sua casa astral."}
-                                        {task.id === 'm3' && "O Sol e Aquário demandam conexões sinceras e libertadoras. Uma palavra amiga nutre o coração solar."}
+                                        <strong className="text-slate-400 not-italic uppercase text-[8px] font-mono block mb-0.5">{t("Detalhes da leitura:")}</strong>
+                                        {task.id === 'm1' && t("A ressonância de Vênus em Aquário clareia a visão de fraternidade. Meditar ativa os canais sutis de sua receptividade intelectual.")}
+                                        {task.id === 'm2' && t("Registrando seus sonhos você cria pontes de cinza prateada rumo aos arquivos ocultos de Netuno em Peixes na sua casa astral.")}
+                                        {task.id === 'm3' && t("O Sol e Aquário demandam conexões sinceras e libertadoras. Uma palavra amiga nutre o coração solar.")}
                                       </div>
                                     </div>
                                   ))}
@@ -6808,12 +6818,12 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <Calendar className="w-4 h-4 text-sky-400" />
-                                      Calendário de Tendências (30 Dias)
+                                      {t("Calendário de Tendências (30 Dias)")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">Clique nas datas de Junho de 2026 para obter análises astrológicas inteligentes e tendências cósmicas.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Clique nas datas de Junho de 2026 para obter análises astrológicas inteligentes e tendências cósmicas.")}</p>
                                   </div>
                                   <span className="px-2 py-0.5 bg-sky-500/10 border border-sky-500/20 text-[9px] font-mono font-bold text-sky-455 rounded-lg shrink-0">
-                                    Próximos 30 Dias
+                                    {t("Próximos 30 Dias")}
                                   </span>
                                 </div>
 
@@ -6861,37 +6871,37 @@ export default function App() {
                                     <div className="flex items-center gap-1.5">
                                       <span className="w-2 h-2 rounded-full bg-sky-400" />
                                       <span className="text-[11px] font-bold uppercase font-mono text-slate-205">
-                                        Análise Estelar: {selectedCalendarDay.toString().padStart(2, '0')} de Junho, 2026
+                                        {t("Análise Estelar:")} {selectedCalendarDay.toString().padStart(2, '0')} {t("de Junho, 2026")}
                                       </span>
                                     </div>
                                     <span className="text-[9px] text-slate-500 uppercase font-mono">
-                                      {selectedCalendarDay % 6 === 0 && "Frequência: Recolhimento"}
-                                      {selectedCalendarDay % 6 === 1 && "Frequência: Foco Ativo"}
-                                      {selectedCalendarDay % 6 === 2 && "Frequência: União Afetiva"}
-                                      {selectedCalendarDay % 6 === 3 && "Frequência: Cuidado Celestial"}
-                                      {selectedCalendarDay % 6 === 4 && "Frequência: Expansão Material"}
-                                      {selectedCalendarDay % 6 === 5 && "Frequência: Diálogo & Ideias"}
+                                      {selectedCalendarDay % 6 === 0 && t("Frequência: Recolhimento")}
+                                      {selectedCalendarDay % 6 === 1 && t("Frequência: Foco Ativo")}
+                                      {selectedCalendarDay % 6 === 2 && t("Frequência: União Afetiva")}
+                                      {selectedCalendarDay % 6 === 3 && t("Frequência: Cuidado Celestial")}
+                                      {selectedCalendarDay % 6 === 4 && t("Frequência: Expansão Material")}
+                                      {selectedCalendarDay % 6 === 5 && t("Frequência: Diálogo & Ideias")}
                                     </span>
                                   </div>
 
                                   <div className="text-[11px] text-slate-350 leading-relaxed font-sans space-y-2">
                                     <p>
-                                      {selectedCalendarDay % 6 === 0 && "Seu dia está dominado pelo reflexo lunar profundo de introspecção. Excelente para rever planos, repousar a musculatura de estudos livres e escrever no Cofre dos Sonhos."}
-                                      {selectedCalendarDay % 6 === 1 && "Foco afunilado pela quadratura de Marte ativo. Ótimo momento para iniciar novos rascunhos, limpar gavetas e focar em prazos complexos."}
-                                      {selectedCalendarDay % 6 === 2 && "Vênus faz trígono harmonioso com sua lenda astrológica de nascimento. Dia excelente para socializar, conversar intimamente, escutar amigos ou resolver disputas com leveza."}
-                                      {selectedCalendarDay % 6 === 3 && "Mercúrio em conjunção crítica. Alerta estelar para impulsividade verbal, falhas de sistema ou assinaturas rápidas. Aguarde o entardecer antes de formalizar transações de vulto."}
-                                      {selectedCalendarDay % 6 === 4 && "Abundância sob auspício do Caminho de Vida 8 em ritmo de expansão solar. Favorável para o seu bolso, investimentos cuidadosos de longo prazo e decisões corporativas estruturadas."}
-                                      {selectedCalendarDay % 6 === 5 && "Voz de Aquário energizada em alta inteligência coletiva. Excelente para palestras, reuniões de brainstorming de equipe, propostas de engajamento urbano ou estudos conceituais."}
+                                      {selectedCalendarDay % 6 === 0 && t("Seu dia está dominado pelo reflexo lunar profundo de introspecção. Excelente para rever planos, repousar a musculatura de estudos livres e escrever no Cofre dos Sonhos.")}
+                                      {selectedCalendarDay % 6 === 1 && t("Foco afunilado pela quadratura de Marte ativo. Ótimo momento para iniciar novos rascunhos, limpar gavetas e focar em prazos complexos.")}
+                                      {selectedCalendarDay % 6 === 2 && t("Vênus faz trígono harmonioso com sua lenda astrológica de nascimento. Dia excelente para socializar, conversar intimamente, escutar amigos ou resolver disputas com leveza.")}
+                                      {selectedCalendarDay % 6 === 3 && t("Mercúrio em conjunção crítica. Alerta estelar para impulsividade verbal, falhas de sistema ou assinaturas rápidas. Aguarde o entardecer antes de formalizar transações de vulto.")}
+                                      {selectedCalendarDay % 6 === 4 && t("Abundância sob auspício do Caminho de Vida 8 em ritmo de expansão solar. Favorável para o seu bolso, investimentos cuidadosos de longo prazo e decisões corporativas estruturadas.")}
+                                      {selectedCalendarDay % 6 === 5 && t("Voz de Aquário energizada em alta inteligência coletiva. Excelente para palestras, reuniões de brainstorming de equipe, propostas de engajamento urbano ou estudos conceituais.")}
                                     </p>
 
                                     <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850 text-[10px] text-slate-400 italic">
-                                      <strong className="not-italic text-slate-300 font-mono text-[9px] block mb-1">Dica prática do dia:</strong>
-                                      {selectedCalendarDay % 6 === 0 && "Durma meia hora mais cedo hoje. Use pedra de Selenita ao lado do travesseiro."}
-                                      {selectedCalendarDay % 6 === 1 && "Evite multitarefas. Foque em uma única atividade prioritária até sua plena conclusão."}
-                                      {selectedCalendarDay % 6 === 2 && "Experimente usar roupas com tons de Quartzo Rosa ou Carmim para sintonizar a diplomacia."}
-                                      {selectedCalendarDay % 6 === 3 && "Escreva no papel antes de enviar mensagens difíceis. Respire e releia 3 vezes."}
-                                      {selectedCalendarDay % 6 === 4 && "Organize suas finanças mensais em planilha hoje. A abundância floresce de solo ordenado."}
-                                      {selectedCalendarDay % 6 === 5 && "Escreva um e-mail de agradecimento a um mentor ou colega intelectual."}
+                                      <strong className="not-italic text-slate-300 font-mono text-[9px] block mb-1">{t("Dica prática do dia:")}</strong>
+                                      {selectedCalendarDay % 6 === 0 && t("Durma meia hora mais cedo hoje. Use pedra de Selenita ao lado do travesseiro.")}
+                                      {selectedCalendarDay % 6 === 1 && t("Evite multitarefas. Foque em uma única atividade prioritária até sua plena conclusão.")}
+                                      {selectedCalendarDay % 6 === 2 && t("Experimente usar roupas com tons de Quartzo Rosa ou Carmim para sintonizar a diplomacia.")}
+                                      {selectedCalendarDay % 6 === 3 && t("Escreva no papel antes de enviar mensagens difíceis. Respire e releia 3 vezes.")}
+                                      {selectedCalendarDay % 6 === 4 && t("Organize suas finanças mensais em planilha hoje. A abundância floresce de solo ordenado.")}
+                                      {selectedCalendarDay % 6 === 5 && t("Escreva um e-mail de agradecimento a um mentor ou colega intelectual.")}
                                     </div>
                                   </div>
                                 </div>
@@ -6907,25 +6917,25 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <Sparkles className="w-4 h-4 text-purple-400" />
-                                      Cores Favoráveis para o Mês de Junho
+                                      {t("Cores Favoráveis para o Mês de Junho")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">As frequências cromáticas sintonizadas às emanações vigentes no seu mapa astrológico principal de 2026.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("As frequências cromáticas sintonizadas às emanações vigentes no seu mapa astrológico principal de 2026.")}</p>
                                   </div>
                                   <span className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 text-[9px] font-mono font-bold text-purple-450 rounded-lg shrink-0">
-                                    Atualização Mensal
+                                    {t("Atualização Mensal")}
                                   </span>
                                 </div>
 
                                 {/* Custom Color Swatches Bento Grid */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1 font-sans">
                                   {[
-                                    { title: 'Cor Principal', name: 'Azul Cobalto', hex: '#1e3a8a', bgClass: 'bg-[#1e3a8a]', text: 'Ativa sua mente fria e original de Aquário, eliminando cansaços e sobrecargas mentais do cotidiano.' },
-                                    { title: 'Cor Secundária', name: 'Violeta Estelar', hex: '#6366f1', bgClass: 'bg-[#6366f1]', text: 'Fortalece seu chakra coronário e abre antenização intuitiva para os aconselhamentos do Tarot.' },
-                                    { title: 'Cor para Prosperidade', name: 'Dourado Solar', hex: '#eab308', bgClass: 'bg-[#eab308]', text: 'Amplifica o magnetismo material do seu Caminho de Vida 8. Use na carteira ou papéis financeiros.' },
-                                    { title: 'Cor para Relacionamentos', name: 'Rosa Quartzo', hex: '#f43f5e', bgClass: 'bg-[#f43f5e]', text: 'Suaviza as defesas estressadas de sua mente analítica, permitindo afetos doces e empatia sutil.' },
-                                    { title: 'Cor para Trabalho', name: 'Cinza Slate Profundo', hex: '#334155', bgClass: 'bg-[#334155]', text: 'Garante o rigor estrutural de Saturno, a disciplina laboriosa e o foco em prazos cruciais.' },
-                                    { title: 'Cor para Encontros', name: 'Carmim Magnético', hex: '#be123c', bgClass: 'bg-[#be123c]', text: 'Traz confiança cênica, impulsiona o brilho pessoal misterioso e sedutor de Marte.' },
-                                    { title: 'Uso no Dia a Dia', name: 'Off-White Pérola', hex: '#f8fafc', bgClass: 'bg-[#f8fafc]', text: 'Frequência de purificação ideal para neutralizar ruídos eletromagnéticos e limpar meridianos sutilmente.' }
+                                    { title: t('Cor Principal'), name: t('Azul Cobalto'), hex: '#1e3a8a', bgClass: 'bg-[#1e3a8a]', text: t('Ativa sua mente fria e original de Aquário, eliminando cansaços e sobrecargas mentais do cotidiano.') },
+                                    { title: t('Cor Secundária'), name: t('Violeta Estelar'), hex: '#6366f1', bgClass: 'bg-[#6366f1]', text: t('Fortalece seu chakra coronário e abre antenização intuitiva para os aconselhamentos do Tarot.') },
+                                    { title: t('Cor para Prosperidade'), name: t('Dourado Solar'), hex: '#eab308', bgClass: 'bg-[#eab308]', text: t('Amplifica o magnetismo material do seu Caminho de Vida 8. Use na carteira ou papéis financeiros.') },
+                                    { title: t('Cor para Relacionamentos'), name: t('Rosa Quartzo'), hex: '#f43f5e', bgClass: 'bg-[#f43f5e]', text: t('Suaviza as defesas estressadas de sua mente analítica, permitindo afetos doces e empatia sutil.') },
+                                    { title: t('Cor para Trabalho'), name: t('Cinza Slate Profundo'), hex: '#334155', bgClass: 'bg-[#334155]', text: t('Garante o rigor estrutural de Saturno, a disciplina laboriosa e o foco em prazos cruciais.') },
+                                    { title: t('Cor para Encontros'), name: t('Carmim Magnético'), hex: '#be123c', bgClass: 'bg-[#be123c]', text: t('Traz confiança cênica, impulsiona o brilho pessoal misterioso e sedutor de Marte.') },
+                                    { title: t('Uso no Dia a Dia'), name: t('Off-White Pérola'), hex: '#f8fafc', bgClass: 'bg-[#f8fafc]', text: t('Frequência de purificação ideal para neutralizar ruídos eletromagnéticos e limpar meridianos sutilmente.') }
                                   ].map((c, i) => (
                                     <div key={i} className="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-850/70 space-y-3 hover:border-slate-800 transition">
                                       <div className="flex items-center gap-3">
@@ -6952,12 +6962,12 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <ShieldCheck className="w-4 h-4 text-emerald-450" />
-                                      Amuletos & Símbolos de Poder Pessoais
+                                      {t("Amuletos & Símbolos de Poder Pessoais")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">Escudos energéticos e frequências físicas para purificar, ancorar e focar sua aura este mês.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Escudos energéticos e frequências físicas para purificar, ancorar e focar sua aura este mês.")}</p>
                                   </div>
                                   <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-mono font-bold text-emerald-450 rounded-lg shrink-0">
-                                    Baseado no Mapa Estelar
+                                    {t("Baseado no Mapa Estelar")}
                                   </span>
                                 </div>
 
@@ -6968,10 +6978,10 @@ export default function App() {
                                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                                     <div className="flex items-center gap-2 text-sky-400">
                                       <Globe className="w-4 h-4 shrink-0" />
-                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">Seu Elemento Ativo: Ar</h4>
+                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">{t("Seu Elemento Ativo: Ar")}</h4>
                                     </div>
                                     <p className="text-[10px] text-slate-350 leading-relaxed">
-                                      O Ar reina na sua matriz essencial de <strong>Aquário</strong>. Confere rapidez de raciocínio, ideais humanitários amplos e facilidade comunicativa. Alinhe-se ao elemento acendendo incensos puros de lavanda e inspirando fundo de manhã ao ar livre.
+                                      {t("O Ar reina na sua matriz essencial de")} <strong>{t("Aquário")}</strong>. {t("Confere rapidez de raciocínio, ideais humanitários amplos e facilidade comunicativa. Alinhe-se ao elemento acendendo incensos puros de lavanda e inspirando fundo de manhã ao ar livre.")}
                                     </p>
                                   </div>
 
@@ -6979,11 +6989,11 @@ export default function App() {
                                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                                     <div className="flex items-center gap-2 text-rose-400">
                                       <Sparkles className="w-4 h-4 shrink-0" />
-                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">Pedras e Cristais de Filtro</h4>
+                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">{t("Pedras e Cristais de Filtro")}</h4>
                                     </div>
                                     <div className="text-[10px] text-slate-350 leading-relaxed space-y-1">
-                                      <p><strong>Lápis-Lazúli:</strong> Estimula a visão transcendental, abre a clareza intelectual e protege seu canal respiratório superior.</p>
-                                      <p><strong>Sodalita e Selenita:</strong> Conectam o raciocínio lógico às vibrações sutis da intuição celestial pura.</p>
+                                      <p><strong>{t("Lápis-Lazúli:")}</strong> {t("Estimula a visão transcendental, abre a clareza intelectual e protege seu canal respiratório superior.")}</p>
+                                      <p><strong>{t("Sodalita e Selenita:")}</strong> {t("Conectam o raciocínio lógico às vibrações sutis da intuição celestial pura.")}</p>
                                     </div>
                                   </div>
 
@@ -6991,11 +7001,11 @@ export default function App() {
                                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                                     <div className="flex items-center gap-2 text-amber-500">
                                       <Orbit className="w-4 h-4 shrink-0" />
-                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">Símbolos Celestiais Sagrados</h4>
+                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">{t("Símbolos Celestiais Sagrados")}</h4>
                                     </div>
                                     <p className="text-[10px] text-slate-350 leading-relaxed">
-                                      O <strong>Portador de Água (Aquário)</strong> sintoniza sua missão solar coletiva. 
-                                      A <strong>Estrela de Sete Pontas (Heptagrama)</strong> sela seu campo áurico de proteção contra interferências energéticas externas e equilibra seu Caminho de Vida 8.
+                                      {t("O")} <strong>{t("Portador de Água (Aquário)")}</strong> {t("sintoniza sua missão solar coletiva.")} 
+                                      {t("A")} <strong>{t("Estrela de Sete Pontas (Heptagrama)")}</strong> {t("sela seu campo áurico de proteção contra interferências energéticas externas e equilibra seu Caminho de Vida 8.")}
                                     </p>
                                   </div>
 
@@ -7003,11 +7013,10 @@ export default function App() {
                                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                                     <div className="flex items-center gap-2 text-purple-400">
                                       <Award className="w-4 h-4 shrink-0" />
-                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">Amuletos Ativos Recomendados</h4>
+                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">{t("ui.amulets.title", "Amuletos Ativos Recomendados")}</h4>
                                     </div>
                                     <p className="text-[10px] text-slate-350 leading-relaxed">
-                                      Use o <strong>Escaravelho Azul de Proteção</strong> para promover renovações físicas e materiais favoráveis. 
-                                      Sincronize com o <strong>Olho de Hórus</strong> em liga de prata para barrar a fadiga mental provocada pelo excesso de telas ou conversas mundanas.
+                                      {t("ui.amulets.description", "Use o Escaravelho Azul de Proteção para promover renovações físicas e materiais favoráveis. Sincronize com o Olho de Hórus em liga de prata para barrar a fadiga mental provocada pelo excesso de telas ou conversas mundanas.")}
                                     </p>
                                   </div>
 
@@ -7017,18 +7026,18 @@ export default function App() {
                                 <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850/85 text-left space-y-2.5 font-sans">
                                   <div className="flex items-center gap-1.5 pb-1 border-b border-slate-900">
                                     <Star className="w-4 h-4 text-amber-400" />
-                                    <h4 className="text-[11px] font-bold uppercase font-mono text-amber-400">Recomendação Estelar de Joia de Poder</h4>
+                                    <h4 className="text-[11px] font-bold uppercase font-mono text-amber-400">{t("ui.jewelry.title", "Recomendação Estelar de Joia de Poder")}</h4>
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
                                     <div className="sm:col-span-3 text-center p-2 bg-slate-900/60 rounded-xl border border-slate-800 text-[10px] font-mono text-slate-300 font-bold shrink-0">
-                                      Colar ou Anel
+                                      {t("ui.jewelry.type", "Colar ou Anel")}
                                     </div>
                                     <div className="sm:col-span-9">
                                       <p className="text-[11px] text-slate-350 leading-relaxed">
-                                        Recomendamos o uso de um <strong>Colar de Lápis-Lazúli montado em Prata Pura</strong> posicionado na altura do chakra laríngeo, ou alternativamente um <strong>Anel de Prata com Pirita</strong> usado no dedo indicador correspondente ao seu poder criador e materializador. 
+                                        {t("ui.jewelry.recommendation", "Recomendamos o uso de um Colar de Lápis-Lazúli montado em Prata Pura posicionado na altura do chakra laríngeo, ou alternativamente um Anel de Prata com Pirita usado no dedo indicador correspondente ao seu poder criador e materializador.")}
                                       </p>
                                       <p className="text-[10px] text-slate-500 italic mt-1 leading-normal leading-relaxed text-left">
-                                        <strong>Conselho de ativação:</strong> Na noite do quarto crescente lunar, deixe a joia imersa em copo de água mineral por duas horas exposta ao luar e use-a após secar purificada.
+                                        <strong>{t("ui.jewelry.activationAdvice", "Conselho de ativação:")}</strong> {t("ui.jewelry.activationSteps", "Na noite do quarto crescente lunar, deixe a joia imersa em copo de água mineral por duas horas exposta ao luar e use-a após secar purificada.")}
                                       </p>
                                     </div>
                                   </div>
@@ -7045,12 +7054,12 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <BookOpen className="w-4 h-4 text-pink-400" />
-                                      Mensagem Inspiradora da Semana
+                                      {t("Mensagem Inspiradora da Semana")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">Canalizações semanais personalizadas guiadas pelo trânsito ativo do Solstício de Junho de 2026.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Canalizações semanais personalizadas guiadas pelo trânsito ativo do Solstício de Junho de 2026.")}</p>
                                   </div>
                                   <span className="px-2 py-0.5 bg-pink-500/10 border border-pink-500/20 text-[9px] font-mono font-bold text-pink-450 rounded-lg shrink-0">
-                                    Atualização Semanal
+                                    {t("Atualização Semanal")}
                                   </span>
                                 </div>
 
@@ -7059,7 +7068,7 @@ export default function App() {
                                   <div className="absolute top-0 right-0 w-28 h-28 bg-pink-500/[0.02] rounded-full blur-2xl pointer-events-none" />
                                   <div className="absolute bottom-0 left-0 w-28 h-28 bg-amber-500/[0.02] rounded-full blur-2xl pointer-events-none" />
                                   
-                                  <span className="text-[9px] font-mono text-amber-500/70 block uppercase tracking-widest">Semana de 08/06 a 14/06 de 2026</span>
+                                  <span className="text-[9px] font-mono text-amber-500/70 block uppercase tracking-widest">{t("Semana de 08/06 a 14/06 de 2026")}</span>
                                   
                                   <p className="font-serif italic text-sm text-amber-100/90 leading-relaxed max-w-xl mx-auto">
                                     "{user.name.split(' ')[0]}, o céu desta semana convida você a encontrar o silêncio lúcido em meio ao turbilhão de ideias brilhantes que seu Sol em {mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate || "")} tanto gera. A força construtora do seu Caminho de Vida {(numerology as any)?.lifePathNumber || numerology?.caminhoDeVida || getLifePathNumber(user.birthDate || "")} exige que você não apenas idealize soluções, mas permita-se o cansaço terapêutico de assentar as ideias no solo firme da realidade."
@@ -7071,7 +7080,7 @@ export default function App() {
 
                                   <div className="pt-3 border-t border-slate-900 max-w-xs mx-auto">
                                     <Sparkles className="w-4 h-4 text-amber-450 mx-auto animate-pulse" />
-                                    <span className="text-[8px] font-mono uppercase text-slate-500 tracking-wider block mt-1">Conselheira Espiritual Orbia</span>
+                                    <span className="text-[8px] font-mono uppercase text-slate-500 tracking-wider block mt-1">{t("ui.orbia.advisorTitle", "Conselheira Espiritual Orbia")}</span>
                                   </div>
                                 </div>
                               </div>
@@ -7158,13 +7167,13 @@ export default function App() {
                           <React.Suspense fallback={
                             <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse">
                               <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                              <p className="text-xs text-slate-400 font-mono">Descriptografando efemérides e traçando alinhamento de casas...</p>
+                              <p className="text-xs text-slate-400 font-mono">{t("ui.loading.ephemerides", "Descriptografando efemérides e traçando alinhamento de casas...")}</p>
                             </div>
                           }>
                             {!mapData ? (
                               <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse">
                                 <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                                <p className="text-xs text-slate-400 font-mono">Descriptografando efemérides e traçando alinhamento de casas...</p>
+                                <p className="text-xs text-slate-400 font-mono">{t("ui.loading.ephemerides", "Descriptografando efemérides e traçando alinhamento de casas...")}</p>
                               </div>
                             ) : (
                               <div key={`astrology_view_${user.name}_${user.birthDate}_${user.birthTime || ''}`}>
@@ -7180,7 +7189,7 @@ export default function App() {
                             {!numerology ? (
                               <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse">
                                 <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mx-auto" />
-                                <p className="text-xs text-slate-400 font-mono">Calculando ciclos numerológicos e frequências vitais...</p>
+                                <p className="text-xs text-slate-400 font-mono">{t("ui.loading.numerology", "Calculando ciclos numerológicos e frequências vitais...")}</p>
                               </div>
                             ) : (
                               <div key={`numerology_view_${user.name}_${user.birthDate}`}>
@@ -7196,7 +7205,7 @@ export default function App() {
                           {!isPostTrialLocked(user) && (
                             <React.Suspense fallback={
                               <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 animate-pulse">
-                                <p className="text-xs text-slate-405 font-mono">Sintonizando afinidades e afinadores de energia...</p>
+                                <p className="text-xs text-slate-405 font-mono">{t("ui.loading.compatibility", "Sintonizando afinidades e afinadores de energia...")}</p>
                               </div>
                             }>
                               <CompatibilityView user={user} lang={currentLang} />
@@ -7256,7 +7265,7 @@ export default function App() {
                                 value={createMainName}
                                 onChange={(e) => setCreateMainName(e.target.value)}
                                 className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-205 focus:outline-hidden"
-                                placeholder="e.g. Fabricio Souza Santos"
+                                placeholder={t("ui.placeholder.fullName", "e.g. Fabricio Souza Santos")}
                               />
                             </div>
 
@@ -7279,7 +7288,7 @@ export default function App() {
                                   value={createMainTime}
                                   onChange={(e) => setCreateMainTime(e.target.value)}
                                   className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-205 focus:outline-hidden font-mono"
-                                  placeholder="e.g. 15:30"
+                                  placeholder={t("ui.placeholder.time", "e.g. 15:30")}
                                 />
                               </div>
 
@@ -7409,7 +7418,7 @@ export default function App() {
                 <div key={`biorhythm_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
                   <React.Suspense fallback={
                     <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                      <span className="text-xs text-slate-400 font-mono">Desenhando curvas biológicas vitais...</span>
+                      <span className="text-xs text-slate-400 font-mono">{t("ui.loading.biorhythm", "Desenhando curvas biológicas vitais...")}</span>
                     </div>
                   }>
                     <BiorhythmView 
@@ -7424,7 +7433,7 @@ export default function App() {
                 <div key={`lunar_cycle_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
                   <React.Suspense fallback={
                     <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                      <span className="text-xs text-slate-405 font-mono">Calculando fases de lunação astrológica...</span>
+                      <span className="text-xs text-slate-405 font-mono">{t("ui.loading.lunarCycle", "Calculando fases de lunação astrológica...")}</span>
                     </div>
                   }>
                     <LunarCycle 
@@ -7488,7 +7497,7 @@ export default function App() {
                 <div key={`lunar_nodes_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
                   <React.Suspense fallback={
                     <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                      <span className="text-xs text-slate-405 font-mono">Calculando nodos lunares de evolução cármica...</span>
+                      <span className="text-xs text-slate-405 font-mono">{t("ui.loading.lunarNodes", "Calculando nodos lunares de evolução cármica...")}</span>
                     </div>
                   }>
                     <LunarNodes userName={user?.name} mapData={mapData} lang={currentLang} />
@@ -7525,8 +7534,9 @@ export default function App() {
                       <span>{t("Exibindo alinhamentos celestes e trânsitos em tempo real. Crie seu mapa natal no menu 'Meu Mapa' para personalizar seus aspectos exatos.")}</span>
                     </div>
                     <button
+                      type="button"
                       onClick={() => {
-                        setActiveTab('mapa');
+                        handleUserSelectTab('mapa');
                         setMapSubTab('criar_meu_mapa');
                       }}
                       className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors whitespace-nowrap cursor-pointer text-xs"
@@ -7537,76 +7547,84 @@ export default function App() {
                 )}
 
                 {/* D3 Real-time Transit Map Alignment */}
-                <React.Suspense fallback={
-                  <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
-                    <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                    <div>{t("Injetando efemérides astronômicas em tempo real...")}</div>
-                  </div>
-                }>
-                  <TransitMap mapData={effectiveMapData} />
-                </React.Suspense>
+                <ErrorBoundary>
+                  <React.Suspense fallback={
+                    <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
+                      <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                      <div>{t("Injetando efemérides astronômicas em tempo real...")}</div>
+                    </div>
+                  }>
+                    <TransitMap mapData={effectiveMapData} />
+                  </React.Suspense>
+                </ErrorBoundary>
 
                 {/* Monthly Celestial Transits History Panel */}
                 <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
-                  <React.Suspense fallback={
-                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                      <span className="text-xs text-slate-405 font-mono">Calculando trânsitos astrológicos mensais...</span>
-                    </div>
-                  }>
-                    <TransitHistory
-                      userName={user?.name}
-                      birthDate={user?.birthDate}
-                      birthTime={user?.birthTime}
-                      latitude={user?.latitude}
-                      longitude={user?.longitude}
-                      lang={currentLang}
-                    />
-                  </React.Suspense>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.transits", "Calculando trânsitos astrológicos mensais...")}</span>
+                      </div>
+                    }>
+                      <TransitHistory
+                        userName={user?.name}
+                        birthDate={user?.birthDate}
+                        birthTime={user?.birthTime}
+                        latitude={user?.latitude}
+                        longitude={user?.longitude}
+                        lang={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 {/* Orbia AI Chat and Oracle Component */}
                 <div key={`orbia_oracle_chat_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
-                  <React.Suspense fallback={
-                    <div className="h-96 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                      <span className="text-xs text-slate-405 font-mono">Iniciando inteligência conselheira Orbia...</span>
-                    </div>
-                  }>
-                    <OrbiaAIAndOracle
-                      chatMessages={chatMessages}
-                      currentChatInput={currentChatInput}
-                      setCurrentChatInput={setCurrentChatInput}
-                      isSendingChat={isSendingChat}
-                      handleSendChatMessage={handleSendChatMessage}
-                      hasQueriedOracleToday={hasQueriedOracleToday}
-                      oracleQuestion={oracleQuestion}
-                      setOracleQuestion={setOracleQuestion}
-                      oracleResponse={oracleResponse}
-                      setOracleResponse={setOracleResponse}
-                      isQueryingOracle={isQueryingOracle}
-                      handleAskOracle={handleAskOracle}
-                      lang={currentLang}
-                    />
-                  </React.Suspense>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-96 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.orbia", "Iniciando inteligência conselheira Orbia...")}</span>
+                      </div>
+                    }>
+                      <OrbiaAIAndOracle
+                        chatMessages={chatMessages}
+                        currentChatInput={currentChatInput}
+                        setCurrentChatInput={setCurrentChatInput}
+                        isSendingChat={isSendingChat}
+                        handleSendChatMessage={handleSendChatMessage}
+                        hasQueriedOracleToday={hasQueriedOracleToday}
+                        oracleQuestion={oracleQuestion}
+                        setOracleQuestion={setOracleQuestion}
+                        oracleResponse={oracleResponse}
+                        setOracleResponse={setOracleResponse}
+                        isQueryingOracle={isQueryingOracle}
+                        handleAskOracle={handleAskOracle}
+                        lang={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 {/* Oráculo dos Sonhos Component */}
                 <div key={`oraculo_sonhos_card_${user?.name}_${user?.birthDate}`}>
-                  <React.Suspense fallback={
-                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                      <span className="text-xs text-slate-405 font-mono">Abrindo Cofre Celestial dos Sonhos...</span>
-                    </div>
-                  }>
-                    <OraculoDosSonhosCard
-                      newDreamDesc={newDreamDesc}
-                      setNewDreamDesc={setNewDreamDesc}
-                      isInterpretingDream={isInterpretingDream}
-                      handleRecordAndInterpretDream={handleRecordAndInterpretDream}
-                      dreamsHistory={dreamsHistory}
-                      selectedDreamDisplay={selectedDreamDisplay}
-                      setSelectedDreamDisplay={setSelectedDreamDisplay}
-                      preferredLanguage={currentLang}
-                    />
-                  </React.Suspense>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.dreams", "Abrindo Cofre Celestial dos Sonhos...")}</span>
+                      </div>
+                    }>
+                      <OraculoDosSonhosCard
+                        newDreamDesc={newDreamDesc}
+                        setNewDreamDesc={setNewDreamDesc}
+                        isInterpretingDream={isInterpretingDream}
+                        handleRecordAndInterpretDream={handleRecordAndInterpretDream}
+                        dreamsHistory={dreamsHistory}
+                        selectedDreamDisplay={selectedDreamDisplay}
+                        setSelectedDreamDisplay={setSelectedDreamDisplay}
+                        preferredLanguage={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
 
               </div>
@@ -7709,7 +7727,7 @@ export default function App() {
                           disabled={(user.mainMapChangesCount ?? 0) >= 2}
                           onChange={(e) => setSettingsBirthTime(e.target.value)} 
                           className="w-full px-3 py-2 rounded-xl bg-slate-955 border border-slate-850 text-xs text-slate-200 focus:outline-hidden disabled:opacity-50"
-                          placeholder="e.g. 15:30"
+                          placeholder={t("ui.placeholder.time", "e.g. 15:30")}
                         />
                       </div>
 
@@ -7717,7 +7735,7 @@ export default function App() {
                         <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_city')}</label>
                         <CityAutocomplete
                           value={settingsBirthCity}
-                          placeholder="e.g. São Paulo, SP"
+                          placeholder={t("ui.placeholder.city", "e.g. São Paulo, SP")}
                           onChange={(val) => setSettingsBirthCity(val)}
                           onSelectCity={(city) => {
                             setSettingsBirthCity(city.label);
@@ -7832,7 +7850,7 @@ export default function App() {
                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                           highContrast ? 'bg-amber-500' : 'bg-slate-800'
                         }`}
-                        aria-label="Alternar Alto Contraste"
+                        aria-label={t("ui.accessibility.toggleHighContrast", "Alternar Alto Contraste")}
                       >
                         <span
                           className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-slate-950 shadow-lg ring-0 transition duration-200 ease-in-out ${
@@ -7924,7 +7942,7 @@ export default function App() {
                       <button 
                         onClick={() => setShowSubPortalModal(false)}
                         className="absolute top-4 right-4 text-slate-500 hover:text-slate-350 transition cursor-pointer"
-                        aria-label="Close"
+                        aria-label={t("Fechar")}
                       >
                         ✕
                       </button>
@@ -8213,8 +8231,9 @@ export default function App() {
             
             {/* Mapa Estelar Tab activator */}
             <button
+              type="button"
               onClick={() => {
-                setActiveTab('mapa');
+                handleUserSelectTab('mapa');
                 if (!isPremiumActive && mapSubTab !== 'meu_mapa' && mapSubTab !== 'criar_meu_mapa') {
                   setMapSubTab('meu_mapa');
                 }
@@ -8231,7 +8250,8 @@ export default function App() {
 
             {/* Constelações Tab activator */}
             <button
-              onClick={() => setActiveTab('constelacoes')}
+              type="button"
+              onClick={() => handleUserSelectTab('constelacoes')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'constelacoes' 
                   ? 'text-emerald-400 bg-emerald-500/10' 
@@ -8244,7 +8264,8 @@ export default function App() {
 
             {/* Planetas Tab activator */}
             <button
-              onClick={() => setActiveTab('planetas')}
+              type="button"
+              onClick={() => handleUserSelectTab('planetas')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'planetas' 
                   ? 'text-rose-450 bg-rose-500/10' 
@@ -8257,7 +8278,8 @@ export default function App() {
 
             {/* Tarot Tab activator */}
             <button
-              onClick={() => setActiveTab('tarot')}
+              type="button"
+              onClick={() => handleUserSelectTab('tarot')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'tarot' 
                   ? 'text-amber-500 bg-amber-500/10' 
@@ -8270,7 +8292,8 @@ export default function App() {
 
             {/* Configurações Tab activator */}
             <button
-              onClick={() => setActiveTab('configuracoes')}
+              type="button"
+              onClick={() => handleUserSelectTab('configuracoes')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'configuracoes' 
                   ? 'text-[#F59E0B] bg-[#F59E0B]/10' 

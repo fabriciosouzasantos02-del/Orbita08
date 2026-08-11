@@ -4390,10 +4390,10 @@ export default function UserDashboardPortal({
                     </p>
                     
                     <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-850 space-y-2 text-[10px] text-slate-400 text-left leading-relaxed">
-                      <div className="font-bold text-slate-200 uppercase tracking-widest text-[9px] font-mono mb-1 text-amber-400">{t("Como Instalar no Celular:")}</div>
+                      <div className="font-bold text-slate-200 uppercase tracking-widest text-[9px] font-mono mb-1 text-amber-400">{t("pwa.howToInstallTitle")}</div>
                       <div className="space-y-1.5 font-sans">
-                        <p><strong>{t("No Android / Chrome:")}</strong> {t("Clique no botão de instalar abaixo ou nos 3 pontinhos")} (<span className="font-mono">⋮</span>) {t("no canto superior e selecione")} <strong>{t("\"Instalar aplicativo\"")}</strong> {t("ou")} <strong>{t("\"Adicionar à tela inicial\"")}</strong>.</p>
-                        <p><strong>{t("No iPhone / Safari:")}</strong> {t("Toque no ícone de compartilhamento")} (<span className="text-xs text-sky-400 font-bold">↑</span>) {t("no Safari e selecione")} <strong>{t("\"Adicionar à Tela de Início\"")}</strong>.</p>
+                        <p>{t("pwa.androidChromeText")}</p>
+                        <p>{t("pwa.iosSafariText")}</p>
                       </div>
                     </div>
                   </div>
@@ -4403,10 +4403,10 @@ export default function UserDashboardPortal({
                       <div className="w-full py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex flex-col items-center justify-center gap-1 text-emerald-400">
                         <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider">
                           <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                          {t("Portal Órbita Instalado")}
+                          {t("pwa.installedTitle")}
                         </div>
                         <span className="text-[9px] text-emerald-500/90 font-medium">
-                          {t("Sessão em execução segura no modo standalone nativo.")}
+                          {t("pwa.installedSubtitle")}
                         </span>
                       </div>
                     ) : (
@@ -4416,7 +4416,7 @@ export default function UserDashboardPortal({
                           if (onInstallPWA) {
                             onInstallPWA();
                           } else {
-                            alert(t("Esta aplicação é um PWA completo! Encontre a opção de instalar diretamente no menu de opções do seu navegador (ícone de computador ou adicionar à tela inicial) para rodar como um app nativo."));
+                            alert(t("pwa.installAlert"));
                           }
                         }}
                         className="w-full py-2.5 bg-gradient-to-r from-amber-500 via-amber-400 to-rose-500 hover:from-amber-450 hover:to-rose-550 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-amber-500/10 animate-pulse"
@@ -4424,12 +4424,12 @@ export default function UserDashboardPortal({
                       >
                         <Smartphone className="w-3.5 h-3.5" />
                         {typeof navigator !== 'undefined' && /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())
-                          ? t("Clique em Compartilhar e Adicionar à Tela de Início")
-                          : t("Instalar Aplicativo")}
+                          ? t("pwa.installIosShare")
+                          : t("pwa.installButton")}
                       </button>
                     )}
                     <p className="text-[10px] text-slate-500 text-center leading-normal">
-                      {t("Não consome memória de armazenamento físico adicional. Atualiza em tempo real.")}
+                      {t("pwa.noPhysicalMemory")}
                     </p>
                   </div>
                 </div>
@@ -4440,7 +4440,7 @@ export default function UserDashboardPortal({
                     <div className="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
                       <Share2 className="w-4 h-4" />
                     </div>
-                    <h4 className="text-sm font-black text-slate-100">{t("Sincronizar Celular Via QR Code / Compartilhar")}</h4>
+                    <h4 className="text-sm font-black text-slate-100">{t("pwa.syncQrShareTitle")}</h4>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-6 bg-slate-950/60 p-4 rounded-3xl border border-slate-850">
@@ -4483,7 +4483,7 @@ export default function UserDashboardPortal({
                     
                     <div className="space-y-3 flex-1 font-sans">
                       <p className="text-xs text-slate-350 leading-relaxed">
-                        {t("Aponte a câmera do seu celular para este código para abrir o Portal Órbita instantaneamente no seu celular ou acionar a instalação direta sem digitar endereços.")}
+                        {t("pwa.qrInstructions")}
                       </p>
                       
                       <div className="flex flex-col sm:flex-row gap-2">
@@ -4491,12 +4491,12 @@ export default function UserDashboardPortal({
                           type="button"
                           onClick={() => {
                             navigator.clipboard.writeText(window.location.href);
-                            alert(t("Link do Portal Órbita copiado para o seu clipboard! Compartilhe o link com familiares e amigos."));
+                            alert(t("pwa.linkCopied"));
                           }}
                           className="px-4 py-2 bg-slate-900 hover:bg-slate-850 hover:text-indigo-400 border border-slate-800 rounded-xl text-[10.5px] font-bold text-slate-300 tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5 flex-1"
                         >
                           <Copy className="w-3.5 h-3.5" />
-                          {t("Copiar Link do App")}
+                          {t("pwa.copyAppLink")}
                         </button>
                         
                         <button
@@ -4505,18 +4505,18 @@ export default function UserDashboardPortal({
                             if (navigator.share) {
                               navigator.share({
                                 title: 'Portal Órbita - Astrologia Premium',
-                                text: t('Venha desvendar seu mapa de nascimento, biorritmo, tarô e conselhos da IA Orbia no Portal Órbita!'),
+                                text: t('pwa.shareText'),
                                 url: window.location.href,
                               }).catch(console.warn);
                             } else {
                               navigator.clipboard.writeText(window.location.href);
-                              alert(t("Recurso de compartilhamento nativo indisponível. O link do aplicativo foi copiado para a área de transferência!"));
+                              alert(t("pwa.nativeShareUnavailable"));
                             }
                           }}
                           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-slate-950 font-black rounded-xl text-[10.5px] font-sans uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 flex-1"
                         >
                           <Share2 className="w-3.5 h-3.5" />
-                          {t("Enviar via WhatsApp")}
+                          {t("pwa.sendWhatsapp")}
                         </button>
                       </div>
                     </div>
@@ -4527,7 +4527,7 @@ export default function UserDashboardPortal({
 
               {/* SECURITY ASSURANCE BANNER AND TECHNICAL SPECIFICATIONS AND TUTORIAL */}
               <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 space-y-3 font-sans">
-                <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">🛡️ {t("Informações Úteis de Instalação e Distribuição Independente")}</h5>
+                <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">🛡️ {t("pwa.apkInfoTitle")}</h5>
                 <p className="text-[10.5px] text-slate-500 leading-relaxed">
                   {t("apk_distribution_info")}
                 </p>
@@ -4550,7 +4550,7 @@ export default function UserDashboardPortal({
             <X className="w-4 h-4" />
           </button>
 
-          <span className="text-[9px] font-mono uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md font-extrabold font-mono">{t("Artigo de Saber")}</span>
+          <span className="text-[9px] font-mono uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md font-extrabold font-mono">{t("article.label")}</span>
           <h1 className="text-lg md:text-xl font-bold text-slate-100 tracking-tight mt-3 mb-1">{selectedArticle.title}</h1>
           <p className="text-[10px] text-slate-500 font-mono">Por {selectedArticle.author} · {selectedArticle.date}</p>
           
@@ -4565,7 +4565,7 @@ export default function UserDashboardPortal({
               onClick={() => setSelectedArticle(null)}
               className="px-4 py-2 bg-emerald-500 text-slate-950 hover:bg-emerald-400 text-xs font-black uppercase rounded-xl transition cursor-pointer"
             >
-              {t("Concluir Leitura")}
+              {t("article.finishReading")}
             </button>
           </div>
         </div>
@@ -4587,7 +4587,7 @@ export default function UserDashboardPortal({
           <div className="flex items-center gap-3">
             <span className="text-3xl text-purple-400">{selectedSign.symbol}</span>
             <div>
-              <span className="text-[9px] font-mono uppercase bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md font-extrabold font-mono">{t("Definição Planetária")}</span>
+              <span className="text-[9px] font-mono uppercase bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md font-extrabold font-mono">{t("planetary.definitionTitle")}</span>
               <h1 className="text-lg md:text-xl font-bold text-slate-100 tracking-tight mt-1">{selectedSign.name}</h1>
             </div>
           </div>
@@ -4597,22 +4597,22 @@ export default function UserDashboardPortal({
           <div className="space-y-4 font-sans">
             <div className="grid grid-cols-2 gap-3 text-[10px] font-mono">
               <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
-                <span className="text-slate-500 block uppercase">{t("Planeta Regente")}</span>
+                <span className="text-slate-500 block uppercase">{t("planetary.rulingPlanet")}</span>
                 <strong className="text-slate-200 mt-0.5 block">{selectedSign.regente}</strong>
               </div>
               <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
-                <span className="text-slate-500 block uppercase">{t("Elemento")}</span>
+                <span className="text-slate-500 block uppercase">{t("planetary.element")}</span>
                 <strong className="text-slate-200 mt-0.5 block">{selectedSign.element}</strong>
               </div>
             </div>
 
             <div className="space-y-1">
-              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">{t("Características / Traços")}</h4>
+              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">{t("planetary.traits")}</h4>
               <p className="text-xs text-slate-300 leading-relaxed">{selectedSign.traits}</p>
             </div>
 
             <div className="space-y-1">
-              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">{t("Previsão Cósmica (Horóscopo)")}</h4>
+              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">{t("cosmic.forecastTitle")}</h4>
               <p className="text-xs text-amber-100/90 leading-relaxed bg-amber-500/5 p-3 rounded-xl border border-amber-500/10 italic">"{selectedSign.horoscopo}"</p>
             </div>
           </div>
@@ -4623,7 +4623,7 @@ export default function UserDashboardPortal({
               onClick={() => setSelectedSign(null)}
               className="px-4 py-2 bg-purple-500 text-slate-950 hover:bg-purple-400 text-xs font-black uppercase rounded-xl transition cursor-pointer"
             >
-              {t("Concluiu")}
+              {t("cosmic.completed")}
             </button>
           </div>
         </div>
@@ -4639,7 +4639,7 @@ export default function UserDashboardPortal({
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest block">
-                {t('Navegação Cósmica')}
+                {t('cosmic.navigation')}
               </span>
             </div>
             <button
@@ -4698,7 +4698,7 @@ export default function UserDashboardPortal({
               onClick={() => setIsMobileNavOpen(false)}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-200 text-[10px] font-black uppercase rounded-xl transition cursor-pointer"
             >
-              {t("Fechar")}
+              {t("common.actions.close")}
             </button>
           </div>
         </div>
