@@ -2,7 +2,7 @@ import { Language } from './types';
 import { commonTranslations } from './common';
 import { profileTranslations } from './profile';
 import { astrologyTranslations } from './astrology';
-import { tarotSemanticTranslations } from './tarotSemantic';
+import { tarotSemanticTranslations, tarotSemanticKeyMap } from './tarotSemantic';
 import { dreamsTranslations } from './dreams';
 import { missionsTranslations } from './missions';
 import { settingsTranslations } from './settings';
@@ -63,6 +63,15 @@ try {
   applyTranslationPatches(mergedTranslations);
 } catch (e) {
   console.warn('Note: applyTranslationPatches deferred or already merged.');
+}
+
+// Temporary compatibility bridge retained until every legacy Tarot consumer is
+// migrated. It must be removed only after the final legacy-key scan is clean.
+for (const lang of languages) {
+  for (const [semanticId, legacyKey] of Object.entries(tarotSemanticKeyMap)) {
+    const value = mergedTranslations[lang][semanticId];
+    if (value) mergedTranslations[lang][legacyKey] = value;
+  }
 }
 
 import i18next from 'i18next';
