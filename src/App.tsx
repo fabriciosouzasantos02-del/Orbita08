@@ -6546,6 +6546,12 @@ export default function App() {
                             mapData={mapData}
                             onInstallPWA={handleInstallPWA}
                             isInstalled={isInstalled}
+                            newDreamDesc={newDreamDesc}
+                            setNewDreamDesc={setNewDreamDesc}
+                            isInterpretingDream={isInterpretingDream}
+                            handleRecordAndInterpretDream={handleRecordAndInterpretDream}
+                            selectedDreamDisplay={selectedDreamDisplay}
+                            setSelectedDreamDisplay={setSelectedDreamDisplay}
                           />
                         </div>
 

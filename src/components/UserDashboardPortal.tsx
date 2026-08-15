@@ -13,6 +13,7 @@ import SocialViralityCard from './SocialViralityCard';
 import CosmicChakras from './CosmicChakras';
 import PracticalRituals from './PracticalRituals';
 import { CupidoRadarView } from './CupidoRadarView';
+import OraculoDosSonhosCard from './OraculoDosSonhosCard';
 import { 
   generatePersonalizedProsperityMap, 
   generatePersonalizedColorsList, 
@@ -111,6 +112,12 @@ interface UserDashboardPortalProps {
   mapData?: any;
   onInstallPWA?: () => void;
   isInstalled?: boolean;
+  newDreamDesc?: string;
+  setNewDreamDesc?: (val: string) => void;
+  isInterpretingDream?: boolean;
+  handleRecordAndInterpretDream?: (e: React.FormEvent) => Promise<void>;
+  selectedDreamDisplay?: any;
+  setSelectedDreamDisplay?: (val: any) => void;
 }
 
 const localPortalTranslations: Record<string, Record<string, string>> = {
@@ -1137,7 +1144,13 @@ export default function UserDashboardPortal({
   lang,
   mapData,
   onInstallPWA,
-  isInstalled
+  isInstalled,
+  newDreamDesc: propNewDreamDesc,
+  setNewDreamDesc: propSetNewDreamDesc,
+  isInterpretingDream: propIsInterpretingDream,
+  handleRecordAndInterpretDream: propHandleRecordAndInterpretDream,
+  selectedDreamDisplay: propSelectedDreamDisplay,
+  setSelectedDreamDisplay: propSetSelectedDreamDisplay
 }: UserDashboardPortalProps) {
   const email = user?.email || localStorage.getItem("orbi_logged_email") || "";
   const { idioma } = useIdioma();
@@ -1353,6 +1366,55 @@ export default function UserDashboardPortal({
   const areaSubTab = propAreaSubTab !== undefined ? propAreaSubTab : localAreaSubTab;
   const setAreaSubTab = propSetAreaSubTab !== undefined ? propSetAreaSubTab : setLocalAreaSubTab;
 
+  // Dream Oracle fallback states
+  const [internalNewDreamDesc, setInternalNewDreamDesc] = useState('');
+  const [internalIsInterpretingDream, setInternalIsInterpretingDream] = useState(false);
+  const [internalSelectedDreamDisplay, setInternalSelectedDreamDisplay] = useState<any>(null);
+
+  const effectiveNewDreamDesc = propNewDreamDesc !== undefined ? propNewDreamDesc : internalNewDreamDesc;
+  const effectiveSetNewDreamDesc = propSetNewDreamDesc !== undefined ? propSetNewDreamDesc : setInternalNewDreamDesc;
+  const effectiveIsInterpreting = propIsInterpretingDream !== undefined ? propIsInterpretingDream : internalIsInterpretingDream;
+  const effectiveSelectedDreamDisplay = propSelectedDreamDisplay !== undefined ? propSelectedDreamDisplay : internalSelectedDreamDisplay;
+  const effectiveSetSelectedDreamDisplay = propSetSelectedDreamDisplay !== undefined ? propSetSelectedDreamDisplay : setInternalSelectedDreamDisplay;
+
+  const handleInternalRecordDream = async (e: React.FormEvent) => {
+    if (propHandleRecordAndInterpretDream) {
+      return propHandleRecordAndInterpretDream(e);
+    }
+    e.preventDefault();
+    if (!effectiveNewDreamDesc) return;
+    setInternalIsInterpretingDream(true);
+    try {
+      const response = await fetch("/api/dreams/interpret", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: effectiveNewDreamDesc,
+          lang: activeLang,
+          mapData: mapData,
+          userProfile: user
+        })
+      });
+      const data = await response.json();
+      const newEntry = {
+        id: `dream_${Date.now()}`,
+        chartId: `chart_${user?.name}`,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        title: data.interpretation?.title || effectiveNewDreamDesc.slice(0, 30) + "...",
+        language: activeLang,
+        description: effectiveNewDreamDesc,
+        interpretation: data.interpretation
+      };
+      setInternalSelectedDreamDisplay(newEntry);
+      setInternalNewDreamDesc('');
+    } catch (err) {
+      console.error("Dream interpretation error:", err);
+    } finally {
+      setInternalIsInterpretingDream(false);
+    }
+  };
+
   const navigationGroups = useMemo(() => [
     {
       group: "Oráculo de Entrada",
@@ -1395,7 +1457,7 @@ export default function UserDashboardPortal({
         { id: 'relacionamentos', label: 'Relacionamentos', icon: Users, color: 'text-cyan-400', bg: 'hover:bg-cyan-500/5' },
         { id: 'desenvolvimento', label: 'Desenv. Pessoal', icon: Star, color: 'text-yellow-400', bg: 'hover:bg-yellow-500/5' },
         { id: 'energia_casa', label: 'Energia da Casa', icon: Home, color: 'text-indigo-400', bg: 'hover:bg-indigo-500/5' },
-        { id: 'sonhos', label: 'Centro de Sonhos', icon: Moon, color: 'text-pink-400', bg: 'hover:bg-pink-500/5' }
+        { id: 'sonhos', label: 'Oráculo dos Sonhos', icon: Moon, color: 'text-pink-400', bg: 'hover:bg-pink-500/5' }
       ]
     }
   ], []);
@@ -3712,6 +3774,18 @@ export default function UserDashboardPortal({
 
             return (
               <div className="space-y-6">
+                {/* Main Oráculo dos Sonhos Interactive Module */}
+                <OraculoDosSonhosCard
+                  newDreamDesc={effectiveNewDreamDesc}
+                  setNewDreamDesc={effectiveSetNewDreamDesc}
+                  isInterpretingDream={effectiveIsInterpreting}
+                  handleRecordAndInterpretDream={handleInternalRecordDream}
+                  dreamsHistory={dreamsHistory}
+                  selectedDreamDisplay={effectiveSelectedDreamDisplay}
+                  setSelectedDreamDisplay={effectiveSetSelectedDreamDisplay}
+                  preferredLanguage={activeLang as any}
+                />
+
                 <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-5">
                   <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center">
                     <div>

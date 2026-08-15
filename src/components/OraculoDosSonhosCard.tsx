@@ -322,52 +322,64 @@ export default function OraculoDosSonhosCard({
   const { i18n, t } = useTranslation();
   const langKey = (i18n.language || preferredLanguage || 'pt').toLowerCase().split('-')[0];
   
-  // Dynamic UI dictionary driven by i18next
+  // Dynamic UI dictionary driven by i18next with robust embedded fallback
+  const fallbackDict = (ORACLE_UI as any)[langKey] || ORACLE_UI.pt;
+  const getUiStr = (key: string, defaultVal?: string) => {
+    const val = t(key);
+    if (val && val !== key) return val;
+    return fallbackDict[key] || defaultVal || key;
+  };
+
   const ui = {
-    oracleTitle: t('oracleTitle'),
-    oracleSubtitle: t('oracleSubtitle'),
-    tellDream: t('tellDream'),
-    describeHint: t('describeHint'),
-    revealBtn: t('revealBtn'),
-    decipheringBtn: t('decipheringBtn'),
-    dreamVault: t('dreamVault'),
-    downloadDream: t('downloadDream'),
-    searchPlaceholder: t('searchPlaceholder'),
-    meaningPrefix: t('meaningPrefix'),
-    noArchived: t('noArchived'),
-    archivedOn: t('archivedOn'),
-    atTime: t('atTime'),
-    scribeReport: t('scribeReport'),
-    downloadPDF: t('downloadPDF'),
-    primaryMeaning: t('primaryMeaning'),
-    energyIndex: t('energyIndex'),
-    tuned: t('tuned'),
-    oracleAdvice: t('oracleAdvice'),
-    loveArea: t('loveArea'),
-    financeArea: t('financeArea'),
-    careerArea: t('careerArea'),
-    attentionLabel: t('attentionLabel'),
-    opportunitiesLabel: t('opportunitiesLabel'),
-    protectionLabel: t('protectionLabel'),
-    luckyNumbers: t('luckyNumbers'),
-    energyColors: t('energyColors'),
-    highlights: t('highlights'),
-    predominantEmotion: t('predominantEmotion'),
-    numberSymbols: t('numberSymbols'),
-    numberPrefix: t('numberPrefix'),
-    animalArchetypes: t('animalArchetypes'),
-    colorSymbolism: t('colorSymbolism'),
-    universeMessage: t('universeMessage'),
-    waitingDream: t('waitingDream'),
-    waitingDesc: t('waitingDesc'),
-    downloadModal: t('downloadModal'),
-    downloadModalDesc: t('downloadModalDesc'),
-    noArchivedDownload: t('noArchivedDownload'),
-    close: t('close'),
-    dreamsCount: (n: number) => t('dreamsCount', { count: n }),
-    loadingTitle: t('loadingTitle'),
-    loadingDesc: t('loadingDesc'),
-    placeholderText: t('placeholderText'),
+    oracleTitle: getUiStr('oracleTitle', fallbackDict.oracleTitle),
+    oracleSubtitle: getUiStr('oracleSubtitle', fallbackDict.oracleSubtitle),
+    tellDream: getUiStr('tellDream', fallbackDict.tellDream),
+    describeHint: getUiStr('describeHint', fallbackDict.describeHint),
+    revealBtn: getUiStr('revealBtn', fallbackDict.revealBtn),
+    decipheringBtn: getUiStr('decipheringBtn', fallbackDict.decipheringBtn),
+    dreamVault: getUiStr('dreamVault', fallbackDict.dreamVault),
+    downloadDream: getUiStr('downloadDream', fallbackDict.downloadDream),
+    searchPlaceholder: getUiStr('searchPlaceholder', fallbackDict.searchPlaceholder),
+    meaningPrefix: getUiStr('meaningPrefix', fallbackDict.meaningPrefix),
+    noArchived: getUiStr('noArchived', fallbackDict.noArchived),
+    archivedOn: getUiStr('archivedOn', fallbackDict.archivedOn),
+    atTime: getUiStr('atTime', fallbackDict.atTime),
+    scribeReport: getUiStr('scribeReport', fallbackDict.scribeReport),
+    downloadPDF: getUiStr('downloadPDF', fallbackDict.downloadPDF),
+    primaryMeaning: getUiStr('primaryMeaning', fallbackDict.primaryMeaning),
+    energyIndex: getUiStr('energyIndex', fallbackDict.energyIndex),
+    tuned: getUiStr('tuned', fallbackDict.tuned),
+    oracleAdvice: getUiStr('oracleAdvice', fallbackDict.oracleAdvice),
+    loveArea: getUiStr('loveArea', fallbackDict.loveArea),
+    financeArea: getUiStr('financeArea', fallbackDict.financeArea),
+    careerArea: getUiStr('careerArea', fallbackDict.careerArea),
+    attentionLabel: getUiStr('attentionLabel', fallbackDict.attentionLabel),
+    opportunitiesLabel: getUiStr('opportunitiesLabel', fallbackDict.opportunitiesLabel),
+    protectionLabel: getUiStr('protectionLabel', fallbackDict.protectionLabel),
+    luckyNumbers: getUiStr('luckyNumbers', fallbackDict.luckyNumbers),
+    energyColors: getUiStr('energyColors', fallbackDict.energyColors),
+    highlights: getUiStr('highlights', fallbackDict.highlights),
+    predominantEmotion: getUiStr('predominantEmotion', fallbackDict.predominantEmotion),
+    numberSymbols: getUiStr('numberSymbols', fallbackDict.numberSymbols),
+    numberPrefix: getUiStr('numberPrefix', fallbackDict.numberPrefix),
+    animalArchetypes: getUiStr('animalArchetypes', fallbackDict.animalArchetypes),
+    colorSymbolism: getUiStr('colorSymbolism', fallbackDict.colorSymbolism),
+    universeMessage: getUiStr('universeMessage', fallbackDict.universeMessage),
+    waitingDream: getUiStr('waitingDream', fallbackDict.waitingDream),
+    waitingDesc: getUiStr('waitingDesc', fallbackDict.waitingDesc),
+    downloadModal: getUiStr('downloadModal', fallbackDict.downloadModal),
+    downloadModalDesc: getUiStr('downloadModalDesc', fallbackDict.downloadModalDesc),
+    noArchivedDownload: getUiStr('noArchivedDownload', fallbackDict.noArchivedDownload),
+    close: getUiStr('close', fallbackDict.close),
+    dreamsCount: (n: number) => {
+      const val = t('dreamsCount', { count: n });
+      if (val && val !== 'dreamsCount') return val;
+      if (typeof fallbackDict.dreamsCount === 'function') return fallbackDict.dreamsCount(n);
+      return `📁 Cofre de Sonhos (${n})`;
+    },
+    loadingTitle: getUiStr('loadingTitle', fallbackDict.loadingTitle),
+    loadingDesc: getUiStr('loadingDesc', fallbackDict.loadingDesc),
+    placeholderText: getUiStr('placeholderText', fallbackDict.placeholderText),
   };
   // Search state inside dreams list sidebar
   const [dreamSearch, setDreamSearch] = useState('');
