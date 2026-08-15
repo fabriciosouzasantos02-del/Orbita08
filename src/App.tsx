@@ -572,11 +572,11 @@ export default function App() {
 
   // UI Navigation states
   const currentLang = idioma as Language;
-  // 'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes' as specified by the bottom-bar prompt!
-  const [activeTab, setActiveTab] = useState<'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes'>('mapa');
-  const userNavigatedTabRef = useRef<'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes' | null>(null);
+  // 'mapa' | 'constelacoes' | 'planetas' | 'sonhos' | 'tarot' | 'configuracoes' as specified by the bottom-bar prompt!
+  const [activeTab, setActiveTab] = useState<'mapa' | 'constelacoes' | 'planetas' | 'sonhos' | 'tarot' | 'configuracoes'>('mapa');
+  const userNavigatedTabRef = useRef<'mapa' | 'constelacoes' | 'planetas' | 'sonhos' | 'tarot' | 'configuracoes' | null>(null);
 
-  const handleUserSelectTab = (tab: 'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes') => {
+  const handleUserSelectTab = (tab: 'mapa' | 'constelacoes' | 'planetas' | 'sonhos' | 'tarot' | 'configuracoes') => {
     userNavigatedTabRef.current = tab;
     setActiveTab(tab);
   };
@@ -7636,6 +7636,32 @@ export default function App() {
               </div>
             )}
 
+            {/* TAB 4: ORÁCULO DOS SONHOS (Dedicated Direct Navigation Tab) */}
+            {activeTab === 'sonhos' && (
+              <div className="space-y-6 animate-in fade-in duration-300 max-w-7xl mx-auto">
+                <div key={`oraculo_sonhos_dedicated_tab_${user?.name}_${user?.birthDate}`}>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.dreams", "Abrindo Cofre Celestial dos Sonhos...")}</span>
+                      </div>
+                    }>
+                      <OraculoDosSonhosCard
+                        newDreamDesc={newDreamDesc}
+                        setNewDreamDesc={setNewDreamDesc}
+                        isInterpretingDream={isInterpretingDream}
+                        handleRecordAndInterpretDream={handleRecordAndInterpretDream}
+                        dreamsHistory={dreamsHistory}
+                        selectedDreamDisplay={selectedDreamDisplay}
+                        setSelectedDreamDisplay={setSelectedDreamDisplay}
+                        preferredLanguage={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
+                </div>
+              </div>
+            )}
+
             {/* TAB: TAROT COSIMCO */}
             {activeTab === 'tarot' && (
               !hasUserCreatedMap(user) ? (
@@ -8280,6 +8306,20 @@ export default function App() {
             >
               <Globe className="w-5 h-5" />
               <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_planets')}</span>
+            </button>
+
+            {/* Sonhos Tab activator */}
+            <button
+              type="button"
+              onClick={() => handleUserSelectTab('sonhos')}
+              className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
+                activeTab === 'sonhos' 
+                  ? 'text-pink-400 bg-pink-500/10' 
+                  : 'text-slate-450 hover:text-slate-200'
+              }`}
+            >
+              <Moon className="w-5 h-5" />
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_dreams')}</span>
             </button>
 
             {/* Tarot Tab activator */}

@@ -83,7 +83,7 @@ for (const lang of ['en', 'es', 'de', 'fr'] as const) {
     // Check exact match for long phrases or PT specific accented words in non-PT
     if (ptVal.length > 15 && ptVal === targetVal) {
       ptLeakage[lang].push({ key: k, ptVal, targetVal });
-    } else if (lang !== 'es' && lang !== 'pt' && ptRegex.test(targetVal) && ptVal.length > 10) {
+    } else if (lang !== 'es' && ptRegex.test(targetVal) && ptVal.length > 10) {
       // If EN, DE, FR contains PT accented characters and matches PT
       ptLeakage[lang].push({ key: k, ptVal, targetVal });
     }
