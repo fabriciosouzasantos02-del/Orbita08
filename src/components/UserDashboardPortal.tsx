@@ -1897,9 +1897,16 @@ export default function UserDashboardPortal({
       throw new Error("Resposta inválida do Osíris");
     } catch (err) {
       console.warn("Erro no chat com Osíris:", err);
+      const osirisFallbackMap: Record<string, string> = {
+        pt: "Desculpe, sinto uma instabilidade temporária nas esferas celestes. Mas recorde: a força solar brilha firme em sua alma hoje.",
+        en: "I apologize, I feel a temporary instability in the celestial spheres. But remember: the solar strength shines firmly in your soul today.",
+        es: "Disculpa, siento una inestabilidad temporal en las esferas celestes. Pero recuerda: la fuerza solar brilla firme en tu alma hoy.",
+        de: "Entschuldigung, ich spüre eine vorübergehende Instabilität in den Himmelssphären. Aber denken Sie daran: Die Sonnenkraft strahlt heute fest in Ihrer Seele.",
+        fr: "Désolé, je ressens une instabilité temporaire dans les sphères célestes. Mais rappelez-vous : la force solaire brille fermement dans votre âme aujourd'hui."
+      };
       setOsirisChatMessages(prev => [
         ...prev,
-        { sender: 'osiris', text: `Desculpe, sinto uma instabilidade temporária nas esferas celestes. Mas recorde: a força solar brilha firme em sua alma hoje.` }
+        { sender: 'osiris', text: osirisFallbackMap[activeLang] || osirisFallbackMap['pt'] }
       ]);
     } finally {
       setOsirisChatSending(false);

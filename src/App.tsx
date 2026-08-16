@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import i18n from './lib/i18n';
 import { useTranslation } from 'react-i18next';
 import { pwaGuideTranslations } from './lib/locales';
+import { isUserInAppBrowser, getDevicePlatform, isAppRunningStandalone } from './lib/pwaUtils';
 import { 
   UserProfile, 
   AstrologyMap, 
@@ -1776,14 +1777,14 @@ export default function App() {
     // 1. User Profile Real-time Sync
     const unsubProfile = subscribeToUserProfile(loggedEmail, (updatedProfile) => {
       if (updatedProfile) {
+        if (updatedProfile.preferredLanguage && updatedProfile.preferredLanguage !== lang) {
+          mudarIdioma(updatedProfile.preferredLanguage as any);
+          localStorage.setItem('orbi_preferred_language', updatedProfile.preferredLanguage);
+        }
+
         setUser(prev => {
           const rawName = updatedProfile.name || updatedProfile.displayName || updatedProfile.profileName || updatedProfile.birthName || prev.name;
           const finalName = (rawName === "Viajante Estelar" || rawName === "Buscador") ? (prev.name && prev.name !== "Buscador" && prev.name !== "Viajante Estelar" ? prev.name : "Buscador") : rawName;
-          
-          if (updatedProfile.preferredLanguage && updatedProfile.preferredLanguage !== lang) {
-            mudarIdioma(updatedProfile.preferredLanguage as any);
-            localStorage.setItem('orbi_preferred_language', updatedProfile.preferredLanguage);
-          }
 
           return {
             ...prev,
@@ -2981,21 +2982,24 @@ export default function App() {
   const [showPWAInstallGuide, setShowPWAInstallGuide] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check if the prompt was already captured globally
+    // 1. Recover global prompt if already captured before React mounted
     if ((window as any).deferredPrompt) {
       setDeferredPrompt((window as any).deferredPrompt);
     }
 
     const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent automatic browser banner
       e.preventDefault();
+      // Store event globally and in state for immediate .prompt() invocation
       setDeferredPrompt(e);
       (window as any).deferredPrompt = e;
-      console.log('beforeinstallprompt event triggered and deferred!');
+      console.log('beforeinstallprompt captured in App component state!');
     };
 
     const handleCustomPromptAvailable = (e: any) => {
       if (e.detail) {
         setDeferredPrompt(e.detail);
+        (window as any).deferredPrompt = e.detail;
       }
     };
 
@@ -3003,6 +3007,7 @@ export default function App() {
       setIsInstalled(true);
       setDeferredPrompt(null);
       (window as any).deferredPrompt = null;
+      setShowPWAInstallGuide(false);
       triggerGlobalNotification(
         t("Aplicativo Instalado"),
         t("Portal Órbita foi instalado com sucesso em seu dispositivo!"),
@@ -3014,19 +3019,21 @@ export default function App() {
     window.addEventListener('pwa-prompt-available', handleCustomPromptAvailable as any);
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    // 2. Standalone mode check
+    if (isAppRunningStandalone()) {
+      setIsInstalled(true);
+    }
+
     let mediaQuery: MediaQueryList | null = null;
     try {
       if (typeof window !== 'undefined' && window.matchMedia) {
         mediaQuery = window.matchMedia('(display-mode: standalone)');
+        if (mediaQuery.matches) {
+          setIsInstalled(true);
+        }
       }
     } catch (e) {
       console.warn("matchMedia support is restricted in this environment:", e);
-    }
-
-    if (mediaQuery && mediaQuery.matches) {
-      setIsInstalled(true);
-    } else if (typeof navigator !== 'undefined' && (navigator as any).standalone) {
-      setIsInstalled(true);
     }
 
     const handleMediaChange = (e: MediaQueryListEvent) => {
@@ -3074,71 +3081,71 @@ export default function App() {
       return;
     }
 
-    const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
-    const isIos = /iphone|ipad|ipod/.test(ua);
-    const isInAppBrowser = /tiktok|musically|bytedance|instagram|fbav|fban|fb_iab|messenger|line\/|twitter|snapchat|pinterest|gsa\/|wv|webview/i.test(ua);
-
-    let promptEvent = deferredPrompt || (window as any).deferredPrompt;
-
-    // If event is not ready immediately, retry for up to 800ms in case beforeinstallprompt is firing right after load
-    if (!promptEvent && !isIos && !isInAppBrowser) {
-      await new Promise<void>((resolve) => {
-        let attempts = 0;
-        const timer = setInterval(() => {
-          attempts++;
-          const captured = (window as any).deferredPrompt;
-          if (captured) {
-            promptEvent = captured;
-            clearInterval(timer);
-            resolve();
-          } else if (attempts >= 8) {
-            clearInterval(timer);
-            resolve();
-          }
-        }, 100);
-      });
-    }
-
-    if (!promptEvent || isInAppBrowser) {
-      if (isInAppBrowser) {
-        triggerGlobalNotification(
-          t("Navegador do TikTok/Rede Social"),
-          t("O TikTok impede a instalação direta de PWA. Siga o passo a passo na tela para abrir no Chrome ou Safari!"),
-          "info"
-        );
-      } else if (isInstalled) {
-        triggerGlobalNotification(
-          t("Aplicativo Já Instalado"),
-          t("Portal Órbita já está instalado e ativo em seu dispositivo!"),
-          "success"
-        );
-        return;
-      }
+    // 1. Check if user is currently inside a restricted in-app browser (TikTok, Instagram)
+    const inApp = isUserInAppBrowser();
+    if (inApp) {
+      triggerGlobalNotification(
+        t("Navegador do TikTok/Instagram"),
+        t("O navegador interno bloqueia a instalação direta. Siga as instruções para abrir no Chrome ou Safari!"),
+        "info"
+      );
       setShowPWAInstallGuide(true);
       return;
     }
 
-    try {
-      // Trigger the native install prompt immediately
-      await promptEvent.prompt();
-      
-      setDeferredPrompt(null);
-      (window as any).deferredPrompt = null;
-
-      const choiceResult = await promptEvent.userChoice;
-      if (choiceResult?.outcome === 'accepted') {
-        setIsInstalled(true);
-        triggerGlobalNotification(
-          t("Instalação Concluída"),
-          t("Portal Órbita foi instalado com sucesso em seu dispositivo!"),
-          "success"
-        );
-      }
-    } catch (err) {
-      console.error('Erro ao acionar prompt nativo PWA:', err);
-      setDeferredPrompt(null);
-      (window as any).deferredPrompt = null;
+    // If app is already installed in standalone mode
+    if (isInstalled) {
+      triggerGlobalNotification(
+        t("Aplicativo Já Instalado"),
+        t("Portal Órbita já está instalado e ativo em seu dispositivo!"),
+        "success"
+      );
+      return;
     }
+
+    // 2. For standard browsers (Chrome, Edge, Samsung Internet, Android, etc.):
+    // Trigger native prompt directly with 1 click
+    let promptEvent = deferredPrompt || (window as any).deferredPrompt;
+
+    if (promptEvent && typeof promptEvent.prompt === 'function') {
+      try {
+        await promptEvent.prompt();
+        setDeferredPrompt(null);
+        (window as any).deferredPrompt = null;
+
+        const choiceResult = await promptEvent.userChoice;
+        if (choiceResult && choiceResult.outcome === 'accepted') {
+          setIsInstalled(true);
+          setShowPWAInstallGuide(false);
+          triggerGlobalNotification(
+            t("Instalação Concluída"),
+            t("Portal Órbita foi instalado com sucesso em seu dispositivo!"),
+            "success"
+          );
+        }
+        return;
+      } catch (err) {
+        console.error('Erro ao acionar prompt nativo PWA:', err);
+      }
+    }
+
+    // 3. Fallback for iOS Safari (Apple doesn't support beforeinstallprompt event)
+    const isIos = typeof navigator !== 'undefined' && /iphone|ipad|ipod/.test((navigator.userAgent || '').toLowerCase());
+    if (isIos) {
+      triggerGlobalNotification(
+        t("Instalação no iPhone/iPad"),
+        t("Toque no botão Compartilhar (ícone com seta) no Safari e selecione 'Adicionar à Tela de Início'."),
+        "info"
+      );
+      return;
+    }
+
+    // 4. Fallback for Desktop/Android if prompt was already claimed or handled by the address bar
+    triggerGlobalNotification(
+      t("Instalar Aplicativo"),
+      t("Clique no ícone de instalação (+) na barra de endereços do seu navegador para adicionar instantaneamente."),
+      "info"
+    );
   };
 
   const renderLockedSection = (title: string, desc: string) => {
@@ -4103,15 +4110,23 @@ export default function App() {
     e.preventDefault();
     if (!currentChatInput.trim()) return;
     
+    const localeMap: Record<string, string> = {
+      pt: 'pt-BR',
+      en: 'en-US',
+      es: 'es-ES',
+      de: 'de-DE',
+      fr: 'fr-FR'
+    };
+    const activeLocale = localeMap[currentLang] || 'pt-BR';
+
     const userMessage: ChatMessage = {
       id: `chat_${Date.now()}`,
       sender: "user",
       text: currentChatInput,
-      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString(activeLocale, { hour: '2-digit', minute: '2-digit' })
     };
 
     setChatMessages(prev => [...prev, userMessage]);
-    const messageToSend = currentChatInput;
     setCurrentChatInput('');
     setIsSendingChat(true);
 
@@ -4132,13 +4147,32 @@ export default function App() {
       const assistantMessage: ChatMessage = {
         id: `chat_resp_${Date.now()}`,
         sender: "assistant",
-        text: data.response,
-        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        text: data?.response || (
+          currentLang === 'en' ? "I am here with you, connected to your celestial chart. Let me guide your path with love and astrological wisdom."
+          : currentLang === 'es' ? "Estoy aquí contigo, conectada a tu mapa celestial. Permíteme guiar tu camino con amor y sabiduría astrológica."
+          : currentLang === 'de' ? "Ich bin hier bei dir, verbunden mit deinem Himmelsdiagramm. Lass mich deinen Weg mit Liebe und astrologischer Weisheit leiten."
+          : currentLang === 'fr' ? "Je suis ici avec vous, connectée à votre carte céleste. Laissez-moi guider votre chemin avec amour et sagesse astrologique."
+          : "Estou aqui com você, conectada ao seu mapa celestial. Permita-me guiar seus passos com amor e sabedoria astrológica."
+        ),
+        timestamp: new Date().toLocaleTimeString(activeLocale, { hour: '2-digit', minute: '2-digit' })
       };
 
       setChatMessages(prev => [...prev, assistantMessage]);
     } catch (err) {
-      console.error(err);
+      console.error("Erro no chat da Conselheira Orbia:", err);
+      const fallbackMap: Record<string, string> = {
+        en: "I am here with you, connected to your celestial chart. Let me guide your path with love and astrological wisdom.",
+        es: "Estoy aquí contigo, conectada a tu mapa celestial. Permíteme guiar tu camino con amor y sabiduría astrológica.",
+        de: "Ich bin hier bei dir, verbunden mit deinem Himmelsdiagramm. Lass mich deinen Weg mit Liebe und astrologischer Weisheit leiten.",
+        fr: "Je suis ici avec vous, connectée à votre carte céleste. Laissez-moi guider votre chemin avec amour et sagesse astrologique.",
+        pt: "Estou aqui com você, conectada ao seu mapa celestial. Permita-me guiar seus passos com amor e sabedoria astrológica."
+      };
+      setChatMessages(prev => [...prev, {
+        id: `chat_resp_${Date.now()}`,
+        sender: "assistant",
+        text: fallbackMap[currentLang] || fallbackMap['pt'],
+        timestamp: new Date().toLocaleTimeString(activeLocale, { hour: '2-digit', minute: '2-digit' })
+      }]);
     } finally {
       setIsSendingChat(false);
     }
@@ -8360,7 +8394,7 @@ export default function App() {
         const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
         const isIos = /iphone|ipad|ipod/.test(ua);
         const isAndroid = /android/.test(ua);
-        const isInAppBrowser = /tiktok|musically|bytedance|instagram|fbav|fban|fb_iab|messenger|line\/|twitter|snapchat|pinterest|gsa\/|wv|webview/i.test(ua);
+        const isInApp = isUserInAppBrowser();
         const isDesktop = !isIos && !isAndroid;
 
         const handleCopyAppLink = () => {
@@ -8417,22 +8451,22 @@ export default function App() {
               <div className="px-3 py-1.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between text-[11px]">
                 <span className="text-slate-400 font-medium">{guide.detectedDevice}:</span>
                 <span className="font-mono font-bold text-amber-400 uppercase">
-                  {isInAppBrowser 
+                  {isInApp 
                     ? "TikTok / Rede Social (Navegador Interno)" 
                     : isIos 
-                    ? "iOS / iPhone" 
+                    ? "iOS / iPhone (Safari)" 
                     : isAndroid 
-                    ? "Android" 
+                    ? "Android (Google Chrome)" 
                     : "Desktop / Computer"}
                 </span>
               </div>
 
-              {/* In-App Browser / TikTok Warning Card */}
-              {(isInAppBrowser || true) && (
-                <div className={`p-4 rounded-2xl border ${isInAppBrowser ? 'bg-gradient-to-br from-rose-500/15 via-amber-500/10 to-slate-950 border-rose-500/40 shadow-lg' : 'bg-slate-950/40 border-slate-850 opacity-90'}`}>
+              {/* In-App Browser / TikTok Warning Card - ONLY shown if user is actually inside an In-App browser */}
+              {isInApp && (
+                <div className="p-4 rounded-2xl border bg-gradient-to-br from-rose-500/15 via-amber-500/10 to-slate-950 border-rose-500/40 shadow-lg">
                   <h4 className="text-xs font-black text-rose-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     {guide.tiktokTitle}
-                    {isInAppBrowser && <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-mono font-bold animate-pulse">{t("DETECTADO")}</span>}
+                    <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-mono font-bold animate-pulse">{t("DETECTADO")}</span>
                   </h4>
                   <p className="text-xs text-slate-200 mb-3 leading-relaxed font-sans">
                     {guide.tiktokDesc}
@@ -8476,10 +8510,10 @@ export default function App() {
               {/* Guide Accordions or Blocks */}
               <div className="space-y-4">
                 {/* iOS section */}
-                <div className={`p-4 rounded-2xl border ${isIos && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                <div className={`p-4 rounded-2xl border ${isIos && !isInApp ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
                   <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     {guide.iosTitle}
-                    {isIos && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
+                    {isIos && !isInApp && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
                   </h4>
                   <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
                     <li>{guide.iosStep1}</li>
@@ -8489,10 +8523,10 @@ export default function App() {
                 </div>
 
                 {/* Android section */}
-                <div className={`p-4 rounded-2xl border ${isAndroid && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                <div className={`p-4 rounded-2xl border ${isAndroid && !isInApp ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
                   <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     {guide.androidTitle}
-                    {isAndroid && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
+                    {isAndroid && !isInApp && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
                   </h4>
                   <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
                     <li>{guide.androidStep1}</li>

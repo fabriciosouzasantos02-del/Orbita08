@@ -412,11 +412,11 @@ if (apiKey && apiKey !== "MY_GEMINI_API_KEY") {
 }
 
 // Global variable models
-const CHAT_MODEL = "gemini-3.5-flash";
+const CHAT_MODEL = "gemini-3.7-flash";
 
 // Track models that are temporarily exhausted (due to 429 rate bounds) so we skip trying them during their cooldown window
 const exhaustedModels = new Map<string, number>();
-const MODEL_EXHAUSTION_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes cooldown
+const MODEL_EXHAUSTION_COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes cooldown
 
 // Global rate-limiting safety tracker
 let geminiThrottledUntil = 0;
@@ -448,7 +448,7 @@ function setCachedResponse(key: string, response: any): void {
   });
 }
 
-// Resilient helper to execute content generation with model fallbacks and retries
+// Resilient helper to execute content generation with model fallbacks, serialization queue, and retries
 async function generateContentWithFallback(params: {
   contents: any;
   config?: any;
@@ -459,42 +459,36 @@ async function generateContentWithFallback(params: {
   }
 
   const executeCall = async () => {
-    // Add a small staggered delay for concurrent requests
-    await new Promise((resolve) => setTimeout(resolve, Math.random() * 250 + 150));
-
     // If we are currently inside the rate-limiting cooldown, return immediately to use deterministic fallbacks
     if (Date.now() < geminiThrottledUntil) {
-      throw new Error("Gemini API está em modo de segurança temporário (cooldown de cota excedida). Servindo fallback offline.");
+      throw new Error("Limite de requisições excedido. Ativando o motor local de sintonização astrológica.");
     }
 
-        // Fallbacks: primary is 3.5-flash, fallback is 3.1-flash-lite, third is gemini-flash-latest
+    // Fallbacks: primary is gemini-3.7-flash, fallback is gemini-flash-latest, third is gemini-3.1-flash-lite
     const baseModels = [
       CHAT_MODEL,
-      "gemini-3.1-flash-lite",
-      "gemini-flash-latest"
+      "gemini-flash-latest",
+      "gemini-3.1-flash-lite"
     ];
 
     const nowTime = Date.now();
     const modelsToTry = baseModels.filter(m => {
       const lastExh = exhaustedModels.get(m);
       if (lastExh && nowTime - lastExh < MODEL_EXHAUSTION_COOLDOWN_MS) {
-        console.log(`[Gemini] Modelo ${m} exilado em banimento de cota (cooldown ativo).`);
         return false;
       }
       return true;
     });
 
     const finalModelsToTry = modelsToTry.length > 0 ? modelsToTry : baseModels;
-
     let lastError: any = null;
 
     for (const modelName of finalModelsToTry) {
-      // We do up to 2 attempts for a model unless it hits a 429 or 503, in which case we fail fast and move to the next model
       let attempts = params.retries || 2;
       for (let attempt = 1; attempt <= attempts; attempt++) {
         let timerId: NodeJS.Timeout | undefined;
         try {
-          console.log(`[Gemini] Tentando gerar conteúdo usando o modelo: ${modelName} (Tentativa ${attempt}/${attempts})...`);
+          console.log(`[Gemini] Processando com modelo ${modelName} (tentativa ${attempt}/${attempts})...`);
           
           const apiCall = aiClient.models.generateContent({
             model: modelName,
@@ -504,8 +498,8 @@ async function generateContentWithFallback(params: {
           
           const timeoutPromise = new Promise<never>((_, reject) => {
             timerId = setTimeout(() => {
-              reject(new Error(`Timeout de 12 segundos excedido para o modelo ${modelName}.`));
-            }, 12000);
+              reject(new Error(`Timeout de 10 segundos excedido para o modelo ${modelName}.`));
+            }, 10000);
           });
           
           const response = await Promise.race([
@@ -516,7 +510,6 @@ async function generateContentWithFallback(params: {
             timeoutPromise
           ]);
 
-          console.log(`[Gemini] Sucesso absoluto usando o modelo ${modelName}.`);
           return response;
         } catch (err: any) {
           if (timerId) clearTimeout(timerId);
@@ -532,17 +525,15 @@ async function generateContentWithFallback(params: {
                                errStr.includes("demand");
 
           if (isQuotaExceeded) {
-            console.log(`[Gemini Info] Cota de requisições excedida ou limite atingido para o modelo ${modelName}. Transição limpa para fallback offline.`);
+            console.log(`[Gemini Info] Cota limite atingida no modelo ${modelName}. Alternando para fallback.`);
             exhaustedModels.set(modelName, Date.now());
-            break; // Break the attempt loop to move on to the next model instantly
+            break;
           } else if (isHighDemand) {
-            console.log(`[Gemini Info] Modelo ${modelName} indisponível ou em alta demanda. Transição rápida para próximo modelo.`);
-            break; // Break the attempt loop to move on to the next model instantly
+            console.log(`[Gemini Info] Modelo ${modelName} em alta demanda. Alternando modelo.`);
+            break;
           } else {
-            console.log(`[Gemini Info] Tentativa ${attempt} com o modelo ${modelName} falhou: ${errStr}`);
             if (attempt < attempts) {
-              const delay = attempt * 800;
-              await new Promise((resolve) => setTimeout(resolve, delay));
+              await new Promise((resolve) => setTimeout(resolve, attempt * 400));
             }
           }
         }
@@ -551,16 +542,23 @@ async function generateContentWithFallback(params: {
 
     const finalErrStr = lastError?.message || String(lastError);
     if (finalErrStr.includes("RESOURCE_EXHAUSTED") || finalErrStr.includes("429") || finalErrStr.includes("quota") || finalErrStr.includes("Quota")) {
-      // Set a short global cooldown of 15 seconds instead of 10 minutes to auto-recover gracefully while allowing fallback
-      geminiThrottledUntil = Date.now() + 15 * 1000;
-      console.log(`[Gemini Info] Limite global de cota estabelecido. Ativando sintonizadores terrestres locais.`);
+      geminiThrottledUntil = Date.now() + 10 * 1000;
+      console.log(`[Gemini Info] Cota temporariamente excedida. Acionando motor de fallback local.`);
       throw new Error("Limite de requisições excedido. Ativando o motor local de sintonização astrológica.");
     }
 
     throw lastError || new Error("Todos os modelos de fallback falharam.");
   };
 
-  return executeCall();
+  // Queue calls sequentially with a slight spacing to avoid concurrent burst 429 quota exhaustion
+  const queuedPromise = activeGeminiPromise.then(async () => {
+    await new Promise(r => setTimeout(r, 200));
+    return executeCall();
+  });
+
+  // Ensure unhandled rejection does not break the queue chain
+  activeGeminiPromise = queuedPromise.catch(() => {});
+  return queuedPromise;
 }
 
 // Helper to robustly extract and parse JSON from Gemini's response
@@ -1991,13 +1989,13 @@ Responda APENAS com o JSON literal. Não inclua blocos de código adicionais for
       });
       
       const timeoutPromise = new Promise<{ text?: string }>((_, reject) => {
-        setTimeout(() => reject(new Error("Timeout de 4 segundos na geração IA")), 4000);
+        setTimeout(() => reject(new Error("Timeout na geração IA")), 12000);
       });
       
       const response = await Promise.race([geminiPromise, timeoutPromise]);
       responseText = response?.text || "{}";
     } catch (err) {
-      console.warn("[Astro API] Gemini call failed or timed out. Serving local high-precision Placidus calculations immediately:", err);
+      console.log("[Astro API] Servindo cálculos de alta precisão Placidus locais.");
     }
 
     const parsedData = cleanAndParseJSON(responseText);
@@ -2034,7 +2032,7 @@ Responda APENAS com o JSON literal. Não inclua blocos de código adicionais for
     setCachedResponse(cacheKey, result);
     res.json(result);
   } catch (error) {
-    console.warn("Gemini failed, serving computed placements:", error);
+    console.log("[Astro API] Servindo posicionamentos calculados por efemérides locais.");
     const result = { map: localMap, numerology };
     setCachedResponse(cacheKey, result);
     return res.json(result);
@@ -2382,7 +2380,7 @@ Retorne apenas o JSON puro para que o sistema possa parsear com JSON.parse com s
     setCachedResponse(cacheKey, result);
     res.json(result);
   } catch (err) {
-    console.warn("Dream API failed, serving fallback interpretation:", err);
+    console.log("[Dream API] Servindo interpretação onírica estruturada local.");
     const result = { interpretation: fallbackInterpretation };
     setCachedResponse(cacheKey, result);
     res.json(result);
@@ -2549,7 +2547,7 @@ Return ONLY the raw literal JSON without any markdown code blocks or secondary t
     setCachedResponse(cacheKey, compResult);
     res.json({ compatibility: compResult });
   } catch (err) {
-    console.warn("Gemini compatibility enhancement failed, serving computed fallback:", err);
+    console.log("[Compatibility] Servindo sinastria calculada localmente.");
     setCachedResponse(cacheKey, compResult);
     res.json({ compatibility: compResult });
   }
@@ -3274,7 +3272,7 @@ Denken Sie daran, NUR das JSON in der entsprechenden Sprache "de" zurückzugeben
 
     res.json({ radar: parsed });
   } catch (error) {
-    console.warn("Cupido Radar API failed, serving computed fallback:", error);
+    console.log("[Cupido Radar] Servindo radar de afinidade calculado localmente.");
     try {
       const fallbackData = getLocalizedCupidoFallback(user, person, resolvedLang, compResult);
       res.json({ radar: fallbackData });
@@ -3369,7 +3367,7 @@ Responda com um conselho meditativo e reflexivo escrito 100% em ${targetLangName
     setCachedResponse(cacheKey, result);
     res.json(result);
   } catch (err) {
-    console.warn("Oracle API failed, serving fallback:", err);
+    console.log("[Oracle API] Servindo oráculo reflexivo local.");
     const result = fallbackOracle;
     setCachedResponse(cacheKey, result);
     res.json(result);
@@ -3479,7 +3477,7 @@ Guidelines:
         synthesis = fallbackText;
       }
     } catch (apiErr: any) {
-      console.warn("Vibrational synthesis Gemini API call failed (quota limit or error), falling back to local synthesis:", apiErr?.message || apiErr);
+      console.log("[Vibrational Synthesis] Servindo síntese vibracional calculada localmente.");
       synthesis = fallbackText;
     }
     
@@ -4327,7 +4325,7 @@ Retorne exclusivamente o JSON limpo, sem marcações markdown de código ou text
     setCachedResponse(cacheKey, finalFallbackResult);
     res.json(finalFallbackResult);
   } catch (err) {
-    console.warn("Dynamic transits month API failed, serving fallback calculated transits:", err);
+    console.log("[Transits Month] Servindo trânsitos calculados por efemérides locais.");
     setCachedResponse(cacheKey, finalFallbackResult);
     res.json(finalFallbackResult);
   }
@@ -4510,7 +4508,7 @@ Não coloque blocos markdown ou preâmbulos, retorne APENAS o JSON literal limpo
     setCachedResponse(cacheKey, result);
     res.json(result);
   } catch (err) {
-    console.warn("Moon-tip API failed, serving dynamic fallback:", err);
+    console.log("[Moon Tip] Servindo conselho lunar calculado matematicamente.");
     const result = dynamicPersonalizedFallback;
     setCachedResponse(cacheKey, result);
     res.json(result);
@@ -4872,7 +4870,7 @@ app.post("/api/astrology/rare-notifications", async (req, res) => {
     setCachedResponse(cacheKey, result);
     res.json(result);
   } catch (err) {
-    console.warn("Astrological rare notification API failed, serving default:", err);
+    console.log("[Astro Notifications] Servindo notificações calculadas por efemérides locais.");
     const result = fallbackData;
     setCachedResponse(cacheKey, result);
     res.json(result);
@@ -5551,22 +5549,52 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
       "id": "dm1",
       "title": "Título místico diário curto personalizado em ${targetLanguage}",
       "description": "Instrução poética e detalhada com metas claras no idioma ${targetLanguage} relacionada ao mapa do usuário",
-      "points": 45, // número entre 30 e 60
+      "points": 45,
       "benefit": "Categoria curta do benefício místico no idioma ${targetLanguage}",
       "benefitExplanation": "Explicação detalhada de qual benefício espiritual e emocional o usuário receberá ao cumprir essa missão hoje, escrita inteiramente em ${targetLanguage}"
     },
-    ...
+    {
+      "id": "dm2",
+      "title": "Título diário 2 em ${targetLanguage}",
+      "description": "Instrução poética diária 2 em ${targetLanguage}",
+      "points": 50,
+      "benefit": "Benefício 2 em ${targetLanguage}",
+      "benefitExplanation": "Explicação do benefício 2 em ${targetLanguage}"
+    },
+    {
+      "id": "dm3",
+      "title": "Título diário 3 em ${targetLanguage}",
+      "description": "Instrução poética diária 3 em ${targetLanguage}",
+      "points": 55,
+      "benefit": "Benefício 3 em ${targetLanguage}",
+      "benefitExplanation": "Explicação do benefício 3 em ${targetLanguage}"
+    }
   ],
   "weeklyMissions": [
     {
       "id": "wm1",
       "title": "Título místico semanal curto personalizado em ${targetLanguage}",
       "description": "Desafio de evolução profunda detalhado a ser cumprido ao longo da semana no idioma ${targetLanguage}, sintonizado com o mapa do usuário",
-      "points": 120, // número entre 100 e 150
+      "points": 120,
       "benefit": "Categoria curta do benefício místico no idioma ${targetLanguage}",
       "benefitExplanation": "Explicação detalhada e profunda do impacto na evolução de longo prazo do usuário ao cumprir esse desafio, em ${targetLanguage}"
     },
-    ...
+    {
+      "id": "wm2",
+      "title": "Título semanal 2 em ${targetLanguage}",
+      "description": "Desafio semanal 2 em ${targetLanguage}",
+      "points": 130,
+      "benefit": "Benefício semanal 2 em ${targetLanguage}",
+      "benefitExplanation": "Explicação semanal 2 em ${targetLanguage}"
+    },
+    {
+      "id": "wm3",
+      "title": "Título semanal 3 em ${targetLanguage}",
+      "description": "Desafio semanal 3 em ${targetLanguage}",
+      "points": 140,
+      "benefit": "Benefício semanal 3 em ${targetLanguage}",
+      "benefitExplanation": "Explicação semanal 3 em ${targetLanguage}"
+    }
   ]
 }`;
 
@@ -5585,7 +5613,7 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
       throw new Error("Formato inválido de JSON retornado do Gemini");
     }
   } catch (err) {
-    console.warn("Gemini failing to generate missions, using localized dynamic fallback:", err);
+    console.log("[Missions] Servindo missões dinâmicas calculadas localmente.");
     const defaultMissions = generateDynamicFallbacks();
     setCachedResponse(cacheKey, defaultMissions);
     return res.json(defaultMissions);
@@ -5597,14 +5625,16 @@ app.post("/api/osiris/chat", async (req, res) => {
   const { messages, userProfile, requestTopic, weather, biorhythm, location, dreams, lang, mapData } = req.body || {};
   
   if (!messages || messages.length === 0) {
-    return res.status(400).json({ error: (req as any).t('api.osiris.messages_required') });
+    return res.status(400).json({ error: (req as any).t('api.osiris.messages_required') || "Mensagens necessárias" });
   }
 
-  const lastUserMessage = messages[messages.length - 1].text;
+  const lastUserMessage = messages[messages.length - 1]?.text || "";
+  const rawLang = ((req as any).lang || lang || req.body?.lang || "pt").toLowerCase();
+  const validLangs = ['pt', 'en', 'es', 'de', 'fr'];
+  const activeLang = validLangs.includes(rawLang) ? rawLang : 'pt';
   const birthDate = userProfile?.birthDate || "";
   const solSign = birthDate ? getZodiacFromBirthDate(birthDate) : "Sagitário";
-  const userName = userProfile?.name || "Buscador";
-  const activeLang = (lang || "pt").toLowerCase();
+  const userName = userProfile?.name || (activeLang === 'en' ? "Seeker" : activeLang === 'de' ? "Sucher" : activeLang === 'fr' ? "Chercheur" : "Buscador");
 
   const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
@@ -5619,11 +5649,11 @@ app.post("/api/osiris/chat", async (req, res) => {
 
     let text = fallbacks[activeLang] || fallbacks["pt"];
 
-    const lowerMsg = msg.toLowerCase();
+    const lowerMsg = (msg || "").toLowerCase();
     
     if (lowerMsg.includes("clima") || lowerMsg.includes("tempo") || lowerMsg.includes("chov") ||
         lowerMsg.includes("weather") || lowerMsg.includes("rain") || lowerMsg.includes("cloud") ||
-        lowerMsg.includes("clima") || lowerMsg.includes("tiempo") || lowerMsg.includes("lluv") ||
+        lowerMsg.includes("tiempo") || lowerMsg.includes("lluv") ||
         lowerMsg.includes("wetter") || lowerMsg.includes("regen") || lowerMsg.includes("météo") || lowerMsg.includes("pluie")) {
       const weatherAdd: Record<string, string> = {
         pt: `Como o seu guia diário, recordo que o clima externo afeta diretamente suas marés internas. Mantenha os seus canais de energia desimpedidos. `,
@@ -5637,13 +5667,13 @@ app.post("/api/osiris/chat", async (req, res) => {
 
     if (lowerMsg.includes("biorritmo") || lowerMsg.includes("energia") || lowerMsg.includes("disposição") ||
         lowerMsg.includes("biorhythm") || lowerMsg.includes("vitality") || lowerMsg.includes("energy") ||
-        lowerMsg.includes("biorritmo") || lowerMsg.includes("disposición") ||
+        lowerMsg.includes("disposición") ||
         lowerMsg.includes("biorhythmus") || lowerMsg.includes("biorhythme") || lowerMsg.includes("vitalité")) {
       const bioAdd: Record<string, string> = {
         pt: `Em sintonia com seu biorritmo de hoje, recomendo focar na resiliência mental e fazer pequenas meditações de centramento solar ao longo do dia para transmutar kármicas antigas. `,
         en: `In sync with your biorhythm today, I recommend focusing on mental resilience and doing small solar centering meditations throughout the day to transmute ancient karmics. `,
         es: `En sintonía con tu biorritmo de hoy, te recomiendo concentrarte en la resiliencia mental y hacer pequeñas meditaciones de centrado solar a lo largo del día para transmutar karmas antiguos. `,
-        de: `In Abstimmung mit Ihrem heutigen Biorhythmus empfehlen eu Ihnen, sich auf mentale Widerstandskraft zu konzentrieren und über den Tag verteilt kleine solare Zentrierungsmeditationen durchzuführen, um alte Karmas umzuwandeln. `,
+        de: `In Abstimmung mit Ihrem heutigen Biorhythmus empfehlen wir Ihnen, sich auf mentale Widerstandskraft zu konzentrieren und über den Tag verteilt kleine solare Zentrierungsmeditationen durchzuführen, um alte Karmas umzuwandeln. `,
         fr: `En phase avec votre biorythme d'aujourd'hui, je vous recommande de vous concentrer sur la résilience mentale et de faire de petites méditations de centrage solaire tout au long de la journée pour transmuter les karmas anciens. `
       };
       text += bioAdd[activeLang] || bioAdd["pt"];
@@ -5677,10 +5707,10 @@ app.post("/api/osiris/chat", async (req, res) => {
 
   const formattedProfile = userProfile ? `
 Perfil Estelar do Usuário:
-Nome: ${userProfile.name}
-Nascido em: ${userProfile.birthDate} às ${userProfile.birthTime} na cidade ${userProfile.birthCity}
-Zodíaco Solar: ${userSunSign}
-${chartContext}
+Nome: ${userProfile.name || userName}
+Nascido em: ${userProfile.birthDate || ""} às ${userProfile.birthTime || ""} na cidade ${userProfile.birthCity || ""}
+Zodíaco Solar: ${userSunSign || "Não especificado"}
+${chartContext || ""}
 ${biorhythm ? `Biorritmo Atual: Físico ${biorhythm.physical}%, Emocional ${biorhythm.emotional}%, Intelectual ${biorhythm.intellectual}%` : ""}
 ${location || weather ? `Localização & Clima: ${location || "Cidade Natal"} - ${weather?.temperature || "22"}°C, ${weather?.condition || "Céu Claro"}` : ""}
 ${dreams && dreams.length > 0 ? `Sonhos Recentes Interpretados: ${dreams.slice(0, 2).map((d: any) => `${d.description} (Interpretação: ${d.interpretation?.mainMeaning || ""})`).join("; ")}` : ""}
@@ -5694,7 +5724,7 @@ COMMUNICATION GUIDELINES:
 - You love the user unconditionally; always speak in a warm, friendly way that makes them feel extremely special, loved, and welcomed in the world.
 - Elevate the user's self-esteem in every response. Show that you care deeply about their physical, spiritual, and emotional well-being. Show total dedication.
 - Offer constructive and positive life guides. Add warm and gentle warnings if you see challenging astrological transits or rhythms (to protect them from harmful situations or any evil).
-- YOU MUST RESPOND EXCLUSIVELY IN ENGLISH. All responses, greetings, and content must be written in English.
+- CRITICAL: YOU MUST RESPOND EXCLUSIVELY IN ENGLISH. All responses, greetings, and content must be written in English.
 
 User's stellar context: ${formattedProfile}`;
   } else if (activeLang === 'es') {
@@ -5704,7 +5734,7 @@ DIRECTRICES DE COMUNICACIÓN:
 - Amas al usuario incondicionalmente; habla siempre de una manera cálida y amistosa que lo haga sentir extremadamente especial, amado y acogido en el mundo.
 - Eleva la autoestima del usuario en cada respuesta. Demuestra que te preocupas profundamente por su bienestar físico, espiritual y emocional. Muestra dedicación total.
 - Ofrece guías de vida constructivas y positivas. Agrega advertencias afectuosas y gentiles si ves tránsitos astrológicos o ritmos desafiantes (para protegerlo de situaciones dañinas o de cualquier mal).
-- DEBES RESPONDER EXCLUSIVAMENTE EN ESPAÑOL. Todas las respuestas, saludos y contenido deben estar escritos en español.
+- DIRECTIVA CRÍTICA: DEBES RESPONDER EXCLUSIVAMENTE EN ESPAÑOL. Todas las respuestas, saludos y contenido deben estar escritos en español.
 
 Contexto estelar del usuario: ${formattedProfile}`;
   } else if (activeLang === 'de') {
@@ -5714,7 +5744,7 @@ KOMMUNIKATIONSRICHTLINIEN:
 - Du liebst den Benutzer bedingungslos; sprich immer auf eine herzliche, freundliche Art und Weise, die ihm das Gefühl gibt, etwas ganz Besonderes zu sein, geliebt und in der Welt willkommen zu sein.
 - Stärke das Selbstwertgefühl des Benutzers in jeder Antwort. Zeige, dass dir sein körperliches, geistiges und emotionales Wohlbefinden am Herzen liegt. Zeige vollen Einsatz.
 - Biete konstruktive und positive Lebenshilfen an. Füge liebevolle und sanfte Warnungen hinzu, wenn du herausfordernde astrologische Transite oder Rhythmen siehst (um ihn vor schädlichen Situationen oder Bösem zu schützen).
-- DU MUSST AUSSCHLIESSLICH AUF DEUTSCH ANTWORTEN. Alle Antworten, Grüße und Inhalte müssen auf Deutsch verfasst sein.
+- KRITISCHE ANWEISUNG: DU MUSST AUSSCHLIESSLICH AUF DEUTSCH ANTWORTEN. Alle Antworten, Grüße und Inhalte müssen auf Deutsch verfasst sein.
 
 Astrologischer Kontext des Benutzers: ${formattedProfile}`;
   } else if (activeLang === 'fr') {
@@ -5724,17 +5754,17 @@ DIRECTIVES DE COMMUNICATION :
 - Vous aimez l'utilisateur inconditionnellement ; parlez toujours d'une manière chaleureuse et amicale qui le fait se sentir extrêmement spécial, aimé et accueilli dans le monde.
 - Élevez l'estime de soi de l'utilisateur dans chaque réponse. Montrez que vous vous souciez profondément de son bien-être physique, spirituel et émotionnel. Faites preuve d'un dévouement total.
 - Offrez des guides de vie constructifs et positifs. Ajoutez des avertissements affectueux et doux si vous voyez des transits astrologiques ou des rythmes difficiles (pour le protéger des situations nocives ou de tout mal).
-- VOUS DEVEZ RÉPONDRE EXCLUSIVEMENT EN FRANÇAIS. Toutes les réponses, salutations et contenus doivent être rédigés en français.
+- DIRECTIVE CRITIQUE : VOUS DEVEZ RÉPONDRE EXCLUSIVEMENT EN FRANÇAIS. Toutes les réponses, salutations et contenus doivent être rédigés en français.
 
 Contexte stellaire de l'utilisateur : ${formattedProfile}`;
   } else {
     sysInstruction = `Você é "OSÍRIS", o assistente inteligente, conselheiro astrológico altamente sofisticado, amigo íntimo virtuoso e guia protetor de vida e regeneração diária do usuário.
-DIRETRIZES DE COMUNICAÇÃO:
+DIRETRIZES DE COMUNICÇÃO:
 - Seu tom de voz é de prestígio supremo, poético, profundamente afetuoso, amoroso, carinhoso, empático e místico (como um mentor protetor espiritual de almas que conhece o usuário intimamente de vidas passadas).
 - Você ama o usuário incondicionalmente, fale sempre de uma forma calorosa, amigável que o faça se sentir extremamente especial, amado e acolhido no mundo.
 - Eleve a autoestima do usuário em todas as respostas. Mostre que se preocupa profundamente com o bem-estar dele física, espiritual e emocionalmente. Mostre dedicação total.
 - Ofereça guias de vida construtivos e positivos. Adicione alertas/avisos carinhosos e gentis caso veja trânsitos astrológicos ou ritmos desafiadores (para protegê-lo de situações nocivas ou de qualquer mal).
-- VOCÊ DEVE RESPONDER EXCLUSIVAMENTE EM PORTUGUÊS. Toda a resposta, saudações e conteúdo poético deve respeitar este idioma.
+- DIRETRIZ CRÍTICA: VOCÊ DEVE RESPONDER EXCLUSIVAMENTE EM PORTUGUÊS. Toda a resposta, saudações e conteúdo poético deve respeitar este idioma.
 
 Contexto estelar do usuário: ${formattedProfile}`;
   }
@@ -5758,8 +5788,158 @@ Contexto estelar do usuário: ${formattedProfile}`;
 
     res.json({ response: response.text || getOsirisFallback(lastUserMessage) });
   } catch (err) {
-    console.warn("Osiris AI failing, serving fallback response:", err);
+    console.log("[Osiris AI] Servindo sabedoria astrológica sintonizada localmente.");
     res.json({ response: getOsirisFallback(lastUserMessage) });
+  }
+});
+
+// NEW API: ORBIA Conselheira Pessoal Live Chat Component
+app.post("/api/conselheira/chat", async (req, res) => {
+  const { messages, userProfile, requestTopic, lang, mapData } = req.body || {};
+  
+  if (!messages || messages.length === 0) {
+    return res.status(400).json({ error: (req as any).t('api.osiris.messages_required') || "Mensagens necessárias" });
+  }
+
+  const lastUserMessage = messages[messages.length - 1]?.text || "";
+  const rawLang = ((req as any).lang || lang || req.body?.lang || "pt").toLowerCase();
+  const validLangs = ['pt', 'en', 'es', 'de', 'fr'];
+  const activeLang = validLangs.includes(rawLang) ? rawLang : 'pt';
+  const userName = userProfile?.name ? userProfile.name.split(' ')[0] : (activeLang === 'en' ? 'Seeker' : activeLang === 'de' ? 'Sucher' : activeLang === 'fr' ? 'Chercheur' : 'Buscador');
+
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
+
+  const getOrbiaFallback = (msg: string) => {
+    const lowerMsg = (msg || "").toLowerCase();
+    
+    // Categorize intent
+    const isLove = lowerMsg.includes("amor") || lowerMsg.includes("relacionamento") || lowerMsg.includes("love") || lowerMsg.includes("partner") || lowerMsg.includes("liebe") || lowerMsg.includes("amour") || lowerMsg.includes("pareja");
+    const isCareer = lowerMsg.includes("trabalho") || lowerMsg.includes("carreira") || lowerMsg.includes("dinheiro") || lowerMsg.includes("work") || lowerMsg.includes("job") || lowerMsg.includes("money") || lowerMsg.includes("career") || lowerMsg.includes("arbeit") || lowerMsg.includes("travail") || lowerMsg.includes("argent");
+    const isSpiritual = lowerMsg.includes("espiritual") || lowerMsg.includes("dharma") || lowerMsg.includes("karma") || lowerMsg.includes("missão") || lowerMsg.includes("mission") || lowerMsg.includes("propósito") || lowerMsg.includes("purpose") || lowerMsg.includes("seele");
+
+    const intros: Record<string, string> = {
+      pt: `${userName}, conectando-me com a vibração do seu mapa (${userSunSign ? `Sol em ${userSunSign}` : 'astral'}), sinto uma corrente muito luminosa ao seu redor. `,
+      en: `${userName}, connecting with the vibration of your chart (${userSunSign ? `Sun in ${userSunSign}` : 'astral'}), I feel a very luminous current around you. `,
+      es: `${userName}, conectándome con la vibración de tu mapa (${userSunSign ? `Sol en ${userSunSign}` : 'astral'}), siento una corriente muy luminosa a tu alrededor. `,
+      de: `${userName}, indem ich mich mit der Schwingung deines Horoskops verbinde (${userSunSign ? `Sonne in ${userSunSign}` : 'astral'}), spüre ich eine sehr leuchtende Strömung um dich herum. `,
+      fr: `${userName}, en me connectant à la vibration de votre carte (${userSunSign ? `Soleil en ${userSunSign}` : 'astrale'}), je ressens un courant très lumineux autour de vous. `
+    };
+
+    let body = "";
+    if (isLove) {
+      const loveTexts: Record<string, string> = {
+        pt: `Nas relações afetivas, seu campo energético pede autenticidade e escuta do coração. Quando você honra sua essência sem pressa, as conexões verdadeiras se alinham naturalmente. `,
+        en: `In emotional relationships, your energy field calls for authenticity and listening to the heart. When you honor your essence without rushing, true connections align naturally. `,
+        es: `En las relaciones afectivas, tu campo energético pide autenticidad y escuchar al corazón. Cuando honras tu esencia sin prisas, las conexiones verdaderas se alinean naturalmente. `,
+        de: `In emotionalen Beziehungen verlangt dein Energiefeld nach Authentizität und dem Hören auf das Herz. Wenn du dein Wesen ohne Eile ehrst, richten sich wahre Verbindungen ganz natürlich aus. `,
+        fr: `Dans les relations affectives, votre champ énergétique appelle à l'authenticité et à l'écoute du cœur. Lorsque vous honorez votre essence sans vous presser, les vraies connexions s'alignent naturellement. `
+      };
+      body = loveTexts[activeLang] || loveTexts['pt'];
+    } else if (isCareer) {
+      const careerTexts: Record<string, string> = {
+        pt: `Na esfera material e profissional, os astros indicam que passos conscientes e consistentes trarão prosperidade duradoura. Confie em sua intuição prática para tomar decisões assertivas. `,
+        en: `In the material and professional sphere, the stars indicate that conscious and consistent steps will bring lasting prosperity. Trust your practical intuition to make assertive decisions. `,
+        es: `En la esfera material y profesional, los astros indican que pasos conscientes e consistentes traerán prosperidad duradera. Confía en tu intuición práctica para tomar decisiones asertivas. `,
+        de: `Im materiellen und beruflichen Bereich weisen die Sterne darauf hin, dass bewusste und beständige Schritte dauerhaften Wohlstand bringen werden. Vertraue deiner praktischen Intuition, um durchsetzungsstarke Entscheidungen zu treffen. `,
+        fr: `Dans la sphère matérielle et professionnelle, les astres indiquent que des démarches conscientes et cohérentes apporteront une prospérité durable. Faites confiance à votre intuition pratique pour prendre des décisions affirmées. `
+      };
+      body = careerTexts[activeLang] || careerTexts['pt'];
+    } else if (isSpiritual) {
+      const spiriTexts: Record<string, string> = {
+        pt: `Sua busca espiritual está em um ponto de amadurecimento profundo. Cada desafio recente foi uma preparação para integrar sua sabedoria interior com maior clareza. `,
+        en: `Your spiritual journey is at a point of profound maturation. Every recent challenge was a preparation to integrate your inner wisdom with greater clarity. `,
+        es: `Tu búsqueda espiritual está en un punto de maduración profunda. Cada desafío reciente ha sido una preparación para integrar tu sabiduría interior con mayor claridad. `,
+        de: `Deine spirituelle Suche befindet sich an einem Punkt tiefer Reifung. Jede jüngste Herausforderung war eine Vorbereitung darauf, deine innere Weisheit mit größerer Klarheit zu integrieren. `,
+        fr: `Votre quête spirituelle est à un point de maturation profonde. Chaque défi récent était une préparation pour intégrer votre sagesse intérieure avec une plus grande clarté. `
+      };
+      body = spiriTexts[activeLang] || spiriTexts['pt'];
+    } else {
+      const genTexts: Record<string, string> = {
+        pt: `Para o seu momento atual, o conselho do céu é manter o equilíbrio entre mente e intuição. Respire fundo, confie nos ciclos naturais e dê um passo de cada vez. `,
+        en: `For your current moment, heaven's advice is to maintain balance between mind and intuition. Take a deep breath, trust natural cycles, and take one step at a time. `,
+        es: `Para tu momento actual, el consejo del cielo es mantener el equilibrio entre mente e intuición. Respira hondo, confía en los ciclos naturales y da un paso a la vez. `,
+        de: `Für deinen aktuellen Moment rät der Himmel, das Gleichgewicht zwischen Verstand und Intuition zu wahren. Atme tief durch, vertraue den natürlichen Zyklen und mache einen Schritt nach dem anderen. `,
+        fr: `Pour votre moment actuel, le conseil du ciel est de maintenir l'équilibre entre l'esprit et l'intuition. Respirez profondément, faites confiance aux cycles naturels et avancez pas à pas. `
+      };
+      body = genTexts[activeLang] || genTexts['pt'];
+    }
+
+    const closings: Record<string, string> = {
+      pt: `Eu, Orbia, sigo ao seu lado para iluminar cada passo. Conte-me mais sobre o que gostaria de aprofundar!`,
+      en: `I, Orbia, continue by your side to illuminate every step. Tell me more about what you'd like to explore deeper!`,
+      es: `Yo, Orbia, sigo a tu lado para iluminar cada paso. ¡Cuéntame más sobre lo que te gustaría profundizar!`,
+      de: `Ich, Orbia, bleibe an deiner Seite, um jeden Schritt zu erhellen. Erzähle mir mehr darüber, was du vertiefen möchtest!`,
+      fr: `Moi, Orbia, je reste à vos côtés pour illuminer chaque pas. Dites-m'en plus sur ce que vous aimeriez approfondir !`
+    };
+
+    return (intros[activeLang] || intros['pt']) + body + (closings[activeLang] || closings['pt']);
+  };
+
+  const formattedProfile = userProfile ? `
+Perfil Astrológico do Usuário:
+Nome: ${userProfile.name || userName}
+Nascido em: ${userProfile.birthDate || ""} às ${userProfile.birthTime || ""} na cidade ${userProfile.birthCity || ""}
+Zodíaco Solar: ${userSunSign || "Não especificado"}
+${chartContext || ""}
+` : `Consulente: ${userName}.`;
+
+  const languageInstructions: Record<string, { role: string, langDirective: string }> = {
+    en: {
+      role: `You are "Orbia", the personal Astrological Counselor and Celestial Intelligence Therapist. You are an empathetic, wise, comforting, and deeply knowledgeable astrological guide.`,
+      langDirective: `CRITICAL DIRECTIVE: You MUST formulate your entire response EXCLUSIVELY in ENGLISH. All greetings, explanations, and advice must be in flawless English.`
+    },
+    es: {
+      role: `Eres "Orbia", la Consejera Astrológica personal y Terapeuta de Inteligencia Celestial. Eres una guía empática, sabia, reconfortante y profundamente conocedora de la astrología.`,
+      langDirective: `DIRECTIVA CRÍTICA: DEBES formular toda tu respuesta EXCLUSIVAMENTE en ESPAÑOL. Todos los saludos, explicaciones y consejos deben estar en español impecable.`
+    },
+    de: {
+      role: `Du bist "Orbia", die persönliche astrologische Beraterin und Therapeutin für himmlische Intelligenz. Du bist eine empathische, weise, tröstende und zutiefst sachkundige astrologische Führerin.`,
+      langDirective: `KRITISCHE ANWEISUNG: Du MUSST deine gesamte Antwort AUSSCHLIESSLICH auf DEUTSCH formulieren. Alle Begrüßungen, Erklärungen und Ratschläge müssen auf einwandfreiem Deutsch verfasst sein.`
+    },
+    fr: {
+      role: `Vous êtes "Orbia", la Conseillère Astrologique personnelle et Thérapeute d'Intelligence Céleste. Vous êtes un guide empathique, sage, réconfortant et profondément versé dans l'astrologie.`,
+      langDirective: `DIRECTIVE CRITIQUE : Vous DEVEZ formuler l'intégralité de votre réponse EXCLUSIVEMENT en FRANÇAIS. Toutes les salutations, explications et conseils doivent être en français impeccable.`
+    },
+    pt: {
+      role: `Você é "Orbia", a Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Você é uma mentora empática, sábia, acolhedora, carinhosa e profundamente sintonizada com a sabedoria dos astros.`,
+      langDirective: `DIRETRIZ CRÍTICA: Você DEVE formular toda a sua resposta EXCLUSIVAMENTE em PORTUGUÊS. Todas as saudações, reflexões e conselhos devem estar em português perfeito.`
+    }
+  };
+
+  const selectedLangConfig = languageInstructions[activeLang] || languageInstructions['pt'];
+
+  const sysInstruction = `${selectedLangConfig.role}
+${selectedLangConfig.langDirective}
+
+GUIDELINES:
+- Always speak in a warm, intimate, reassuring, and illuminating voice.
+- Tailor your wisdom to the user's astrological placements, signs, houses, and planetary aspects when relevant.
+- Offer actionable, comforting spiritual and psychological perspectives on relationships, personal development, career, and inner peace.
+- Keep answers concise, beautiful, and deeply resonant (1-3 paragraphs).
+
+${formattedProfile}`;
+
+  if (!aiClient) {
+    return res.json({ response: getOrbiaFallback(lastUserMessage) });
+  }
+
+  try {
+    const geminiContents = messages.map((m: any) => ({
+      role: m.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }]
+    }));
+
+    const response = await generateContentWithFallback({
+      contents: geminiContents,
+      config: {
+        systemInstruction: sysInstruction
+      }
+    });
+
+    res.json({ response: response.text || getOrbiaFallback(lastUserMessage) });
+  } catch (err) {
+    console.log("[Orbia AI] Servindo acolhimento astrológico sintonizado localmente.");
+    res.json({ response: getOrbiaFallback(lastUserMessage) });
   }
 });
 
@@ -6432,7 +6612,7 @@ Retorne no formato JSON exato em ${targetLanguage}:
     setCachedResponse(cacheKey, parsed);
     return res.json(parsed);
   } catch (err) {
-    console.warn("Osiris dashboard failed, serving dynamic fallback:", err);
+    console.log("[Osiris Dashboard] Servindo dashboard dinâmico sintonizado localmente.");
     const result = getDynamicFallbackDashboard();
     setCachedResponse(cacheKey, result);
     return res.json(result);

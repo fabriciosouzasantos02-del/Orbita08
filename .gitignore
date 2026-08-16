@@ -21,3 +21,6 @@ search-repos.js
 test-*.js
 test_*.ts
 /translations.ts
+audit_details.json
+missing_invoked.json
+tmp/
