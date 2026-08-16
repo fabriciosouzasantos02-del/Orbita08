@@ -306,8 +306,9 @@ function translateServerMessage(key: string, lang: Language, replacements?: Reco
   return text;
 }
 
-// Global Language Middleware (Unified Backend Resolution)
+// Global Language Middleware (Unified Backend Resolution - Exclusively from App, never browser)
 app.use((req: any, res, next) => {
+  // 1. Read exclusively from App: custom headers (X-App-Lang, X-Language), request body or query parameter
   let rawLang: any = req.headers['x-app-lang'] || req.headers['x-language'];
   
   if (!rawLang) {
@@ -319,13 +320,7 @@ app.use((req: any, res, next) => {
               req.body?.profile?.lang || req.body?.profile?.language || req.body?.profile?.idioma;
   }
   
-  if (!rawLang) {
-    const acceptLang = req.headers['accept-language'];
-    if (typeof acceptLang === 'string') {
-      rawLang = acceptLang.split(',')[0].split(';')[0].trim();
-    }
-  }
-  
+  // Strict Resolution: only valid app languages allowed, fallback unconditionally to 'pt' (NO browser Accept-Language sniffing)
   let resolvedLang: Language = 'pt';
   if (rawLang && typeof rawLang === 'string') {
     const cleanLang = rawLang.split('-')[0].split('_')[0].trim().toLowerCase();

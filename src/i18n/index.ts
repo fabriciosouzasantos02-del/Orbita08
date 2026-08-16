@@ -92,35 +92,24 @@ export function getDeviceLanguage(): Language {
     // Ignore URL parse errors
   }
 
-  const candidates: string[] = [];
-  if (typeof navigator !== 'undefined' && navigator) {
-    if (Array.isArray(navigator.languages) && navigator.languages.length > 0) candidates.push(...navigator.languages);
-    if (navigator.language) candidates.push(navigator.language);
-    if ((navigator as any).userLanguage) candidates.push((navigator as any).userLanguage);
-    if ((navigator as any).browserLanguage) candidates.push((navigator as any).browserLanguage);
-    if ((navigator as any).systemLanguage) candidates.push((navigator as any).systemLanguage);
-  }
-  if (typeof document !== 'undefined' && document.documentElement?.lang) candidates.push(document.documentElement.lang);
-
-  for (const item of candidates) {
-    if (!item || typeof item !== 'string') continue;
-    const clean = item.trim().toLowerCase();
-    if (clean.startsWith('es')) return 'es';
-    if (clean.startsWith('en')) return 'en';
-    if (clean.startsWith('de')) return 'de';
-    if (clean.startsWith('fr')) return 'fr';
-    if (clean.startsWith('pt')) return 'pt';
-  }
+  // Strictly return 'pt' - No browser language sniffing
   return 'pt';
 }
 
 export function getInitialLanguage(): Language {
   if (typeof window === 'undefined') return 'pt';
-  const explicitSaved = localStorage.getItem('orbi_user_explicit_lang');
+  const explicitSaved = localStorage.getItem('orbi_user_explicit_lang') || localStorage.getItem('orbi_preferred_language');
   if (explicitSaved && ['pt', 'en', 'es', 'de', 'fr'].includes(explicitSaved)) return explicitSaved as Language;
-  const detected = getDeviceLanguage();
-  localStorage.setItem('orbi_preferred_language', detected);
-  return detected;
+  
+  // Check URL parameter if present
+  const urlDetected = getDeviceLanguage();
+  if (urlDetected && urlDetected !== 'pt') {
+    localStorage.setItem('orbi_preferred_language', urlDetected);
+    return urlDetected;
+  }
+  
+  // Safe default: 'pt'
+  return 'pt';
 }
 
 export function changeLanguage(novoIdioma: Language): void {

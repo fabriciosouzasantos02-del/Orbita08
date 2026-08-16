@@ -62,6 +62,10 @@ import App from './App.tsx';
 import './index.css';
 import { IdiomaProvider } from './context/IdiomaContext.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
+import { setupGlobalFetchLanguageInterceptor } from './lib/apiClient.ts';
+
+// Initialize global fetch interceptor to guarantee all /api requests carry X-App-Lang
+setupGlobalFetchLanguageInterceptor();
 
 
 // Handle reset query param to force purge stale service workers and caches
