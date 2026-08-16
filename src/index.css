@@ -1,5 +1,106 @@
 @import "tailwindcss";
 
+@theme {
+  --font-serif: 'Cinzel', 'Playfair Display', 'Lora', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Plus Jakarta Sans', 'Outfit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  font-family: 'Plus Jakarta Sans', 'Outfit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Outfit', system-ui, -apple-system, sans-serif;
+  font-size: 1rem; /* 16px */
+  line-height: 1.6;
+  color: #f1f5f9;
+  background-color: #030712;
+  overflow-x: hidden;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* Headings with mystic Serif font */
+h1, h2, h3, h4, .font-cinzel, .font-serif-mystic, .font-serif {
+  font-family: 'Cinzel', 'Playfair Display', 'Lora', Georgia, serif;
+  letter-spacing: 0.02em;
+}
+
+/* Screen / Module Titles (1.75rem to 2rem, 700, line-height 1.2) */
+.title-screen, h1.screen-title, .module-title {
+  font-size: clamp(1.75rem, 3.5vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+}
+
+/* Subtitles of Sections, Cards and Modals (1.25rem to 1.5rem, 600, line-height 1.3) */
+.subtitle-section, h2.section-title, .card-subtitle {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.3;
+  font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+}
+
+/* Content & Interpretation Texts (1rem complete, never below, 400, line-height 1.6) */
+.content-text-body, p, .reading-text, .interpretation-text, .oracle-content {
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Chat, Oracle and Long Messages max reading line width */
+.reading-text, .interpretation-text, .oracle-content, .chat-message-bubble {
+  max-width: 65ch;
+}
+
+/* Buttons, Menus and Actions (1rem, 500, line-height 1.25, flexible wrapping) */
+button, .btn-action, .menu-item {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Minimum Accessible Caption / Support Text (0.875rem = 14px floor) */
+small, .text-support, .badge-label, .caption-text {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+/* Prevent any microscopic unreadable fonts across the entire app */
+.text-xs, .text-\[10px\], .text-\[11px\], .text-\[9px\], .text-\[8px\], .text-\[12px\] {
+  font-size: 0.875rem !important; /* Enforce 14px minimum floor */
+  line-height: 1.4 !important;
+}
+
+/* Anti-clipping & Anti-overflow Rules for i18n */
+.i18n-safe, [data-i18n-safe] {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Modal and Drawer viewport protection with un-truncated complete scroll */
+.modal-scroll-container {
+  max-height: calc(90vh - 2rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  -webkit-overflow-scrolling: touch;
+}
+
 @keyframes flow-beams {
   to {
     stroke-dashoffset: -20;

@@ -491,6 +491,58 @@ export default function App() {
     return i18nT(text, { defaultValue });
   };
 
+  // Safe helper to resolve bottom navigation labels without menu_ prefix leaks and guaranteed single-line fit
+  const getMenuNavLabel = (key: string): string => {
+    const activeL = (idioma || i18n.language || 'pt').toLowerCase().slice(0, 2) as 'pt' | 'en' | 'es' | 'de' | 'fr';
+    const menuDict: Record<'pt' | 'en' | 'es' | 'de' | 'fr', Record<string, string>> = {
+      pt: {
+        menu_map: "Mapa Estelar",
+        menu_stars: "Constelações",
+        menu_planets: "Planetas",
+        menu_dreams: "Sonhos",
+        menu_tarot: "Tarô",
+        menu_settings: "Configurações",
+      },
+      en: {
+        menu_map: "Star Map",
+        menu_stars: "Constellations",
+        menu_planets: "Planets",
+        menu_dreams: "Dreams",
+        menu_tarot: "Tarot",
+        menu_settings: "Settings",
+      },
+      es: {
+        menu_map: "Mapa Estelar",
+        menu_stars: "Constelaciones",
+        menu_planets: "Planetas",
+        menu_dreams: "Sueños",
+        menu_tarot: "Tarot",
+        menu_settings: "Ajustes",
+      },
+      de: {
+        menu_map: "Sternenkarte",
+        menu_stars: "Konstellationen",
+        menu_planets: "Planeten",
+        menu_dreams: "Träume",
+        menu_tarot: "Tarot",
+        menu_settings: "Einstellungen",
+      },
+      fr: {
+        menu_map: "Carte Céleste",
+        menu_stars: "Constellations",
+        menu_planets: "Planètes",
+        menu_dreams: "Rêves",
+        menu_tarot: "Tarot",
+        menu_settings: "Paramètres",
+      }
+    };
+    const translated = t(key);
+    if (translated && !translated.startsWith('menu_') && translated !== key) {
+      return translated;
+    }
+    return menuDict[activeL]?.[key] || menuDict.pt[key] || key;
+  };
+
   const [user, _setUser] = useState<UserProfile>(() => {
     let baseProfile: UserProfile = {
       name: "",
@@ -8293,7 +8345,7 @@ export default function App() {
           {/* ========================================= */}
           {/* BOTTOM FLOATING NAV BAR - (REQUESTED NAVIGATION SYSTEM!) */}
           {/* ========================================= */}
-          <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg bg-slate-900/90 border border-amber-500/15 p-2 rounded-full shadow-[0_15px_40px_rgba(0,0,0,0.8)] backdrop-blur-md z-40 flex justify-between items-center">
+          <nav className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-lg bg-slate-900/95 border border-amber-500/20 p-1.5 sm:p-2 rounded-full shadow-[0_15px_40px_rgba(0,0,0,0.85)] backdrop-blur-md z-40 flex justify-between items-center gap-0.5">
             
             {/* Mapa Estelar Tab activator */}
             <button
@@ -8304,84 +8356,84 @@ export default function App() {
                   setMapSubTab('meu_mapa');
                 }
               }}
-              className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
+              className={`flex-1 flex flex-col items-center py-1.5 sm:py-2 px-0.5 rounded-full transition-all cursor-pointer min-w-0 ${
                 activeTab === 'mapa' 
-                  ? 'text-amber-500 bg-amber-500/10' 
-                  : 'text-slate-450 hover:text-slate-200'
+                  ? 'text-amber-500 bg-amber-500/10 shadow-xs' 
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Orbit className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_map')}</span>
+              <Orbit className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+              <span className="text-[6.5px] sm:text-[7.5px] font-mono uppercase tracking-tight mt-1 font-bold truncate max-w-full px-0.5 leading-none block whitespace-nowrap">{getMenuNavLabel('menu_map')}</span>
             </button>
 
             {/* Constelações Tab activator */}
             <button
               type="button"
               onClick={() => handleUserSelectTab('constelacoes')}
-              className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
+              className={`flex-1 flex flex-col items-center py-1.5 sm:py-2 px-0.5 rounded-full transition-all cursor-pointer min-w-0 ${
                 activeTab === 'constelacoes' 
-                  ? 'text-emerald-400 bg-emerald-500/10' 
-                  : 'text-slate-450 hover:text-slate-200'
+                  ? 'text-emerald-400 bg-emerald-500/10 shadow-xs' 
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Compass className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_stars')}</span>
+              <Compass className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+              <span className="text-[6.5px] sm:text-[7.5px] font-mono uppercase tracking-tight mt-1 font-bold truncate max-w-full px-0.5 leading-none block whitespace-nowrap">{getMenuNavLabel('menu_stars')}</span>
             </button>
 
             {/* Planetas Tab activator */}
             <button
               type="button"
               onClick={() => handleUserSelectTab('planetas')}
-              className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
+              className={`flex-1 flex flex-col items-center py-1.5 sm:py-2 px-0.5 rounded-full transition-all cursor-pointer min-w-0 ${
                 activeTab === 'planetas' 
-                  ? 'text-rose-450 bg-rose-500/10' 
-                  : 'text-slate-450 hover:text-slate-200'
+                  ? 'text-rose-400 bg-rose-500/10 shadow-xs' 
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Globe className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_planets')}</span>
+              <Globe className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+              <span className="text-[6.5px] sm:text-[7.5px] font-mono uppercase tracking-tight mt-1 font-bold truncate max-w-full px-0.5 leading-none block whitespace-nowrap">{getMenuNavLabel('menu_planets')}</span>
             </button>
 
             {/* Sonhos Tab activator */}
             <button
               type="button"
               onClick={() => handleUserSelectTab('sonhos')}
-              className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
+              className={`flex-1 flex flex-col items-center py-1.5 sm:py-2 px-0.5 rounded-full transition-all cursor-pointer min-w-0 ${
                 activeTab === 'sonhos' 
-                  ? 'text-pink-400 bg-pink-500/10' 
-                  : 'text-slate-450 hover:text-slate-200'
+                  ? 'text-pink-400 bg-pink-500/10 shadow-xs' 
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Moon className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_dreams')}</span>
+              <Moon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+              <span className="text-[6.5px] sm:text-[7.5px] font-mono uppercase tracking-tight mt-1 font-bold truncate max-w-full px-0.5 leading-none block whitespace-nowrap">{getMenuNavLabel('menu_dreams')}</span>
             </button>
 
             {/* Tarot Tab activator */}
             <button
               type="button"
               onClick={() => handleUserSelectTab('tarot')}
-              className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
+              className={`flex-1 flex flex-col items-center py-1.5 sm:py-2 px-0.5 rounded-full transition-all cursor-pointer min-w-0 ${
                 activeTab === 'tarot' 
-                  ? 'text-amber-500 bg-amber-500/10' 
-                  : 'text-slate-450 hover:text-slate-200'
+                  ? 'text-amber-500 bg-amber-500/10 shadow-xs' 
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Sparkles className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_tarot')}</span>
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+              <span className="text-[6.5px] sm:text-[7.5px] font-mono uppercase tracking-tight mt-1 font-bold truncate max-w-full px-0.5 leading-none block whitespace-nowrap">{getMenuNavLabel('menu_tarot')}</span>
             </button>
 
             {/* Configurações Tab activator */}
             <button
               type="button"
               onClick={() => handleUserSelectTab('configuracoes')}
-              className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
+              className={`flex-1 flex flex-col items-center py-1.5 sm:py-2 px-0.5 rounded-full transition-all cursor-pointer min-w-0 ${
                 activeTab === 'configuracoes' 
-                  ? 'text-[#F59E0B] bg-[#F59E0B]/10' 
-                  : 'text-slate-450 hover:text-slate-200'
+                  ? 'text-[#F59E0B] bg-[#F59E0B]/10 shadow-xs' 
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Settings className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_settings')}</span>
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+              <span className="text-[6.5px] sm:text-[7.5px] font-mono uppercase tracking-tight mt-1 font-bold truncate max-w-full px-0.5 leading-none block whitespace-nowrap">{getMenuNavLabel('menu_settings')}</span>
             </button>
 
           </nav>

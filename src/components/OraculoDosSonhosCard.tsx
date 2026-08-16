@@ -742,39 +742,39 @@ export default function OraculoDosSonhosCard({
           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-rose-500/10 transition-colors duration-500" />
           
           <div className="pb-4 border-b border-slate-800 flex items-center gap-3" id="dream-scribe-header">
-            <div className="w-8 h-8 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-              <Sparkles className="w-4 h-4 animate-pulse" />
+            <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+              <Sparkles className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest font-mono">{ui.oracleTitle}</h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">{ui.oracleSubtitle}</p>
+              <h3 className="text-xl sm:text-2xl font-bold font-serif text-slate-100 tracking-wide">{ui.oracleTitle}</h3>
+              <p className="text-sm text-slate-400 mt-0.5 leading-normal">{ui.oracleSubtitle}</p>
             </div>
           </div>
 
-          <form onSubmit={handleRecordAndInterpretDream} className="space-y-4 mt-4" id="dream-scribe-form">
-            <div className="space-y-2">
-              <label className="block text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider">
+          <form onSubmit={handleRecordAndInterpretDream} className="space-y-5 mt-4" id="dream-scribe-form">
+            <div className="space-y-2.5">
+              <label className="block text-sm font-mono font-semibold text-slate-300 uppercase tracking-wider">
                 {ui.tellDream}
               </label>
-              <p className="text-[9px] text-slate-500 leading-normal">
+              <p className="text-sm text-slate-400 leading-relaxed font-sans">
                 {ui.describeHint}
               </p>
               
               {/* Orientation Alert Block */}
-              <div className="p-3.5 bg-rose-500/5 border border-rose-500/10 rounded-2xl space-y-1 my-2 text-slate-400 leading-relaxed font-sans text-[11px]" id="dream-orientation-alert">
-                <span className="font-bold text-rose-400 block text-[9.5px] font-mono uppercase tracking-widest">📝 {t('dreamOrientationTitle') || 'Orientação Onírica'}</span>
-                <p className="text-slate-350 leading-relaxed font-sans text-[10.5px]">
+              <div className="p-4 bg-rose-500/5 border border-rose-500/15 rounded-2xl space-y-1.5 my-2 text-slate-300 leading-relaxed font-sans text-sm" id="dream-orientation-alert">
+                <span className="font-bold text-rose-400 block text-sm font-mono uppercase tracking-widest">📝 {t('dreamOrientationTitle') || 'Orientação Onírica'}</span>
+                <p className="text-slate-350 leading-relaxed font-sans text-sm">
                   {t('dreamOrientationMessage')}
                 </p>
               </div>
 
               <textarea 
-                rows={6}
+                rows={5}
                 required
                 placeholder={ui.placeholderText}
                 value={newDreamDesc}
                 onChange={(e) => setNewDreamDesc(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-850 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-hidden focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all font-sans leading-relaxed resize-none"
+                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-850 text-base text-slate-200 placeholder:text-slate-500 focus:outline-hidden focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all font-sans leading-relaxed resize-none"
                 id="dream-input-textarea"
               />
             </div>
@@ -782,17 +782,17 @@ export default function OraculoDosSonhosCard({
             <button
               type="submit"
               disabled={isInterpretingDream}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-slate-100 font-sans font-extrabold text-xs uppercase tracking-widest transition duration-500 shadow-lg shadow-rose-950/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group-hover:scale-[1.01]"
+              className="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-slate-100 font-sans font-semibold text-base transition duration-500 shadow-lg shadow-rose-950/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group-hover:scale-[1.01] cursor-pointer whitespace-normal"
               id="dream-submit-btn"
             >
               {isInterpretingDream ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-slate-200" />
+                  <RefreshCw className="w-5 h-5 animate-spin text-slate-200" />
                   <span>{ui.decipheringBtn}</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-5 h-5" />
                   <span>{ui.revealBtn}</span>
                 </>
               )}
@@ -801,17 +801,17 @@ export default function OraculoDosSonhosCard({
         </div>
 
         {/* Directory/Portal of Revelations sidebar */}
-        <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-805/40 flex flex-col h-[380px]" id="dream-history-sidebar">
+        <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-805/40 flex flex-col min-h-[400px]" id="dream-history-sidebar">
           
-          <div className="pb-3 border-b border-slate-850 flex items-center justify-between shrink-0" id="dream-history-header">
-            <h4 className="text-[10.5px] font-bold font-mono text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="pb-3 border-b border-slate-850 flex items-center justify-between gap-2 shrink-0" id="dream-history-header">
+            <h4 className="text-sm font-bold font-mono text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
               {ui.dreamsCount(dreamsHistory.length)}
             </h4>
             {dreamsHistory.length > 0 && (
               <button
                 type="button"
                 onClick={() => setIsDownloadListOpen(true)}
-                className="px-2 py-1 bg-rose-600/20 hover:bg-rose-600/35 border border-rose-500/30 text-rose-400 hover:text-rose-350 rounded-lg text-[9px] font-mono uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 font-bold"
+                className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/35 border border-rose-500/30 text-rose-400 hover:text-rose-350 rounded-xl text-sm font-mono uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 font-semibold shrink-0"
               >
                 {ui.downloadDream}
               </button>
@@ -820,18 +820,18 @@ export default function OraculoDosSonhosCard({
 
           {/* Quick Search */}
           <div className="relative mt-3 mb-2 shrink-0" id="dream-history-search">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-600" />
+            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
             <input 
               type="text"
               placeholder={ui.searchPlaceholder}
               value={dreamSearch}
               onChange={(e) => setDreamSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-850 text-[10px] text-slate-300 placeholder:text-slate-600 focus:outline-hidden"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-850 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-hidden"
               id="dream-search-input"
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-1" id="dream-history-list">
+          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 mt-2 max-h-[300px]" id="dream-history-list">
             {filteredDreams.length > 0 ? (
               filteredDreams.map((d) => {
                 const isSelected = selectedDreamDisplay?.id === d.id;
@@ -839,26 +839,26 @@ export default function OraculoDosSonhosCard({
                   <button
                     key={d.id}
                     onClick={() => setSelectedDreamDisplay(d)}
-                    className={`w-full text-left p-3 rounded-2xl flex flex-col space-y-1.5 border transition-all duration-300 ${
+                    className={`w-full text-left p-3.5 rounded-2xl flex flex-col space-y-1.5 border transition-all duration-300 cursor-pointer ${
                       isSelected 
-                        ? 'bg-rose-950/20 border-rose-500/30' 
+                        ? 'bg-rose-950/30 border-rose-500/40' 
                         : 'bg-slate-950 border-slate-900 hover:border-slate-800'
                     }`}
                     id={`dream-history-item-${d.id}`}
                   >
                     <div className="flex justify-between items-center w-full">
-                      <span className="text-[9px] font-mono text-slate-500">{d.date}</span>
+                      <span className="text-sm font-mono text-slate-400">{d.date}</span>
                       {d.interpretation?.dreamEnergyType && (
-                        <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[7px] font-mono font-bold text-slate-400 capitalize">
+                        <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-slate-300 capitalize">
                           {d.interpretation.dreamEnergyType}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-300 line-clamp-1 italic font-serif leading-relaxed">
+                    <p className="text-sm text-slate-300 italic font-serif leading-relaxed line-clamp-2">
                       "{d.description}"
                     </p>
                     {d.interpretation?.mainMeaning && (
-                      <span className="text-[8.5px] font-mono font-bold text-rose-455 line-clamp-1 tracking-wide">
+                      <span className="text-sm font-mono font-bold text-rose-400 line-clamp-1 tracking-wide">
                         {ui.meaningPrefix} {d.interpretation.mainMeaning}
                       </span>
                     )}
@@ -867,7 +867,7 @@ export default function OraculoDosSonhosCard({
               })
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <p className="text-[10px] text-slate-600 font-mono">{ui.noArchived}</p>
+                <p className="text-sm text-slate-500 font-mono">{ui.noArchived}</p>
               </div>
             )}
           </div>
@@ -881,14 +881,14 @@ export default function OraculoDosSonhosCard({
         {isInterpretingDream ? (
           <div className="bg-slate-900/30 border border-slate-800/80 rounded-[32px] p-16 text-center flex flex-col items-center justify-center min-h-[500px]" id="dream-loader-card">
             <div className="relative mb-6">
-              <div className="w-16 h-16 rounded-full border border-dashed border-rose-500/20 animate-spin-slow flex items-center justify-center" />
-              <Moon className="w-8 h-8 text-rose-500 animate-pulse absolute top-4 left-4" />
+              <div className="w-20 h-20 rounded-full border border-dashed border-rose-500/30 animate-spin-slow flex items-center justify-center" />
+              <Moon className="w-10 h-10 text-rose-500 animate-pulse absolute top-5 left-5" />
             </div>
             
-            <h4 className="text-sm font-extrabold font-mono tracking-widest text-slate-100 uppercase animate-pulse">
+            <h4 className="text-lg font-bold font-serif text-slate-100 animate-pulse">
               {ui.loadingTitle}
             </h4>
-            <p className="text-xs text-slate-500 mt-2.5 max-w-xs mx-auto leading-relaxed font-sans">
+            <p className="text-sm text-slate-400 mt-2.5 max-w-sm mx-auto leading-relaxed font-sans">
               {ui.loadingDesc}
             </p>
           </div>
@@ -899,21 +899,21 @@ export default function OraculoDosSonhosCard({
             
             {/* Display Header details */}
             <div className="pb-4 border-b border-slate-800 flex justify-between items-start sm:flex-nowrap flex-wrap gap-3" id="dream-display-header">
-              <div className="space-y-1 flex-1">
-                <span className="text-[8.5px] font-mono text-rose-400 font-bold uppercase tracking-widest block">
+              <div className="space-y-2 flex-1">
+                <span className="text-sm font-mono text-rose-400 font-bold uppercase tracking-widest block">
                   {ui.archivedOn} {selectedDreamDisplay.date} {selectedDreamDisplay.time ? ` ${ui.atTime} ${selectedDreamDisplay.time}` : ''}
                 </span>
-                <h3 className="text-xs font-mono font-bold text-slate-400">
+                <h3 className="text-base font-mono font-bold text-slate-300">
                   {ui.scribeReport}
                 </h3>
-                <p className="text-xs text-slate-350 leading-relaxed font-serif bg-slate-950 border border-slate-850 p-3 rounded-xl italic block">
+                <p className="text-base text-slate-200 leading-relaxed font-serif bg-slate-950 border border-slate-850 p-4 rounded-2xl italic block [overflow-wrap:anywhere] break-words max-w-[65ch]">
                   "{selectedDreamDisplay.description}"
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => handleDeviceDownloadDreamPDF(selectedDreamDisplay)}
-                className="px-3 py-1.5 bg-rose-600/15 hover:bg-rose-600/30 border border-rose-500/30 text-rose-400 hover:text-rose-350 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                className="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/35 border border-rose-500/30 text-rose-400 hover:text-rose-350 rounded-xl text-sm font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shrink-0 font-medium whitespace-normal"
                 title={ui.downloadPDF}
               >
                 {ui.downloadPDF}
@@ -921,61 +921,61 @@ export default function OraculoDosSonhosCard({
             </div>
 
             {/* Display Dream analysis */}
-            <div className="space-y-4 animate-in fade-in duration-500" id="dream-display-content">
+            <div className="space-y-5 animate-in fade-in duration-500" id="dream-display-content">
               
               {/* Main semantic and title interpretations */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 
                 {/* Significance board */}
-                <div className="md:col-span-8 p-5 bg-slate-950 border border-slate-850 rounded-2xl space-y-2" id="dream-meaning-pane">
-                  <span className="text-[8.5px] font-mono font-bold text-rose-455 uppercase tracking-widest block">
+                <div className="md:col-span-8 p-6 bg-slate-950 border border-slate-850 rounded-2xl space-y-2.5" id="dream-meaning-pane">
+                  <span className="text-sm font-mono font-bold text-rose-400 uppercase tracking-widest block">
                     {ui.primaryMeaning}
                   </span>
-                  <h4 className="text-sm font-bold text-slate-100 leading-snug">
+                  <h4 className="text-xl sm:text-2xl font-bold font-serif text-slate-100 leading-snug">
                     {selectedDreamDisplay.interpretation?.mainMeaning}
                   </h4>
-                  <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                  <p className="text-base text-slate-300 leading-relaxed font-sans [overflow-wrap:anywhere] break-words max-w-[65ch]">
                     {selectedDreamDisplay.interpretation?.psychological}
                   </p>
                 </div>
 
                 {/* Energy index metrics card */}
                 <div className="md:col-span-4 p-5 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between items-center text-center relative overflow-hidden" id="dream-energy-card">
-                  <span className="text-[8.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
+                  <span className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest block">
                     {ui.energyIndex}
                   </span>
                   
                   {/* Circular indicator placeholder visualization */}
-                  <div className="relative w-20 h-20 flex items-center justify-center my-3">
+                  <div className="relative w-24 h-24 flex items-center justify-center my-3">
                     <svg className="w-full h-full transform -rotate-90">
                       <circle 
-                        cx="40" 
-                        cy="40" 
-                        r="34" 
+                        cx="48" 
+                        cy="48" 
+                        r="40" 
                         className="stroke-slate-800 fill-none" 
-                        strokeWidth="5" 
+                        strokeWidth="6" 
                       />
                       <circle 
-                        cx="40" 
-                        cy="40" 
-                        r="34" 
-                        className="stroke-rose-600 fill-none" 
-                        strokeWidth="5" 
-                        strokeDasharray={213}
-                        strokeDashoffset={213 - (213 * (selectedDreamDisplay.interpretation?.dreamEnergyIndex || 50)) / 100}
+                        cx="48" 
+                        cy="48" 
+                        r="40" 
+                        className="stroke-rose-500 fill-none" 
+                        strokeWidth="6" 
+                        strokeDasharray={251}
+                        strokeDashoffset={251 - (251 * (selectedDreamDisplay.interpretation?.dreamEnergyIndex || 50)) / 100}
                         strokeLinecap="round"
                       />
                     </svg>
-                    <span className="absolute text-sm font-extrabold font-mono text-slate-100">
+                    <span className="absolute text-lg font-extrabold font-mono text-slate-100">
                       {selectedDreamDisplay.interpretation?.dreamEnergyIndex}%
                     </span>
                   </div>
 
                   <div className="space-y-0.5">
-                    <span className="text-[10px] font-extrabold text-slate-300 uppercase font-mono block">
+                    <span className="text-sm font-extrabold text-slate-200 uppercase font-mono block">
                       {selectedDreamDisplay.interpretation?.dreamEnergyType}
                     </span>
-                    <span className="text-[7.5px] font-mono text-slate-550 block">{ui.tuned}</span>
+                    <span className="text-xs font-mono text-slate-400 block">{ui.tuned}</span>
                   </div>
                 </div>
 
@@ -983,11 +983,11 @@ export default function OraculoDosSonhosCard({
 
               {/* Advice oracle block */}
               {selectedDreamDisplay.interpretation?.oracleAdvice && (
-                <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex gap-4" id="dream-oracle-advice">
-                  <span className="text-2xl mt-1 select-none">📜</span>
-                  <div className="space-y-1">
-                    <h4 className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest">{ui.oracleAdvice}</h4>
-                    <p className="text-xs text-slate-300 leading-relaxed font-serif italic">
+                <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-4 items-start" id="dream-oracle-advice">
+                  <span className="text-3xl select-none shrink-0">📜</span>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-mono font-bold text-amber-400 uppercase tracking-widest">{ui.oracleAdvice}</h4>
+                    <p className="text-base text-slate-200 leading-relaxed font-serif italic [overflow-wrap:anywhere] break-words max-w-[65ch]">
                       {selectedDreamDisplay.interpretation.oracleAdvice}
                     </p>
                   </div>
@@ -995,16 +995,16 @@ export default function OraculoDosSonhosCard({
               )}
 
               {/* Triad Areas of Life: Love, Finance, Professional details */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3" id="dream-triad-areas">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4" id="dream-triad-areas">
                 
                 {/* Love */}
                 {selectedDreamDisplay.interpretation?.loveArea && (
-                  <div className="p-4 bg-pink-950/10 border border-pink-500/10 rounded-2xl space-y-1.5" id="area-love">
-                    <div className="flex items-center gap-1.5 text-pink-400">
-                      <Heart className="w-3.5 h-3.5 fill-pink-400/20" />
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">{ui.loveArea}</span>
+                  <div className="p-5 bg-pink-950/20 border border-pink-500/20 rounded-2xl space-y-2" id="area-love">
+                    <div className="flex items-center gap-2 text-pink-400">
+                      <Heart className="w-4 h-4 fill-pink-400/20" />
+                      <span className="text-sm font-mono font-bold uppercase tracking-widest">{ui.loveArea}</span>
                     </div>
-                    <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
+                    <p className="text-base text-slate-300 leading-relaxed font-sans [overflow-wrap:anywhere] break-words">
                       {selectedDreamDisplay.interpretation.loveArea}
                     </p>
                   </div>
@@ -1012,12 +1012,12 @@ export default function OraculoDosSonhosCard({
 
                 {/* Financial */}
                 {selectedDreamDisplay.interpretation?.financeArea && (
-                  <div className="p-4 bg-emerald-950/10 border border-emerald-500/10 rounded-2xl space-y-1.5" id="area-finance">
-                    <div className="flex items-center gap-1.5 text-emerald-400">
-                      <DollarSign className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">{ui.financeArea}</span>
+                  <div className="p-5 bg-emerald-950/20 border border-emerald-500/20 rounded-2xl space-y-2" id="area-finance">
+                    <div className="flex items-center gap-2 text-emerald-400">
+                      <DollarSign className="w-4 h-4" />
+                      <span className="text-sm font-mono font-bold uppercase tracking-widest">{ui.financeArea}</span>
                     </div>
-                    <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
+                    <p className="text-base text-slate-300 leading-relaxed font-sans [overflow-wrap:anywhere] break-words">
                       {selectedDreamDisplay.interpretation.financeArea}
                     </p>
                   </div>
@@ -1025,12 +1025,12 @@ export default function OraculoDosSonhosCard({
 
                 {/* Professional */}
                 {selectedDreamDisplay.interpretation?.careerArea && (
-                  <div className="p-4 bg-indigo-950/10 border border-indigo-500/10 rounded-2xl space-y-1.5" id="area-career">
-                    <div className="flex items-center gap-1.5 text-indigo-400">
-                      <Orbit className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">{ui.careerArea}</span>
+                  <div className="p-5 bg-indigo-950/20 border border-indigo-500/20 rounded-2xl space-y-2" id="area-career">
+                    <div className="flex items-center gap-2 text-indigo-400">
+                      <Orbit className="w-4 h-4" />
+                      <span className="text-sm font-mono font-bold uppercase tracking-widest">{ui.careerArea}</span>
                     </div>
-                    <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
+                    <p className="text-base text-slate-300 leading-relaxed font-sans [overflow-wrap:anywhere] break-words">
                       {selectedDreamDisplay.interpretation.careerArea}
                     </p>
                   </div>
@@ -1039,37 +1039,37 @@ export default function OraculoDosSonhosCard({
               </div>
 
               {/* Warnings and Opportunities: Attention, Opportunity, Protection */}
-              <div className="space-y-3" id="dream-warnings-box">
+              <div className="space-y-3.5" id="dream-warnings-box">
                 
                 {/* Attention */}
                 {selectedDreamDisplay.interpretation?.attention && (
-                  <div className="p-4 bg-red-950/15 border border-red-500/15 rounded-2xl flex gap-3" id="attention-box">
-                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    <div className="space-y-0.5">
-                      <span className="text-[9px] font-mono font-bold text-red-400 uppercase tracking-wider block">{ui.attentionLabel}</span>
-                      <p className="text-[11px] text-slate-300 leading-relaxed font-sans">{selectedDreamDisplay.interpretation.attention}</p>
+                  <div className="p-5 bg-red-950/20 border border-red-500/25 rounded-2xl flex gap-3.5 items-start" id="attention-box">
+                    <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider block">{ui.attentionLabel}</span>
+                      <p className="text-base text-slate-200 leading-relaxed font-sans [overflow-wrap:anywhere] break-words max-w-[65ch]">{selectedDreamDisplay.interpretation.attention}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Opportunities */}
                 {selectedDreamDisplay.interpretation?.opportunities && (
-                  <div className="p-4 bg-teal-950/15 border border-teal-500/15 rounded-2xl flex gap-3" id="opportunities-box">
-                    <Award className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
-                    <div className="space-y-0.5">
-                      <span className="text-[9px] font-mono font-bold text-teal-400 uppercase tracking-wider block">{ui.opportunitiesLabel}</span>
-                      <p className="text-[11px] text-slate-300 leading-relaxed font-sans">{selectedDreamDisplay.interpretation.opportunities}</p>
+                  <div className="p-5 bg-teal-950/20 border border-teal-500/25 rounded-2xl flex gap-3.5 items-start" id="opportunities-box">
+                    <Award className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="text-sm font-mono font-bold text-teal-400 uppercase tracking-wider block">{ui.opportunitiesLabel}</span>
+                      <p className="text-base text-slate-200 leading-relaxed font-sans [overflow-wrap:anywhere] break-words max-w-[65ch]">{selectedDreamDisplay.interpretation.opportunities}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Protection */}
                 {selectedDreamDisplay.interpretation?.protection && (
-                  <div className="p-4 bg-blue-950/15 border border-blue-500/15 rounded-2xl flex gap-3" id="protection-box">
-                    <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                    <div className="space-y-0.5">
-                      <span className="text-[9px] font-mono font-bold text-blue-400 uppercase tracking-wider block">{ui.protectionLabel}</span>
-                      <p className="text-[11px] text-slate-300 leading-relaxed font-sans">{selectedDreamDisplay.interpretation.protection}</p>
+                  <div className="p-5 bg-blue-950/20 border border-blue-500/25 rounded-2xl flex gap-3.5 items-start" id="protection-box">
+                    <ShieldCheck className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="text-sm font-mono font-bold text-blue-400 uppercase tracking-wider block">{ui.protectionLabel}</span>
+                      <p className="text-base text-slate-200 leading-relaxed font-sans [overflow-wrap:anywhere] break-words max-w-[65ch]">{selectedDreamDisplay.interpretation.protection}</p>
                     </div>
                   </div>
                 )}
@@ -1080,15 +1080,15 @@ export default function OraculoDosSonhosCard({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="dream-oracular-sincronias">
                 
                 {/* Lucky Numbers */}
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2">
-                  <span className="text-[8.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
+                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2.5">
+                  <span className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest block">
                     {ui.luckyNumbers}
                   </span>
-                  <div className="flex flex-wrap gap-2 pt-1">
+                  <div className="flex flex-wrap gap-2.5 pt-1">
                     {selectedDreamDisplay.interpretation?.luckyNumbers && selectedDreamDisplay.interpretation.luckyNumbers.map((num) => (
                       <span 
                         key={num} 
-                        className="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-xs font-bold font-mono text-rose-450 select-none shadow-md hover:border-rose-500/40 transition-colors"
+                        className="w-11 h-11 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-sm font-bold font-mono text-rose-400 select-none shadow-md hover:border-rose-500/40 transition-colors"
                       >
                         {num}
                       </span>
@@ -1097,11 +1097,11 @@ export default function OraculoDosSonhosCard({
                 </div>
 
                 {/* Favorable Energy Colors */}
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2">
-                  <span className="text-[8.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
+                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2.5">
+                  <span className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest block">
                     {ui.energyColors}
                   </span>
-                  <div className="flex flex-wrap gap-2 pt-1">
+                  <div className="flex flex-wrap gap-2.5 pt-1">
                     {selectedDreamDisplay.interpretation?.favorableColors && selectedDreamDisplay.interpretation.favorableColors.map((color) => {
                       const cLower = color.toLowerCase();
                       let hexVal = "#e2e8f0";
@@ -1117,13 +1117,13 @@ export default function OraculoDosSonhosCard({
                       return (
                         <div 
                           key={color}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 shadow-sm"
+                          className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-slate-900 border border-slate-800 shadow-sm"
                         >
                           <span 
-                            className="w-3 h-3 rounded-full border border-slate-700 block" 
+                            className="w-3.5 h-3.5 rounded-full border border-slate-700 block" 
                             style={{ backgroundColor: hexVal }}
                           />
-                          <span className="text-[10px] font-mono font-bold text-slate-300">
+                          <span className="text-sm font-mono font-bold text-slate-200">
                             {color}
                           </span>
                         </div>
@@ -1135,9 +1135,9 @@ export default function OraculoDosSonhosCard({
               </div>
 
               {/* Value adds: animals, mentioned variables & emotions */}
-              <div className="space-y-4 pt-2 border-t border-slate-800" id="dream-archetypes-highlights">
+              <div className="space-y-4 pt-3 border-t border-slate-800" id="dream-archetypes-highlights">
                 
-                <h4 className="text-[9.5px] font-mono font-black text-slate-500 uppercase tracking-widest">
+                <h4 className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest">
                   {ui.highlights}
                 </h4>
 
@@ -1145,14 +1145,14 @@ export default function OraculoDosSonhosCard({
                   
                   {/* Predominant Emotion */}
                   {selectedDreamDisplay.interpretation?.predominantEmotion && (
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-1">
-                      <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <div className="p-5 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2">
+                      <div className="text-sm font-mono text-slate-400 uppercase tracking-widest flex items-center gap-2">
                         <span>{ui.predominantEmotion}</span>
                         <span className="text-yellow-400 font-extrabold uppercase">
                           {selectedDreamDisplay.interpretation.predominantEmotion.emotion}
                         </span>
                       </div>
-                      <p className="text-[10.5px] text-slate-400 font-sans leading-relaxed">
+                      <p className="text-base text-slate-300 font-sans leading-relaxed [overflow-wrap:anywhere] break-words">
                         {selectedDreamDisplay.interpretation.predominantEmotion.explanation}
                       </p>
                     </div>
@@ -1160,15 +1160,15 @@ export default function OraculoDosSonhosCard({
 
                   {/* Detected Numbers if any */}
                   {selectedDreamDisplay.interpretation?.detectedNumbers && selectedDreamDisplay.interpretation.detectedNumbers.length > 0 && (
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2">
-                      <span className="text-[9.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
+                    <div className="p-5 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2">
+                      <span className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest block">
                         {ui.numberSymbols}
                       </span>
                       <div className="space-y-2">
                         {selectedDreamDisplay.interpretation.detectedNumbers.map((obj, idx) => (
-                          <div key={idx} className="text-[11px] font-sans leading-relaxed">
-                            <strong className="text-[10.5px] font-mono text-rose-455 block mb-0.5">{ui.numberPrefix} {obj.number}:</strong>
-                            <p className="text-slate-400">{obj.meaning}</p>
+                          <div key={idx} className="text-base font-sans leading-relaxed [overflow-wrap:anywhere] break-words">
+                            <strong className="text-sm font-mono text-rose-400 block mb-0.5">{ui.numberPrefix} {obj.number}:</strong>
+                            <p className="text-slate-300">{obj.meaning}</p>
                           </div>
                         ))}
                       </div>
@@ -1177,17 +1177,17 @@ export default function OraculoDosSonhosCard({
 
                   {/* Detected Animals if any */}
                   {selectedDreamDisplay.interpretation?.detectedAnimals && selectedDreamDisplay.interpretation.detectedAnimals.length > 0 && (
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2 col-span-1 md:col-span-2">
-                      <span className="text-[9.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
+                    <div className="p-5 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2 col-span-1 md:col-span-2">
+                      <span className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest block">
                         {ui.animalArchetypes}
                       </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {selectedDreamDisplay.interpretation.detectedAnimals.map((obj, idx) => (
-                          <div key={idx} className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
-                            <strong className="text-[10.5px] font-mono text-amber-500 uppercase tracking-wider block">
+                          <div key={idx} className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-1.5">
+                            <strong className="text-sm font-mono text-amber-400 uppercase tracking-wider block">
                               🦊 {obj.animal}
                             </strong>
-                            <p className="text-[11px] text-slate-400 leading-relaxed font-sans">{obj.meaning}</p>
+                            <p className="text-base text-slate-300 leading-relaxed font-sans [overflow-wrap:anywhere] break-words">{obj.meaning}</p>
                           </div>
                         ))}
                       </div>
@@ -1196,17 +1196,17 @@ export default function OraculoDosSonhosCard({
 
                   {/* Detected Colors if any */}
                   {selectedDreamDisplay.interpretation?.detectedColors && selectedDreamDisplay.interpretation.detectedColors.length > 0 && (
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2 col-span-1 md:col-span-2">
-                      <span className="text-[9.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
+                    <div className="p-5 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2 col-span-1 md:col-span-2">
+                      <span className="text-sm font-mono font-bold text-slate-400 uppercase tracking-widest block">
                         {ui.colorSymbolism}
                       </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {selectedDreamDisplay.interpretation.detectedColors.map((obj, idx) => (
-                          <div key={idx} className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
-                            <strong className="text-[10.5px] font-mono text-purple-400 uppercase tracking-wider block">
+                          <div key={idx} className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-1.5">
+                            <strong className="text-sm font-mono text-purple-400 uppercase tracking-wider block">
                               🖌️ {obj.color}
                             </strong>
-                            <p className="text-[11px] text-slate-400 leading-relaxed font-sans">{obj.meaning}</p>
+                            <p className="text-base text-slate-300 leading-relaxed font-sans [overflow-wrap:anywhere] break-words">{obj.meaning}</p>
                           </div>
                         ))}
                       </div>
@@ -1219,12 +1219,12 @@ export default function OraculoDosSonhosCard({
 
               {/* Universe mystical message section at the bottom */}
               {selectedDreamDisplay.interpretation?.universeMessage && (
-                <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-950 border border-indigo-500/20 shadow-inner space-y-2 text-center relative overflow-hidden group">
+                <div className="p-8 rounded-3xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-950 border border-indigo-500/25 shadow-inner space-y-3 text-center relative overflow-hidden group">
                   <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent opacity-50 blur-xl pointer-events-none" />
-                  <span className="text-[8.5px] font-mono font-black text-indigo-400 uppercase tracking-widest block">
+                  <span className="text-sm font-mono font-bold text-indigo-300 uppercase tracking-widest block">
                     {ui.universeMessage}
                   </span>
-                  <p className="text-xs sm:text-[13px] leading-relaxed italic text-indigo-200 font-serif max-w-xl mx-auto">
+                  <p className="text-base sm:text-lg leading-relaxed italic text-indigo-100 font-serif max-w-[65ch] mx-auto [overflow-wrap:anywhere] break-words">
                     "{selectedDreamDisplay.interpretation.universeMessage}"
                   </p>
                 </div>
@@ -1237,9 +1237,9 @@ export default function OraculoDosSonhosCard({
         ) : (
           /* If history is empty and nothing is selected */
           <div className="bg-slate-900/10 border border-dashed border-slate-800 rounded-[32px] p-12 text-center flex flex-col items-center justify-center min-h-[500px]" id="dream-empty-landing">
-            <Moon className="w-12 h-12 text-slate-700 animate-pulse mb-4" />
-            <h4 className="text-sm font-bold font-mono tracking-widest text-slate-500 uppercase">{ui.waitingDream}</h4>
-            <p className="text-xs text-slate-600 mt-2 max-w-xs mx-auto leading-relaxed">
+            <Moon className="w-14 h-14 text-slate-700 animate-pulse mb-4" />
+            <h4 className="text-lg font-bold font-serif tracking-wide text-slate-400">{ui.waitingDream}</h4>
+            <p className="text-base text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
               {ui.waitingDesc}
             </p>
           </div>
@@ -1255,23 +1255,23 @@ export default function OraculoDosSonhosCard({
             
             <div className="flex justify-between items-center pb-4 border-b border-slate-800">
               <div>
-                <h3 className="text-sm font-bold text-slate-100 font-mono flex items-center gap-2">
+                <h3 className="text-xl font-bold text-slate-100 font-serif flex items-center gap-2">
                   {ui.downloadModal}
                 </h3>
-                <p className="text-[10px] text-slate-400 mt-1 leading-normal font-sans">
+                <p className="text-sm text-slate-400 mt-1 leading-normal font-sans">
                   {ui.downloadModalDesc}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsDownloadListOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-705 text-slate-400 hover:text-slate-200 flex items-center justify-center text-xs transition duration-200 cursor-pointer font-bold"
+                className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-sm transition duration-200 cursor-pointer font-bold shrink-0"
               >
                 ✕
               </button>
             </div>
 
-            <div className="max-h-80 overflow-y-auto space-y-2.5 my-4 pr-1">
+            <div className="max-h-80 overflow-y-auto space-y-3 my-4 pr-1">
               {dreamsHistory.length > 0 ? (
                 dreamsHistory.map((d) => (
                   <button
@@ -1280,26 +1280,26 @@ export default function OraculoDosSonhosCard({
                       handleDeviceDownloadDreamPDF(d);
                       setIsDownloadListOpen(false);
                     }}
-                    className="w-full text-left p-3.5 rounded-2xl bg-slate-950 border border-slate-850 hover:border-rose-500/40 transition-all duration-300 flex items-center justify-between gap-4 cursor-pointer group"
+                    className="w-full text-left p-4 rounded-2xl bg-slate-950 border border-slate-850 hover:border-rose-500/40 transition-all duration-300 flex items-center justify-between gap-4 cursor-pointer group"
                   >
                     <div className="space-y-1 flex-1">
-                      <h4 className="text-xs font-bold text-slate-200 group-hover:text-rose-400 transition-colors font-mono line-clamp-1">
-                        {d.title || d.interpretation?.mainMeaning || d.description.slice(0, 30) + "..."}
+                      <h4 className="text-sm font-bold text-slate-200 group-hover:text-rose-400 transition-colors font-mono">
+                        {d.title || d.interpretation?.mainMeaning || d.description.slice(0, 35) + "..."}
                       </h4>
-                      <p className="text-[10px] text-slate-500 line-clamp-1 italic">
+                      <p className="text-sm text-slate-400 italic [overflow-wrap:anywhere] break-words">
                         "{d.description}"
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="text-[9px] font-mono text-rose-500 font-bold block">{d.date}</span>
+                      <span className="text-sm font-mono text-rose-400 font-bold block">{d.date}</span>
                       {d.time && (
-                        <span className="text-[8px] font-mono text-slate-500 block mt-0.5">{d.time}</span>
+                        <span className="text-xs font-mono text-slate-500 block mt-0.5">{d.time}</span>
                       )}
                     </div>
                   </button>
                 ))
               ) : (
-                <div className="p-8 text-center text-slate-600 font-mono text-xs">
+                <div className="p-8 text-center text-slate-500 font-mono text-sm">
                   {ui.noArchivedDownload}
                 </div>
               )}
@@ -1309,7 +1309,7 @@ export default function OraculoDosSonhosCard({
               <button
                 type="button"
                 onClick={() => setIsDownloadListOpen(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-slate-100 rounded-xl text-xs font-mono uppercase tracking-wider transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-sm font-mono uppercase tracking-wider transition-all cursor-pointer font-medium"
               >
                 {ui.close}
               </button>

@@ -16,6 +16,14 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     aiAssistant: 'Assistentes Cósmicos',
     profile: 'Perfil',
 
+    // Navigation Menu
+    menu_map: 'Mapa Estelar',
+    menu_stars: 'Constelações',
+    menu_planets: 'Planetas',
+    menu_dreams: 'Sonhos',
+    menu_tarot: 'Tarô',
+    menu_settings: 'Configurações',
+
     // Auth & Forms
     name: 'Nome Completo',
     birthDate: 'Data de Nascimento',
@@ -161,6 +169,14 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     tarot: 'Tarot',
     aiAssistant: 'Cosmic Assistants',
     profile: 'Profile',
+
+    // Navigation Menu
+    menu_map: 'Star Map',
+    menu_stars: 'Constellations',
+    menu_planets: 'Planets',
+    menu_dreams: 'Dreams',
+    menu_tarot: 'Tarot',
+    menu_settings: 'Settings',
 
     // Auth & Forms
     name: 'Full Name',
@@ -308,6 +324,14 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     aiAssistant: 'Asistentes Cósmicos',
     profile: 'Perfil',
 
+    // Navigation Menu
+    menu_map: 'Mapa Estelar',
+    menu_stars: 'Constelaciones',
+    menu_planets: 'Planetas',
+    menu_dreams: 'Sueños',
+    menu_tarot: 'Tarot',
+    menu_settings: 'Ajustes',
+
     // Auth & Forms
     name: 'Nombre Completo',
     birthDate: 'Fecha de Nacimiento',
@@ -454,6 +478,14 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     aiAssistant: 'Kosmische Assistenten',
     profile: 'Profil',
 
+    // Navigation Menu
+    menu_map: 'Sternenkarte',
+    menu_stars: 'Konstellationen',
+    menu_planets: 'Planeten',
+    menu_dreams: 'Träume',
+    menu_tarot: 'Tarot',
+    menu_settings: 'Einstellungen',
+
     // Auth & Forms
     name: 'Vollständiger Name',
     birthDate: 'Geburtsdatum',
@@ -599,6 +631,14 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     tarot: 'Tarot',
     aiAssistant: 'Assistants Cosmiques',
     profile: 'Profil',
+
+    // Navigation Menu
+    menu_map: 'Carte Céleste',
+    menu_stars: 'Constellations',
+    menu_planets: 'Planètes',
+    menu_dreams: 'Rêves',
+    menu_tarot: 'Tarot',
+    menu_settings: 'Paramètres',
 
     // Auth & Forms
     name: 'Nom Complet',

@@ -2500,41 +2500,41 @@ export default function UserDashboardPortal({
                   </div>
 
                   <div className="pt-4 border-t border-slate-900/50 flex items-center justify-between mt-4">
-                    <span className="text-[9px] text-slate-500 font-mono">{t("dashboard.daily_guidance_title")}</span>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-xs text-slate-400 font-mono">{t("dashboard.daily_guidance_title")}</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                   </div>
                 </div>
 
                 {/* PART B: OFFLINE PUSH NOTIFICATIONS LOG (SIMULATED COPT CHART) */}
-                <div className="bg-slate-950/60 p-6 rounded-3xl border border-slate-850 text-left flex flex-col justify-between">
+                <div className="bg-slate-950/60 p-5 sm:p-6 rounded-3xl border border-slate-850 text-left flex flex-col justify-between space-y-4">
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                    <div className="flex justify-between items-center border-b border-slate-900 pb-3">
                       <div className="flex items-center gap-2">
-                        <Bell className="w-4 h-4 text-amber-500 animate-swing" />
-                        <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider block">{t("dashboard.offline_push_queue")}</span>
+                        <Bell className="w-4.5 h-4.5 text-amber-400 animate-swing shrink-0" />
+                        <span className="text-xs sm:text-sm font-mono font-bold text-slate-200 uppercase tracking-wide block break-words [overflow-wrap:anywhere]">{t("dashboard.offline_push_queue")}</span>
                       </div>
-                      <span className="text-[8px] font-mono text-slate-500">{t("Últimas 3 Notificações")}</span>
+                      <span className="text-xs font-mono text-slate-400 shrink-0">{t("Últimas 3 Notificações")}</span>
                     </div>
 
                     {osirisLoading ? (
                       <div className="space-y-3 animate-pulse">
-                        <div className="h-10 bg-slate-900 rounded-xl"></div>
-                        <div className="h-10 bg-slate-900 rounded-xl"></div>
-                        <div className="h-10 bg-slate-900 rounded-xl"></div>
+                        <div className="h-12 bg-slate-900 rounded-xl"></div>
+                        <div className="h-12 bg-slate-900 rounded-xl"></div>
+                        <div className="h-12 bg-slate-900 rounded-xl"></div>
                       </div>
                     ) : (
-                      <div className="space-y-2.5">
+                      <div className="space-y-3">
                         {osirisDashboard?.offlineNotifications?.map((notif: any) => (
-                          <div key={notif.id} className="p-2.5 bg-slate-900/80 rounded-xl border border-slate-850/40 flex items-start gap-2.5 hover:border-slate-800 transition">
-                            <span className="text-xs mt-0.5 shrink-0">
+                          <div key={notif.id} className="p-3 bg-slate-900/80 rounded-xl border border-slate-850/40 flex items-start gap-3 hover:border-slate-800 transition">
+                            <span className="text-sm mt-0.5 shrink-0">
                               {notif.type === 'transit' ? '🪐' : notif.type === 'lune' ? '🌙' : '✨'}
                             </span>
-                            <div className="space-y-0.5 min-w-0">
-                              <div className="flex justify-between items-baseline gap-2">
-                                <h5 className="text-[10px] font-extrabold text-slate-205 truncate">{notif.title}</h5>
-                                <span className="text-[8px] text-slate-500 font-mono shrink-0">{notif.time}</span>
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="flex justify-between items-baseline gap-2 flex-wrap">
+                                <h5 className="text-xs sm:text-sm font-bold text-slate-100 break-words [overflow-wrap:anywhere]">{notif.title}</h5>
+                                <span className="text-xs text-slate-400 font-mono shrink-0">{notif.time}</span>
                               </div>
-                              <p className="text-[10px] text-slate-400 leading-normal line-clamp-2">{notif.message}</p>
+                              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed break-words [overflow-wrap:anywhere]">{notif.message}</p>
                             </div>
                           </div>
                         ))}
@@ -2542,49 +2542,49 @@ export default function UserDashboardPortal({
                     )}
                   </div>
 
-                  <p className="text-[8.5px] text-slate-500 font-sans mt-3">★ {t("dashboard.offline_push_desc")}</p>
+                  <p className="text-xs text-slate-400 font-sans mt-3 break-words [overflow-wrap:anywhere]">★ {t("dashboard.offline_push_desc")}</p>
                 </div>
               </div>
 
               {/* SECTION: OSÍRIS CHAT ASSISTANT COMPANION */}
-              <div id="osiris-chat-box" className="bg-gradient-to-b from-slate-900 to-slate-950 p-5 rounded-3xl border border-slate-800 space-y-4">
-                <div className="pb-3 border-b border-slate-850 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+              <div id="osiris-chat-box" className="bg-gradient-to-b from-slate-900 to-slate-950 p-5 sm:p-6 rounded-3xl border border-slate-800 space-y-4">
+                <div className="pb-3 border-b border-slate-850 flex justify-between items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <div className="relative">
                       <div className="absolute inset-0 bg-amber-500/25 rounded-full blur-xs animate-ping" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block z-10 relative" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block z-10 relative" />
                     </div>
                     <div className="text-left">
-                      <h3 className="text-xs font-bold font-mono text-slate-205 uppercase tracking-widest">{t("Osíris: Mentor e Conselheiro Live")}</h3>
-                      <p className="text-[9.5px] text-slate-500">{t("Sincronizado aos seus Transitos Estelares, Temperatura do ar e Biorritmo celular")}</p>
+                      <h3 className="text-sm sm:text-base font-bold font-serif text-slate-100 uppercase tracking-wide break-words [overflow-wrap:anywhere]">{t("Osíris: Mentor e Conselheiro Live")}</h3>
+                      <p className="text-xs text-slate-400 break-words [overflow-wrap:anywhere]">{t("Sincronizado aos seus Transitos Estelares, Temperatura do ar e Biorritmo celular")}</p>
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[9px] font-mono text-amber-400 rounded">
+                  <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-xs font-mono text-amber-400 font-bold uppercase rounded-full shrink-0">
                     {t("Sábio Ativo")}
                   </span>
                 </div>
 
                 {/* Osiris Chat History Stream */}
-                <div className="h-[250px] overflow-y-auto px-2 space-y-3 flex flex-col scrollbar-thin scrollbar-thumb-slate-850 text-left">
+                <div className="h-[320px] overflow-y-auto px-2 py-1 space-y-3.5 flex flex-col scrollbar-thin scrollbar-thumb-slate-850 text-left">
                   {osirisChatMessages.map((msg, idx) => (
                     <div
                       key={idx}
-                      className={`max-w-[85%] rounded-2xl p-3 text-[11px] leading-relaxed font-sans ${
+                      className={`max-w-[88%] sm:max-w-[80%] rounded-2xl p-3.5 text-sm sm:text-base leading-relaxed font-sans break-words [overflow-wrap:anywhere] ${
                         msg.sender === 'user'
-                          ? 'bg-amber-600/10 border border-amber-500/25 text-amber-100 self-end'
-                          : 'bg-slate-950/90 border border-slate-850/60 text-slate-300 self-start'
+                          ? 'bg-amber-600/15 border border-amber-500/30 text-amber-100 self-end'
+                          : 'bg-slate-950/90 border border-slate-850/80 text-slate-200 self-start'
                       }`}
                     >
-                      <div className="flex items-center gap-1 mb-1 font-mono text-[8.5px] font-bold text-slate-500 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5 mb-1.5 font-mono text-xs font-bold text-slate-400 uppercase tracking-wider">
                         <span>{msg.sender === 'user' ? t('Você') : 'Osíris'}</span>
                         <span>•</span>
                         <span>{t('Agora')}</span>
                       </div>
-                      <p className="whitespace-pre-line">{t(msg.text)}</p>
+                      <p className="whitespace-pre-line leading-relaxed">{t(msg.text)}</p>
                     </div>
                   ))}
                   {osirisChatSending && (
-                    <div className="bg-slate-950/90 border border-slate-850/60 text-slate-400 self-start rounded-2xl p-3 text-[11px] max-w-[80%] flex items-center gap-1.5 font-mono animate-pulse">
+                    <div className="bg-slate-950/90 border border-slate-850/60 text-slate-300 self-start rounded-2xl p-3.5 text-sm max-w-[85%] flex items-center gap-2 font-mono animate-pulse">
                       <span>{t("✦ Osíris está sintonizando energias...")}</span>
                     </div>
                   )}
@@ -2596,7 +2596,7 @@ export default function UserDashboardPortal({
                     e.preventDefault();
                     handleSendOsirisMessage();
                   }}
-                  className="flex gap-2"
+                  className="flex gap-2.5 pt-1"
                 >
                   <input
                     type="text"
@@ -2604,14 +2604,14 @@ export default function UserDashboardPortal({
                     onChange={(e) => setOsirisChatInput(e.target.value)}
                     placeholder={t("Pergunte ao Osíris sobre seus trânsitos, clima ou sonhos de hoje...")}
                     disabled={osirisChatSending}
-                    className="flex-1 px-4 py-2.5 bg-slate-950 border border-slate-850 rounded-xl text-xs text-slate-205 placeholder-slate-500 focus:outline-hidden focus:border-amber-500/50 disabled:opacity-50"
+                    className="flex-1 px-4 py-3 bg-slate-950 border border-slate-850 rounded-xl text-sm sm:text-base text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-amber-500/50 disabled:opacity-50"
                   />
                   <button
                     type="submit"
                     disabled={osirisChatSending || !osirisChatInput.trim()}
-                    className="p-2.5 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:opacity-50 text-slate-950 rounded-xl transition cursor-pointer shrink-0"
+                    className="px-4 py-3 bg-amber-400 hover:bg-amber-300 disabled:bg-slate-800 disabled:opacity-50 text-slate-950 font-bold rounded-xl transition cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-4.5 h-4.5" />
                   </button>
                 </form>
               </div>

@@ -93,6 +93,205 @@ export const InteractiveAstroMapEngine: React.FC<InteractiveAstroMapEngineProps>
   const mercurio = useMemo(() => mapData?.astros?.find(a => a.name === "Mercúrio"), [mapData]);
   const saturno = useMemo(() => mapData?.astros?.find(a => a.name === "Saturno"), [mapData]);
 
+  // Multilingual translation helper for astro names
+  const getTranslatedAstroName = (rawName: string): string => {
+    const astroDict: Record<string, Record<string, string>> = {
+      en: {
+        Sol: 'Sun',
+        Lua: 'Moon',
+        Mercúrio: 'Mercury',
+        Mercurio: 'Mercury',
+        Vênus: 'Venus',
+        Venus: 'Venus',
+        Marte: 'Mars',
+        Júpiter: 'Jupiter',
+        Jupiter: 'Jupiter',
+        Saturno: 'Saturn',
+        Urano: 'Uranus',
+        Netuno: 'Neptune',
+        Plutão: 'Pluto',
+        Pluto: 'Pluto',
+        Quíron: 'Chiron',
+        Chiron: 'Chiron',
+        Ascendente: 'Ascendant',
+        'Meio do Céu': 'Midheaven',
+        'Nodo Norte': 'North Node',
+        Lilith: 'Lilith',
+        'Roda da Fortuna': 'Part of Fortune'
+      },
+      es: {
+        Sol: 'Sol',
+        Lua: 'Luna',
+        Mercúrio: 'Mercurio',
+        Mercurio: 'Mercurio',
+        Vênus: 'Venus',
+        Venus: 'Venus',
+        Marte: 'Marte',
+        Júpiter: 'Júpiter',
+        Jupiter: 'Júpiter',
+        Saturno: 'Saturno',
+        Urano: 'Urano',
+        Netuno: 'Neptuno',
+        Plutão: 'Plutón',
+        Pluto: 'Plutón',
+        Quíron: 'Quirón',
+        Chiron: 'Quirón',
+        Ascendente: 'Ascendente',
+        'Meio do Céu': 'Medio Cielo',
+        'Nodo Norte': 'Nodo Norte',
+        Lilith: 'Lilith',
+        'Roda da Fortuna': 'Rueda de la Fortuna'
+      },
+      de: {
+        Sol: 'Sonne',
+        Lua: 'Mond',
+        Mercúrio: 'Merkur',
+        Mercurio: 'Merkur',
+        Vênus: 'Venus',
+        Venus: 'Venus',
+        Marte: 'Mars',
+        Júpiter: 'Jupiter',
+        Jupiter: 'Jupiter',
+        Saturno: 'Saturn',
+        Urano: 'Uranus',
+        Netuno: 'Neptun',
+        Plutão: 'Pluto',
+        Pluto: 'Pluto',
+        Quíron: 'Chiron',
+        Chiron: 'Chiron',
+        Ascendente: 'Aszendent',
+        'Meio do Céu': 'Medium Coeli',
+        'Nodo Norte': 'Mondknoten',
+        Lilith: 'Lilith',
+        'Roda da Fortuna': 'Glückspunkt'
+      },
+      fr: {
+        Sol: 'Soleil',
+        Lua: 'Lune',
+        Mercúrio: 'Mercure',
+        Mercurio: 'Mercure',
+        Vênus: 'Vénus',
+        Venus: 'Vénus',
+        Marte: 'Mars',
+        Júpiter: 'Jupiter',
+        Jupiter: 'Jupiter',
+        Saturno: 'Saturne',
+        Urano: 'Uranus',
+        Netuno: 'Neptune',
+        Plutão: 'Pluton',
+        Pluto: 'Pluton',
+        Quíron: 'Chiron',
+        Chiron: 'Chiron',
+        Ascendente: 'Ascendant',
+        'Meio do Céu': 'Milieu du Ciel',
+        'Nodo Norte': 'Nœud Nord',
+        Lilith: 'Lilith',
+        'Roda da Fortuna': 'Part de Fortune'
+      },
+      pt: {
+        Sol: 'Sol',
+        Lua: 'Lua',
+        Mercúrio: 'Mercúrio',
+        Mercurio: 'Mercúrio',
+        Vênus: 'Vênus',
+        Venus: 'Vênus',
+        Marte: 'Marte',
+        Júpiter: 'Júpiter',
+        Jupiter: 'Júpiter',
+        Saturno: 'Saturno',
+        Urano: 'Urano',
+        Netuno: 'Netuno',
+        Plutão: 'Plutão',
+        Pluto: 'Plutão',
+        Quíron: 'Quíron',
+        Chiron: 'Quíron',
+        Ascendente: 'Ascendente',
+        'Meio do Céu': 'Meio do Céu',
+        'Nodo Norte': 'Nodo Norte',
+        Lilith: 'Lilith',
+        'Roda da Fortuna': 'Roda da Fortuna'
+      }
+    };
+    return astroDict[lang]?.[rawName] || astroDict.pt[rawName] || rawName;
+  };
+
+  // Multilingual translation helper for zodiac signs
+  const getTranslatedSignName = (rawSign: string): string => {
+    const signDict: Record<string, Record<string, string>> = {
+      en: {
+        Áries: 'Aries', Aries: 'Aries',
+        Touro: 'Taurus', Taurus: 'Taurus',
+        Gêmeos: 'Gemini', Gemini: 'Gemini',
+        Câncer: 'Cancer', Cancer: 'Cancer',
+        Leão: 'Leo', Leo: 'Leo',
+        Virgem: 'Virgo', Virgo: 'Virgo',
+        Libra: 'Libra',
+        Escorpião: 'Scorpio', Scorpio: 'Scorpio',
+        Sagitário: 'Sagittarius', Sagittarius: 'Sagittarius',
+        Capricórnio: 'Capricorn', Capricorn: 'Capricorn',
+        Aquário: 'Aquarius', Aquarius: 'Aquarius',
+        Peixes: 'Pisces', Pisces: 'Pisces'
+      },
+      es: {
+        Áries: 'Aries', Aries: 'Aries',
+        Touro: 'Tauro', Taurus: 'Tauro',
+        Gêmeos: 'Géminis', Gemini: 'Géminis',
+        Câncer: 'Cáncer', Cancer: 'Cáncer',
+        Leão: 'Leo', Leo: 'Leo',
+        Virgem: 'Virgo', Virgo: 'Virgo',
+        Libra: 'Libra',
+        Escorpião: 'Escorpio', Scorpio: 'Escorpio',
+        Sagitário: 'Sagitario', Sagittarius: 'Sagitario',
+        Capricórnio: 'Capricornio', Capricorn: 'Capricornio',
+        Aquário: 'Acuario', Aquarius: 'Acuario',
+        Peixes: 'Piscis', Pisces: 'Piscis'
+      },
+      de: {
+        Áries: 'Widder', Aries: 'Widder',
+        Touro: 'Stier', Taurus: 'Stier',
+        Gêmeos: 'Zwillinge', Gemini: 'Zwillinge',
+        Câncer: 'Krebs', Cancer: 'Krebs',
+        Leão: 'Löwe', Leo: 'Löwe',
+        Virgem: 'Jungfrau', Virgo: 'Jungfrau',
+        Libra: 'Waage',
+        Escorpião: 'Skorpion', Scorpio: 'Skorpion',
+        Sagitário: 'Schütze', Sagittarius: 'Schütze',
+        Capricórnio: 'Steinbock', Capricorn: 'Steinbock',
+        Aquário: 'Wassermann', Aquarius: 'Wassermann',
+        Peixes: 'Fische', Pisces: 'Fische'
+      },
+      fr: {
+        Áries: 'Bélier', Aries: 'Bélier',
+        Touro: 'Taureau', Taurus: 'Taureau',
+        Gêmeos: 'Gémeaux', Gemini: 'Gémeaux',
+        Câncer: 'Cancer', Cancer: 'Cancer',
+        Leão: 'Lion', Leo: 'Lion',
+        Virgem: 'Vierge', Virgo: 'Vierge',
+        Libra: 'Balance',
+        Escorpião: 'Scorpion', Scorpio: 'Scorpion',
+        Sagitário: 'Sagittaire', Sagittarius: 'Sagittaire',
+        Capricórnio: 'Capricorne', Capricorn: 'Capricorne',
+        Aquário: 'Verseau', Aquarius: 'Verseau',
+        Peixes: 'Poissons', Pisces: 'Poissons'
+      },
+      pt: {
+        Áries: 'Áries', Aries: 'Áries',
+        Touro: 'Touro', Taurus: 'Touro',
+        Gêmeos: 'Gêmeos', Gemini: 'Gêmeos',
+        Câncer: 'Câncer', Cancer: 'Câncer',
+        Leão: 'Leão', Leo: 'Leão',
+        Virgem: 'Virgem', Virgo: 'Virgem',
+        Libra: 'Libra',
+        Escorpião: 'Escorpião', Scorpio: 'Escorpião',
+        Sagitário: 'Sagitário', Sagittarius: 'Sagitário',
+        Capricórnio: 'Capricórnio', Capricorn: 'Capricórnio',
+        Aquário: 'Aquário', Aquarius: 'Aquário',
+        Peixes: 'Peixes', Pisces: 'Peixes'
+      }
+    };
+    return signDict[lang]?.[rawSign] || signDict.pt[rawSign] || rawSign;
+  };
+
   // Multilingual translations dictionary
   const uiTexts = useMemo(() => {
     const dict: Record<string, Record<string, string>> = {
@@ -1293,89 +1492,89 @@ export const InteractiveAstroMapEngine: React.FC<InteractiveAstroMapEngineProps>
       </div>
 
       {/* NAVIGATION TABS */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none border-b border-slate-800/80">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-slate-800/80">
         <button
           onClick={() => setActiveTab('camadas')}
-          className={`flex items-center gap-2 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all cursor-pointer ${
+          className={`flex items-center gap-2 text-xs sm:text-sm px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all cursor-pointer shrink-0 ${
             activeTab === 'camadas'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              ? 'bg-amber-950/40 text-amber-400 border border-amber-500/80 shadow-md font-bold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <Layers className="w-4 h-4" />
-          {uiTexts.tabCamadas}
+          <Layers className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="whitespace-nowrap">{uiTexts.tabCamadas}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('por_que')}
-          className={`flex items-center gap-2 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all cursor-pointer ${
+          className={`flex items-center gap-2 text-xs sm:text-sm px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all cursor-pointer shrink-0 ${
             activeTab === 'por_que'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              ? 'bg-amber-950/40 text-amber-400 border border-amber-500/80 shadow-md font-bold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <Lightbulb className="w-4 h-4" />
-          {uiTexts.tabPorQue}
+          <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="whitespace-nowrap">{uiTexts.tabPorQue}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('paradoxos')}
-          className={`flex items-center gap-2 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all cursor-pointer ${
+          className={`flex items-center gap-2 text-xs sm:text-sm px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all cursor-pointer shrink-0 ${
             activeTab === 'paradoxos'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              ? 'bg-amber-950/40 text-amber-400 border border-amber-500/80 shadow-md font-bold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <Split className="w-4 h-4" />
-          {uiTexts.tabParadoxos}
+          <Split className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="whitespace-nowrap">{uiTexts.tabParadoxos}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('areas')}
-          className={`flex items-center gap-2 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all cursor-pointer ${
+          className={`flex items-center gap-2 text-xs sm:text-sm px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all cursor-pointer shrink-0 ${
             activeTab === 'areas'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              ? 'bg-amber-950/40 text-amber-400 border border-amber-500/80 shadow-md font-bold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <Target className="w-4 h-4" />
-          {uiTexts.tabAreas}
+          <Target className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="whitespace-nowrap">{uiTexts.tabAreas}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('cruzamento')}
-          className={`flex items-center gap-2 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all cursor-pointer ${
+          className={`flex items-center gap-2 text-xs sm:text-sm px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all cursor-pointer shrink-0 ${
             activeTab === 'cruzamento'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              ? 'bg-amber-950/40 text-amber-400 border border-amber-500/80 shadow-md font-bold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <Zap className="w-4 h-4" />
-          {uiTexts.tabCruzamento}
+          <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="whitespace-nowrap">{uiTexts.tabCruzamento}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('grafo')}
-          className={`flex items-center gap-2 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all cursor-pointer ${
+          className={`flex items-center gap-2 text-xs sm:text-sm px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all cursor-pointer shrink-0 ${
             activeTab === 'grafo'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              ? 'bg-amber-950/40 text-amber-400 border border-amber-500/80 shadow-md font-bold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <GitCommit className="w-4 h-4" />
-          {uiTexts.tabGrafo}
+          <GitCommit className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="whitespace-nowrap">{uiTexts.tabGrafo}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('bussola')}
-          className={`flex items-center gap-2 text-xs sm:text-sm px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all cursor-pointer ${
+          className={`flex items-center gap-2 text-xs sm:text-sm px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all cursor-pointer shrink-0 ${
             activeTab === 'bussola'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              ? 'bg-amber-950/40 text-amber-400 border border-amber-500/80 shadow-md font-bold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <Compass className="w-4 h-4" />
-          {uiTexts.tabBussola}
+          <Compass className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="whitespace-nowrap">{uiTexts.tabBussola}</span>
         </button>
       </div>
 
@@ -1383,14 +1582,14 @@ export const InteractiveAstroMapEngine: React.FC<InteractiveAstroMapEngineProps>
       {activeTab === 'camadas' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Depth Selector (Level 1 / 2 / 3) */}
-          <div className="flex items-center justify-between bg-slate-900/90 p-2 rounded-xl border border-slate-800">
-            <span className="text-xs text-slate-400 font-medium px-2">
+          <div className="flex items-center justify-between bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800">
+            <span className="text-xs sm:text-sm text-slate-400 font-medium px-2 whitespace-nowrap">
               {lang === 'en' ? 'Depth:' : lang === 'es' ? 'Profundidad:' : lang === 'de' ? 'Tiefe:' : lang === 'fr' ? 'Profondeur:' : 'Profundidade:'}
             </span>
-            <div className="flex gap-1">
+            <div className="flex gap-1.5 items-center">
               <button
                 onClick={() => setDepthLevel(1)}
-                className={`text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                className={`text-xs sm:text-sm px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                   depthLevel === 1
                     ? 'bg-amber-500 text-slate-950 font-bold shadow'
                     : 'text-slate-400 hover:text-slate-200'
@@ -1400,7 +1599,7 @@ export const InteractiveAstroMapEngine: React.FC<InteractiveAstroMapEngineProps>
               </button>
               <button
                 onClick={() => setDepthLevel(2)}
-                className={`text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                className={`text-xs sm:text-sm px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                   depthLevel === 2
                     ? 'bg-amber-500 text-slate-950 font-bold shadow'
                     : 'text-slate-400 hover:text-slate-200'
@@ -1410,7 +1609,7 @@ export const InteractiveAstroMapEngine: React.FC<InteractiveAstroMapEngineProps>
               </button>
               <button
                 onClick={() => setDepthLevel(3)}
-                className={`text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                className={`text-xs sm:text-sm px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                   depthLevel === 3
                     ? 'bg-amber-500 text-slate-950 font-bold shadow'
                     : 'text-slate-400 hover:text-slate-200'
@@ -1423,22 +1622,32 @@ export const InteractiveAstroMapEngine: React.FC<InteractiveAstroMapEngineProps>
 
           {/* Points Explorer Selector Pills */}
           <div>
-            <p className="text-xs text-slate-400 mb-2 font-medium">{uiTexts.selectItem}</p>
+            <p className="text-xs sm:text-sm text-slate-400 mb-2.5 font-medium">{uiTexts.selectItem}</p>
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {(mapData?.astros || []).map((ast) => (
-                <button
-                  key={ast.name}
-                  onClick={() => setSelectedAstro(ast)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer border ${
-                    selectedAstro?.name === ast.name
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-md'
-                      : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <span className="font-semibold">{ast.name}</span>
-                  <span className="text-slate-500 ml-1">({ast.sign})</span>
-                </button>
-              ))}
+              {(mapData?.astros || []).map((ast) => {
+                const isSelected = selectedAstro?.name === ast.name;
+                const translatedName = getTranslatedAstroName(ast.name);
+                const translatedSign = getTranslatedSignName(ast.sign);
+
+                return (
+                  <button
+                    key={ast.name}
+                    onClick={() => setSelectedAstro(ast)}
+                    className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all cursor-pointer border flex items-center shrink-0 ${
+                      isSelected
+                        ? 'bg-amber-950/40 text-amber-400 border-amber-500/80 shadow-xs'
+                        : 'bg-slate-900/80 text-slate-300 border-slate-800/90 hover:border-slate-700 hover:text-slate-100'
+                    }`}
+                  >
+                    <span className={isSelected ? 'font-bold text-amber-400' : 'font-bold text-slate-200'}>
+                      {translatedName}
+                    </span>
+                    <span className={`ml-1 ${isSelected ? 'text-amber-400/80 font-normal' : 'text-slate-400 font-normal'}`}>
+                      ({translatedSign})
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

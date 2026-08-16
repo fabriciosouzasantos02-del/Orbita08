@@ -1031,49 +1031,49 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="space-y-2 text-left">
-            <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-[9px] font-mono tracking-widest uppercase font-bold flex items-center gap-1.5 w-fit">
-              <Star className="w-3 h-3 text-amber-400 animate-spin-pulse" />
+            <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-xs font-mono tracking-widest uppercase font-bold flex items-center gap-1.5 w-fit">
+              <Star className="w-3.5 h-3.5 text-amber-400 animate-spin-pulse" />
               {t("Templo Oculto de Orbia • Sabedoria Ancestral")}
             </span>
-            <h2 className="text-2xl md:text-3xl font-black font-sans tracking-tight text-white uppercase">
+            <h2 className="text-2xl md:text-3xl font-bold font-serif tracking-normal text-white uppercase break-words [overflow-wrap:anywhere]">
               {t("Tarot Taróloga de Verdade")}
             </h2>
-            <p className="text-slate-400 text-xs font-sans max-w-2xl leading-relaxed">
+            <p className="text-slate-300 text-sm sm:text-base font-sans max-w-2xl leading-relaxed break-words [overflow-wrap:anywhere]">
               {t("Conselhos vivos e canalizações profundas sobre sua vida amorosa, trabalho, relacionamentos e blindagem contra mal olhado e invejas. Uma experiência sensitiva realista inspirada em consultas presenciais.")}
             </p>
           </div>
           
-          <div className="bg-slate-900/90 px-4 py-2 rounded-2xl border border-slate-800 text-right shrink-0">
-            <span className="text-[9px] font-mono text-slate-500 block">{t("SINTONIZADOR CELESTE")}</span>
-            <span className="text-xs font-mono font-bold text-amber-400">{t("Ativo • Orbia Tarot Real")}</span>
+          <div className="bg-slate-900/90 px-4 py-2.5 rounded-2xl border border-slate-800 text-right shrink-0">
+            <span className="text-xs font-mono text-slate-400 block uppercase">{t("SINTONIZADOR CELESTE")}</span>
+            <span className="text-sm font-mono font-bold text-amber-400">{t("Ativo • Orbia Tarot Real")}</span>
           </div>
         </div>
 
         {/* Categories Grid (emphasizing the weekly reading heavily) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-6 pt-4 border-t border-slate-900 z-10 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 mt-6 pt-4 border-t border-slate-900 z-10 relative">
           
           {/* Highlighted Item: Tarot Semanal (Destaque Máximo) */}
           <button
             onClick={() => { setActiveMode('semanal'); handleResetDraw(); }}
-            className={`md:col-span-1 p-3.5 rounded-2xl border-2 text-left transition duration-300 flex flex-col justify-between h-28 relative overflow-hidden cursor-pointer select-none ${
+            className={`p-4 rounded-2xl border-2 text-left transition duration-300 flex flex-col justify-between min-h-[8.5rem] relative overflow-hidden cursor-pointer select-none ${
               activeMode === 'semanal' 
                 ? 'bg-gradient-to-br from-amber-500/15 via-slate-900 to-slate-950 border-amber-400/80 text-amber-200 shadow-xl shadow-amber-500/5' 
                 : 'bg-slate-950/90 hover:bg-slate-900 border-amber-500/30 text-amber-400 hover:text-amber-200 hover:border-amber-400/50'
             }`}
           >
             {/* Crown of stars top-right */}
-            <div className="absolute top-2 right-2 flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-450/25">
-              <Flame className="w-2.5 h-2.5 text-amber-400 animate-bounce" />
-              <span className="text-[7.5px] font-mono font-bold text-amber-400 uppercase tracking-widest">{t("DESTAQUE PRINCIPAL")}</span>
+            <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-450/25">
+              <Flame className="w-3 h-3 text-amber-400 animate-bounce" />
+              <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">{t("DESTAQUE")}</span>
             </div>
 
             <div className="flex items-center justify-between">
               <Calendar className="w-5 h-5 text-amber-400" />
               {activeMode === 'semanal' && <span className="w-2 h-2 rounded-full bg-amber-450 animate-ping" />}
             </div>
-            <div className="space-y-0.5">
-              <h4 className="text-xs font-black tracking-tight font-sans uppercase text-white">{t("✨ Tarot Semanal Profundo")}</h4>
-              <p className="text-[9px] leading-snug text-slate-400">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold tracking-tight font-serif uppercase text-white break-words [overflow-wrap:anywhere]">{t("✨ Tarot Semanal Profundo")}</h4>
+              <p className="text-xs leading-relaxed text-slate-300 break-words [overflow-wrap:anywhere]">
                 {t("Tiragem de 10 Cartas com leitura espiritual completa de trânsitos, invejas e trabalho. Uma consulta por semana.")}
               </p>
             </div>
@@ -1082,19 +1082,19 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
           {/* 1: Tarot Inteligente */}
           <button
             onClick={() => { setActiveMode('inteligente'); handleResetDraw(); }}
-            className={`p-3.5 rounded-2xl border text-left transition duration-300 flex flex-col justify-between h-28 cursor-pointer select-none ${
+            className={`p-4 rounded-2xl border text-left transition duration-300 flex flex-col justify-between min-h-[8.5rem] cursor-pointer select-none ${
               activeMode === 'inteligente' 
                 ? 'bg-amber-500/10 border-amber-500/40 text-amber-200' 
                 : 'bg-slate-950/80 hover:bg-slate-900 border-slate-850 text-slate-400 hover:text-slate-200'
             }`}
           >
             <div className="flex items-center justify-between">
-              <Sparkles className={`w-4 h-4 ${activeMode === 'inteligente' ? 'text-amber-400' : 'text-slate-500'}`} />
-              {activeMode === 'inteligente' && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+              <Sparkles className={`w-5 h-5 ${activeMode === 'inteligente' ? 'text-amber-400' : 'text-slate-500'}`} />
+              {activeMode === 'inteligente' && <div className="w-2 h-2 rounded-full bg-amber-400" />}
             </div>
-            <div className="space-y-0.5">
-              <h4 className="text-xs font-bold font-sans">{t("Tarot Inteligente")}</h4>
-              <p className="text-[9px] leading-snug text-slate-400">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold font-serif text-slate-100 break-words [overflow-wrap:anywhere]">{t("Tarot Inteligente")}</h4>
+              <p className="text-xs leading-relaxed text-slate-300 break-words [overflow-wrap:anywhere]">
                 {t("Conselhos e tiragens mágicas unindo tecnologia espiritual planetária.")}
               </p>
             </div>
@@ -1103,19 +1103,19 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
           {/* 2: Tarot do Amor */}
           <button
             onClick={() => { setActiveMode('amor'); handleResetDraw(); }}
-            className={`p-3.5 rounded-2xl border text-left transition duration-300 flex flex-col justify-between h-28 cursor-pointer select-none ${
+            className={`p-4 rounded-2xl border text-left transition duration-300 flex flex-col justify-between min-h-[8.5rem] cursor-pointer select-none ${
               activeMode === 'amor' 
                 ? 'bg-rose-500/10 border-rose-500/40 text-rose-200' 
                 : 'bg-slate-950/80 hover:bg-slate-900 border-slate-850 text-slate-400 hover:text-slate-200'
             }`}
           >
             <div className="flex items-center justify-between">
-              <Heart className={`w-4 h-4 ${activeMode === 'amor' ? 'text-rose-450' : 'text-slate-500'}`} />
-              {activeMode === 'amor' && <div className="w-1.5 h-1.5 rounded-full bg-rose-400" />}
+              <Heart className={`w-5 h-5 ${activeMode === 'amor' ? 'text-rose-450' : 'text-slate-500'}`} />
+              {activeMode === 'amor' && <div className="w-2 h-2 rounded-full bg-rose-400" />}
             </div>
-            <div className="space-y-0.5">
-              <h4 className="text-xs font-bold font-sans">{t("Tarot do Amor")}</h4>
-              <p className="text-[9px] leading-snug text-slate-400">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold font-serif text-slate-100 break-words [overflow-wrap:anywhere]">{t("Tarot do Amor")}</h4>
+              <p className="text-xs leading-relaxed text-slate-300 break-words [overflow-wrap:anywhere]">
                 {t("Conselhos dos caminhos afetivos para os assuntos e angústias amorosas.")}
               </p>
             </div>
@@ -1124,19 +1124,19 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
           {/* 3: Tarot Tradicional */}
           <button
             onClick={() => { setActiveMode('tradicional'); handleResetDraw(); }}
-            className={`p-3.5 rounded-2xl border text-left transition duration-300 flex flex-col justify-between h-28 cursor-pointer select-none ${
+            className={`p-4 rounded-2xl border text-left transition duration-300 flex flex-col justify-between min-h-[8.5rem] cursor-pointer select-none ${
               activeMode === 'tradicional' 
                 ? 'bg-purple-500/10 border-purple-500/40 text-purple-200' 
                 : 'bg-slate-950/80 hover:bg-slate-900 border-slate-850 text-slate-400 hover:text-slate-200'
             }`}
           >
             <div className="flex items-center justify-between">
-              <BookOpen className={`w-4 h-4 ${activeMode === 'tradicional' ? 'text-purple-400' : 'text-slate-500'}`} />
-              {activeMode === 'tradicional' && <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />}
+              <BookOpen className={`w-5 h-5 ${activeMode === 'tradicional' ? 'text-purple-400' : 'text-slate-500'}`} />
+              {activeMode === 'tradicional' && <div className="w-2 h-2 rounded-full bg-purple-400" />}
             </div>
-            <div className="space-y-0.5">
-              <h4 className="text-xs font-bold font-sans">{t("Tarot Tradicional")}</h4>
-              <p className="text-[9px] leading-snug text-slate-400">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold font-serif text-slate-100 break-words [overflow-wrap:anywhere]">{t("Tarot Tradicional")}</h4>
+              <p className="text-xs leading-relaxed text-slate-300 break-words [overflow-wrap:anywhere]">
                 {t("Tiragens clássicas para aconselhamentos rápidos dos Arcanos Maiores.")}
               </p>
             </div>
@@ -1151,12 +1151,12 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
         {/* Left Column: Drawing/Interactive zone (7 cols) */}
         <div className="col-span-1 lg:col-span-7 space-y-6">
           
-          <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-805 space-y-5">
+          <div className="bg-slate-900/40 p-5 sm:p-7 rounded-3xl border border-slate-805 space-y-5">
             
             {/* Dynamic Label for current mode */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-              <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest flex items-center gap-2">
-                <Compass className={`w-4.5 h-4.5 shrink-0 ${
+              <h3 className="text-base font-bold font-serif text-slate-100 uppercase tracking-wide flex items-center gap-2 break-words [overflow-wrap:anywhere]">
+                <Compass className={`w-5 h-5 shrink-0 ${
                   activeMode === 'semanal' ? 'text-amber-400' : activeMode === 'amor' ? 'text-rose-400' : activeMode === 'tradicional' ? 'text-purple-400' : 'text-amber-500'
                 }`} />
                 {activeMode === 'semanal' 
@@ -1169,9 +1169,9 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
               </h3>
 
               {/* Status Limit label */}
-              <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800 text-[10px] font-mono">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-slate-400 uppercase font-semibold">
+              <div className="flex items-center gap-2 bg-slate-950 px-3.5 py-1.5 rounded-full border border-slate-800 text-xs font-mono">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-slate-300 uppercase font-semibold">
                   {activeMode === 'semanal' ? t("Limite: 1x por semana") : t("Limite: 1x por dia")}
                 </span>
               </div>
@@ -1179,22 +1179,22 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
 
             {/* If Cooldown exists, warn gently AND show reading loader */}
             {cooldowns[activeMode] && (
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-3">
-                <div className="flex gap-2.5 text-left">
-                  <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <h5 className="text-xs font-bold text-amber-200">
+              <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-3">
+                <div className="flex gap-3 text-left">
+                  <ShieldAlert className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1.5">
+                    <h5 className="text-sm font-bold font-serif text-amber-200">
                       {cooldowns[activeMode] === -1 
                         ? t("Portal Semanal Fechado") 
                         : t("Energias Consagradas Conservadas")}
                     </h5>
-                    <p className="text-[11px] leading-relaxed text-amber-400/90 font-sans">
+                    <p className="text-sm leading-relaxed text-amber-200/90 font-sans break-words [overflow-wrap:anywhere]">
                       {userName ? `${t("Olá")}, ${userName}. ` : `${t("Olá")}! `}
                       {cooldowns[activeMode] === -1
                         ? t("O Tarot Semanal Profundo só pode ser jogado aos domingos para captar a vibração cósmica inicial da semana. Caso você não tenha jogado no último domingo, sintonize-se no próximo ciclo solar de domingo.")
                         : t("Você já realizou sua tiragem nesta sessão hoje! O tarot é uma ferramenta de reflexão espiritual profunda. Sorteios frequentes tumultuam o fluxo de sintonização sutil dos arcanos.")}
                     </p>
-                    <p className="text-[10px] text-slate-300 font-mono mt-1">
+                    <p className="text-xs text-slate-300 font-mono mt-1 break-words [overflow-wrap:anywhere]">
                       {cooldowns[activeMode] === -1
                         ? t("Sua próxima sintonização estará disponível no:")
                         : t("Sua próxima leitura nesta sessão estará liberada em estimadamente:")}{" "}
@@ -1206,9 +1206,9 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                 </div>
                 
                 {interpretation && (
-                  <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-xl space-y-2">
-                    <div className="flex items-center gap-1.5 text-[9px] font-mono text-slate-405">
-                      <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-xl space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                      <BookOpen className="w-4 h-4 text-amber-400" />
                       {t("RE-LEITURA DO CONSELHO ATUAL JÁ DISPONÍVEL ABAIXO")}
                     </div>
                   </div>
@@ -1221,18 +1221,18 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
               <>
                 {activeMode === 'inteligente' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-mono uppercase text-slate-450 block">{t("Qual sua questão central de autoconhecimento hoje?")}</label>
+                    <label className="text-xs font-mono uppercase text-slate-300 block font-semibold">{t("Qual sua questão central de autoconhecimento hoje?")}</label>
                     <div className="relative">
                       <input
                         type="text"
                         value={intelligentQuestion}
                         onChange={(e) => setIntelligentQuestion(e.target.value)}
                         placeholder={t("Ex: Qual caminho profissional devo trilhar nesta transição complicada de Saturno?")}
-                        className="w-full bg-slate-950 text-slate-200 rounded-xl px-4 py-3 text-xs border border-slate-800 focus:outline-none focus:border-amber-500/50 pr-10"
+                        className="w-full bg-slate-950 text-slate-100 rounded-xl px-4 py-3.5 text-sm sm:text-base border border-slate-800 focus:outline-none focus:border-amber-500/50 pr-10"
                       />
-                      <HelpCircle className="w-4 h-4 text-slate-600 absolute right-3.5 top-3.5" />
+                      <HelpCircle className="w-4 h-4 text-slate-500 absolute right-3.5 top-4" />
                     </div>
-                    <p className="text-[9px] text-slate-500 font-sans italic">
+                    <p className="text-xs text-slate-400 font-sans italic leading-relaxed break-words [overflow-wrap:anywhere]">
                       * {t("Orbia unirá a efeméride às cartas para formular uma resposta de taróloga real sobre tramas cotidianas, energias e focos.")}
                     </p>
                   </div>
@@ -1240,47 +1240,47 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
 
                 {activeMode === 'amor' && (
                   <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono uppercase text-slate-450 block">{t("Escolha uma questão romântica profunda:")}</label>
-                      <div className="grid grid-cols-1 gap-2">
+                    <div className="space-y-2">
+                      <label className="text-xs font-mono uppercase text-slate-300 block font-semibold">{t("Escolha uma questão romântica profunda:")}</label>
+                      <div className="grid grid-cols-1 gap-2.5">
                         {amorQuestions.map((q, i) => (
                           <button
                             key={i}
                             onClick={() => { setSelectedAmorQuestion(q); setIsCustomAmor(false); }}
-                            className={`text-left p-3 rounded-xl text-xs font-sans transition-colors cursor-pointer border flex items-center gap-2 ${
+                            className={`text-left p-3.5 rounded-xl text-sm font-sans transition-colors cursor-pointer border flex items-center gap-2.5 break-words [overflow-wrap:anywhere] ${
                               !isCustomAmor && selectedAmorQuestion === q
-                                ? 'bg-rose-500/10 text-rose-305 border-rose-500/35 font-semibold'
-                                : 'bg-slate-950 text-slate-400 hover:text-slate-200 border-slate-850 hover:bg-slate-900/60'
+                                ? 'bg-rose-500/10 text-rose-200 border-rose-500/35 font-semibold'
+                                : 'bg-slate-950 text-slate-300 hover:text-slate-100 border-slate-850 hover:bg-slate-900/60'
                             }`}
                           >
-                            <Heart className="w-3.5 h-3.5 text-rose-550 shrink-0" />
-                            {t(q)}
+                            <Heart className="w-4 h-4 text-rose-500 shrink-0" />
+                            <span className="leading-relaxed">{t(q)}</span>
                           </button>
                         ))}
                         
                         <button
                           onClick={() => setIsCustomAmor(true)}
-                          className={`text-left p-3 rounded-xl text-xs font-sans transition-colors cursor-pointer border flex items-center gap-2 ${
+                          className={`text-left p-3.5 rounded-xl text-sm font-sans transition-colors cursor-pointer border flex items-center gap-2.5 break-words [overflow-wrap:anywhere] ${
                             isCustomAmor
-                              ? 'bg-rose-500/10 text-rose-300 border-rose-500/30 font-semibold'
-                              : 'bg-slate-950 text-slate-440 hover:text-slate-200 border-slate-850 hover:bg-slate-900/60'
+                              ? 'bg-rose-500/10 text-rose-200 border-rose-500/30 font-semibold'
+                              : 'bg-slate-950 text-slate-300 hover:text-slate-100 border-slate-850 hover:bg-slate-900/60'
                           }`}
                         >
-                          <Zap className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                          {t("Quero escrever uma pergunta personalizada de amor...")}
+                          <Zap className="w-4 h-4 text-rose-400 shrink-0" />
+                          <span className="leading-relaxed">{t("Quero escrever uma pergunta personalizada de amor...")}</span>
                         </button>
                       </div>
                     </div>
 
                     {isCustomAmor && (
-                      <div className="space-y-1.5 animate-in slide-in-from-top-1">
-                        <label className="text-[10px] font-mono uppercase text-slate-450 block">{t("Sua pergunta afetiva:")}</label>
+                      <div className="space-y-2 animate-in slide-in-from-top-1">
+                        <label className="text-xs font-mono uppercase text-slate-300 block font-semibold">{t("Sua pergunta afetiva:")}</label>
                         <input
                           type="text"
                           value={customAmorQuestion}
                           onChange={(e) => setCustomAmorQuestion(e.target.value)}
                           placeholder={t("Ex: Como posso abrir meu coração novamente e me blindar de energias pesadas?")}
-                          className="w-full bg-slate-950 text-slate-200 rounded-xl px-4 py-3 text-xs border border-slate-800 focus:outline-none focus:border-rose-500/50"
+                          className="w-full bg-slate-950 text-slate-100 rounded-xl px-4 py-3.5 text-sm sm:text-base border border-slate-800 focus:outline-none focus:border-rose-500/50"
                         />
                       </div>
                     )}
@@ -1289,20 +1289,20 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
 
                 {activeMode === 'tradicional' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-mono uppercase text-slate-450 block">{t("Escolha o formato de tiragem clássica:")}</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <label className="text-xs font-mono uppercase text-slate-300 block font-semibold">{t("Escolha o formato de tiragem clássica:")}</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {spreads.map((spr) => (
                         <button
                           key={spr.id}
                           onClick={() => { setSelectedSpread(spr.id as any); handleResetDraw(); }}
-                          className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between h-20 ${
+                          className={`p-3.5 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between min-h-[5.5rem] ${
                             selectedSpread === spr.id
-                              ? 'bg-purple-500/10 border-purple-500/35 text-purple-300'
-                              : 'bg-slate-950 hover:bg-slate-900 border-slate-850 text-slate-400 hover:text-slate-200'
+                              ? 'bg-purple-500/10 border-purple-500/35 text-purple-200 font-semibold'
+                              : 'bg-slate-950 hover:bg-slate-900 border-slate-850 text-slate-300 hover:text-slate-100'
                           }`}
                         >
                           <Layers className="w-4 h-4 text-purple-400" />
-                          <span className="text-[10.5px] font-sans font-bold leading-tight">{t(spr.name)}</span>
+                          <span className="text-sm font-sans font-bold leading-tight break-words [overflow-wrap:anywhere]">{t(spr.name)}</span>
                         </button>
                       ))}
                     </div>
@@ -1310,9 +1310,9 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                 )}
 
                 {activeMode === 'semanal' && (
-                  <div className="p-4 bg-amber-500/5 rounded-2xl border border-amber-500/15 text-xs text-slate-400 leading-relaxed font-sans space-y-2">
-                    <div className="flex items-center gap-1.5 font-bold text-amber-300">
-                      <Flame className="w-3.5 h-3.5 fill-amber-300 text-amber-500" />
+                  <div className="p-4 bg-amber-500/5 rounded-2xl border border-amber-500/15 text-sm text-slate-300 leading-relaxed font-sans space-y-2 break-words [overflow-wrap:anywhere]">
+                    <div className="flex items-center gap-2 font-bold font-serif text-amber-300 text-sm sm:text-base">
+                      <Flame className="w-4 h-4 fill-amber-300 text-amber-500 shrink-0" />
                       {t("A PREVISÃO COMPLETA DE SUA LINHA DO TEMPO")}
                     </div>
                     <p>
@@ -1327,7 +1327,7 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                     <button
                       onClick={handlePreFetchDeck}
                       disabled={isDrawing}
-                      className={`w-full py-4 rounded-2xl text-xs font-bold font-mono uppercase cursor-pointer tracking-wider text-slate-950 transition duration-300 hover:-translate-y-0.5 shadow-lg flex items-center justify-center gap-2 ${
+                      className={`w-full py-4 px-6 rounded-2xl text-sm sm:text-base font-bold font-mono uppercase cursor-pointer tracking-wider text-slate-950 transition duration-300 hover:-translate-y-0.5 shadow-lg flex items-center justify-center gap-2.5 break-words [overflow-wrap:anywhere] ${
                         isDrawing ? 'opacity-50 cursor-wait' : ''
                       } ${
                         activeMode === 'inteligente' 
@@ -1341,13 +1341,13 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                     >
                       {isDrawing ? (
                         <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          {t("Consagrando Deck de Cartas...")}
+                          <RefreshCw className="w-5 h-5 animate-spin shrink-0" />
+                          <span>{t("Consagrando Deck de Cartas...")}</span>
                         </>
                       ) : (
                         <>
-                          <Layers className="w-4 h-4 shrink-0" />
-                          {t("Abra o Deck do Templo Oculto")} ({modeCount(activeMode)} {modeCount(activeMode) === 1 ? t('Carta') : t('Cartas')})
+                          <Layers className="w-5 h-5 shrink-0" />
+                          <span>{t("Abra o Deck do Templo Oculto")} ({modeCount(activeMode)} {modeCount(activeMode) === 1 ? t('Carta') : t('Cartas')})</span>
                         </>
                       )}
                     </button>
@@ -1356,13 +1356,13 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                   <div className="space-y-6 pt-2">
                     
                     {/* Information / Instruction label */}
-                    <div className="p-3 bg-slate-950 border border-slate-850 rounded-2xl flex items-center justify-between">
+                    <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="relative flex h-2 w-2">
+                        <span className="relative flex h-2.5 w-2.5 shrink-0">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-450 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400"></span>
                         </span>
-                        <span className="text-[10px] font-mono text-slate-400">
+                        <span className="text-xs sm:text-sm font-mono text-slate-300">
                           {t("Sintonizando:")} <strong className="text-amber-400 font-bold">{revealedIndices.length}</strong> {t("de")} <strong className="text-amber-300">{selectableCount}</strong> {t("cartas sorteadas")}
                         </span>
                       </div>
@@ -1370,7 +1370,7 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                       {revealedIndices.length < selectableCount && (
                         <button 
                           onClick={handleResetDraw}
-                          className="text-[9px] font-mono text-slate-500 hover:text-slate-300 transition cursor-pointer uppercase font-bold"
+                          className="text-xs font-mono text-slate-400 hover:text-slate-200 transition cursor-pointer uppercase font-bold"
                         >
                           {t("Mudar Perguntas")}
                         </button>
@@ -1378,7 +1378,7 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                     </div>
 
                     {/* DYNAMIC CARD DECK WITH 3D FLIP EFFECT ON DECK BACKS */}
-                    <span className="text-[10.5px] font-mono text-slate-450 uppercase block tracking-wider text-center">
+                    <span className="text-xs sm:text-sm font-mono text-slate-300 uppercase block tracking-wider text-center font-semibold">
                       🔮 {t("Toque nas cartas de costas para realizar sua escolha intuitiva:")}
                     </span>
                     
@@ -1563,32 +1563,32 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                     {revealedIndices.length === selectableCount && (
                       <div className="space-y-4 pt-2 animate-in fade-in duration-300 text-left">
                         
-                        <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl">
-                          <h4 className="text-[10px] font-mono uppercase text-slate-400 mb-2 truncate">
+                        <div className="p-4 sm:p-5 bg-slate-950 border border-slate-850 rounded-2xl">
+                          <h4 className="text-xs sm:text-sm font-mono uppercase text-slate-300 mb-3 font-semibold break-words [overflow-wrap:anywhere]">
                             {t("📋 Listagem Completa de Cartas Escolhidas por Inteligência Espiritual:")}
                           </h4>
-                          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                          <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                             {revealedIndices.map((deckV, idx) => {
                               const card = cardMapping[deckV];
                               if (!card) return null;
                               const translatedCard = translateCard(card);
                               if (!translatedCard) return null;
                               return (
-                                <div key={idx} className="flex gap-2.5 items-start p-2 bg-slate-900/60 rounded-xl border border-slate-850 text-xs">
-                                  <span className="w-5 h-5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold rounded flex items-center justify-center shrink-0">
+                                <div key={idx} className="flex gap-3 items-start p-3 bg-slate-900/60 rounded-xl border border-slate-850 text-sm">
+                                  <span className="w-6 h-6 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-bold rounded flex items-center justify-center shrink-0 mt-0.5">
                                     {idx + 1}
                                   </span>
-                                  <div className="space-y-0.5">
-                                    <h5 className="font-bold text-slate-200">
+                                  <div className="space-y-1">
+                                    <h5 className="font-serif font-bold text-slate-100 text-sm sm:text-base break-words [overflow-wrap:anywhere]">
                                       {translatedCard.cardName} 
                                       {activeMode === 'semanal' && (
-                                        <span className="text-[9px] font-mono text-amber-500 ml-1.5 font-normal">
+                                        <span className="text-xs font-mono text-amber-400 ml-2 font-normal">
                                           ({getWeeklyPositionLabel(idx)})
                                         </span>
                                       )}
                                     </h5>
-                                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                                      <strong>{t("Significado Prático:")}</strong> {translatedCard.uprightMeaning} — <strong>{t("Seu conselho:")}</strong> {translatedCard.advice}
+                                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed break-words [overflow-wrap:anywhere]">
+                                      <strong className="text-slate-200">{t("Significado Prático:")}</strong> {translatedCard.uprightMeaning} — <strong className="text-slate-200">{t("Seu conselho:")}</strong> {translatedCard.advice}
                                     </p>
                                   </div>
                                 </div>
@@ -1603,25 +1603,25 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                             <button
                               onClick={handleInterpretWithAI}
                               disabled={isInterpreting}
-                              className={`w-full py-3 rounded-xl font-mono text-xs font-bold uppercase transition duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
+                              className={`w-full py-4 px-6 rounded-xl font-mono text-sm sm:text-base font-bold uppercase transition duration-300 flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 break-words [overflow-wrap:anywhere] ${
                                 activeMode === 'inteligente'
-                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25'
+                                  ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25'
                                   : activeMode === 'amor'
-                                    ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25'
+                                    ? 'bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25'
                                     : activeMode === 'semanal'
-                                      ? 'bg-amber-500/10 text-amber-300 border border-amber-400/30 hover:bg-amber-500/25'
-                                      : 'bg-purple-500/10 text-purple-400 border border-purple-500/30 hover:bg-purple-500/25'
+                                      ? 'bg-amber-500/10 text-amber-200 border border-amber-400/30 hover:bg-amber-500/25'
+                                      : 'bg-purple-500/10 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25'
                               }`}
                             >
                               {isInterpreting ? (
                                 <>
-                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  {t("Canalizando Interpretação Real de Orbia por IA...")}
+                                  <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                                  <span>{t("Canalizando Interpretação Real de Orbia por IA...")}</span>
                                 </>
                               ) : (
                                 <>
-                                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                                  {t("Revelar Leitura Humana da Taróloga Real")}
+                                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                                  <span>{t("Revelar Leitura Humana da Taróloga Real")}</span>
                                 </>
                               )}
                             </button>
@@ -1645,7 +1645,7 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                className={`p-6 rounded-3xl border text-left space-y-4 shadow-xl ${
+                className={`p-6 sm:p-7 rounded-3xl border text-left space-y-5 shadow-xl ${
                   activeMode === 'inteligente'
                     ? 'bg-amber-500/5 border-amber-500/20'
                     : activeMode === 'amor'
@@ -1657,27 +1657,27 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
               >
                 
                 {/* Result header */}
-                <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2">
-                    <Sparkles className={`w-4 h-4 ${
+                    <Sparkles className={`w-5 h-5 ${
                       activeMode === 'inteligente' || activeMode === 'semanal' ? 'text-amber-400' : activeMode === 'amor' ? 'text-rose-400' : 'text-purple-400'
                     }`} />
-                    <span className="text-xs font-bold font-mono tracking-wider uppercase text-slate-100">
+                    <span className="text-sm sm:text-base font-bold font-serif uppercase text-slate-100 break-words [overflow-wrap:anywhere]">
                       {t("Canalização Real da Taróloga Orbia")}
                     </span>
                   </div>
-                  <span className="px-2 py-0.5 bg-slate-950 rounded border border-slate-850 text-[8px] font-mono text-amber-400 font-bold uppercase tracking-wider">
+                  <span className="px-2.5 py-1 bg-slate-950 rounded-full border border-slate-800 text-xs font-mono text-amber-400 font-bold uppercase tracking-wider">
                     {t("Sessão Ativa")}
                   </span>
                 </div>
 
                 {/* Main interpretational text */}
-                <div className="space-y-3 leading-relaxed text-xs font-sans text-slate-300">
+                <div className="space-y-3.5 leading-relaxed text-sm sm:text-base font-sans text-slate-200">
                   {interpretation.split('\n').map((para, pidx) => {
                     const cleanPara = para.trim();
                     if (!cleanPara) return null;
                     return (
-                      <p key={pidx} className="indent-2">
+                      <p key={pidx} className="break-words [overflow-wrap:anywhere]">
                         {cleanPara}
                       </p>
                     );
@@ -1686,21 +1686,21 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
 
                 {/* Specific Spiritual guidance of defense, herbs or prayers */}
                 {guidance && (
-                  <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850/60 space-y-1.5">
-                    <span className="text-[9px] font-mono text-amber-405 uppercase tracking-widest font-extrabold block flex items-center gap-1.5">
-                      <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400/10" />
+                  <div className="p-4 sm:p-5 bg-slate-950/80 rounded-2xl border border-slate-850/60 space-y-2">
+                    <span className="text-xs sm:text-sm font-mono text-amber-400 uppercase tracking-wider font-bold block flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-amber-400 fill-amber-400/10 shrink-0" />
                       {t("Decreto Sagrado de Proteção & Alinhamento Semanal:")}
                     </span>
-                    <p className="text-[11px] text-slate-400 font-sans italic leading-relaxed">
+                    <p className="text-sm sm:text-base text-slate-300 font-sans italic leading-relaxed break-words [overflow-wrap:anywhere]">
                       "{guidance}"
                     </p>
                   </div>
                 )}
 
                 {/* Quick informational banner explaining real tarot values */}
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-950/30 border border-slate-850/30 text-[10px] text-slate-500">
-                  <Info className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
-                  <p className="leading-normal font-sans">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-950/30 border border-slate-850/30 text-xs sm:text-sm text-slate-400">
+                  <Info className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                  <p className="leading-relaxed font-sans break-words [overflow-wrap:anywhere]">
                     {t("Lembre-se que o Tarot é um espelho dinâmico. Essa consulta foi consagrada para reestruturar seu dia/semana. Suas decisões livres e orações de blindagem formam a linha do tempo do seu amanhã com soberania.")}
                   </p>
                 </div>
@@ -1710,9 +1710,9 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
                   <div className="flex justify-end pt-2">
                     <button
                       onClick={handleResetDraw}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-850 text-[10px] font-semibold font-mono text-slate-400 transition hover:text-slate-205 cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-850 text-xs font-semibold font-mono text-slate-300 transition hover:text-slate-100 cursor-pointer"
                     >
-                      <RefreshCw className="w-3 h-3" />
+                      <RefreshCw className="w-3.5 h-3.5" />
                       {t("Visualizar Nova Tiragem")}
                     </button>
                   </div>
@@ -1728,47 +1728,47 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
         <div className="col-span-1 lg:col-span-5 space-y-6">
           
           {/* Card: Como o Tarot Funciona */}
-          <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-805 space-y-4 text-left">
-            <h3 className="text-xs font-bold text-slate-100 uppercase tracking-widest flex items-center gap-2 pb-2.5 border-b border-slate-850/60 font-sans">
-              <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="bg-slate-900/40 p-6 sm:p-7 rounded-3xl border border-slate-805 space-y-4 text-left">
+            <h3 className="text-sm sm:text-base font-bold font-serif text-slate-100 uppercase tracking-wide flex items-center gap-2 pb-3 border-b border-slate-850/60 break-words [overflow-wrap:anywhere]">
+              <BookOpen className="w-5 h-5 text-amber-400 shrink-0" />
               {t("Como o Tarot funciona?")}
             </h3>
 
-            <div className="space-y-4 text-xs font-sans text-slate-400 leading-relaxed">
-              <p>
+            <div className="space-y-4 text-sm sm:text-base font-sans text-slate-300 leading-relaxed">
+              <p className="break-words [overflow-wrap:anywhere]">
                 {userName ? <>{t("Olá")}, <span className="text-amber-400 font-bold">{userName}</span>. </> : <>{t("Olá")}. </>}{t("Lembre-se de que o Tarot é uma ferramenta de autoconhecimento que deve ser usada com responsabilidade, quando você precisar se conectar mais profundamente com as forças que regem o universo.")}
               </p>
 
-              <p>
+              <p className="break-words [overflow-wrap:anywhere]">
                 {t("Fazer uma consulta trará revelações que poderão influenciar a linha do tempo de sua vida, portanto, reflita sobre o que lhe foi transmitido de forma intuitiva mas ao mesmo tempo consciente. A carta escolhida é a que possui mais afinidade com o seu momento ou pergunta e traz a orientação mais apropriada. Mesmo que você não receba a resposta que gostaria, não é recomendado repetir a consulta no mesmo instante. Releia o conteúdo da carta e reflita sobre a mensagem que lhe foi transmitida, pois é a que traz o melhor conselho para você agora.")}
               </p>
 
-              <p>
+              <p className="break-words [overflow-wrap:anywhere]">
                 {t("Saiba que o Tarot é um espelho da nossa alma e reflete todo o espectro da experiência humana através de arquétipos. É uma das conexões mais antigas entre os seres humanos e as divindades, tendo o papel de nos aproximar de algo superior. Seu estudo representa uma viagem de descoberta interior, onde passamos a conhecer melhor a nós mesmos e o atual momento o qual estamos inseridos. É um oráculo que caminha lado a lado com a astrologia e a alquimia, onde em suas cartas há uma correspondência alquímica, um signo astrológico e um número para cada arquétipo. As cartas podem ser consideradas uma jornada que nos ajuda a obter uma melhor compreensão do passado, presente e futuro.")}
               </p>
             </div>
 
             <div className="pt-2 flex items-center gap-2 justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-[9px] font-mono text-amber-400 uppercase tracking-wider font-bold">{t("Sabedoria Astrológica Sagrada")}</span>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-xs font-mono text-amber-400 uppercase tracking-wider font-bold">{t("Sabedoria Astrológica Sagrada")}</span>
               </div>
-              <span className="text-[10px] font-mono text-slate-550">Orbia 2026</span>
+              <span className="text-xs font-mono text-slate-400">Orbia 2026</span>
             </div>
           </div>
 
           {/* Sintonizadores Auxiliares Card */}
-          <div className="p-5 rounded-3xl bg-slate-950/40 border border-slate-850 space-y-3">
-            <h4 className="text-[10px] font-mono text-slate-450 uppercase font-black tracking-wider text-left">{t("Conselho Alquímico do Dia")}</h4>
-            <div className="space-y-2 text-left">
-              <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+          <div className="p-5 sm:p-6 rounded-3xl bg-slate-950/40 border border-slate-850 space-y-3">
+            <h4 className="text-xs font-mono text-slate-400 uppercase font-bold tracking-wider text-left">{t("Conselho Alquímico do Dia")}</h4>
+            <div className="space-y-2.5 text-left">
+              <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-sans break-words [overflow-wrap:anywhere]">
                 "{t("Não apresse os eventos sagrados do amanhã. A energia da Lua lembra que as ilusões e a inveja de terceiros se dissipam na névoa quando nos fechamos em orações e tomamos banho de sálvia ou arruda.")}"
               </p>
-              <div className="flex items-center gap-1.5 pt-1">
-                <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-505/15 text-[8px] font-mono rounded text-amber-400 text-[8.5px] font-bold">
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="px-3 py-1 bg-amber-500/10 border border-amber-505/15 font-mono rounded-full text-amber-400 text-xs font-bold">
                   {t("Sálvia & Prata")}
                 </span>
-                <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-505/15 text-[8px] font-mono rounded text-emerald-400 text-[8.5px] font-bold">
+                <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-505/15 font-mono rounded-full text-emerald-400 text-xs font-bold">
                   {t("Defumação Activa")}
                 </span>
               </div>
