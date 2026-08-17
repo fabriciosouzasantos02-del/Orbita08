@@ -45,6 +45,7 @@ import AdminPanel from './components/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import OrbiaAIAndOracle from './components/OrbiaAIAndOracle';
 import OraculoDosSonhosCard from './components/OraculoDosSonhosCard';
+import { normalizeDreamsList, normalizeOracleDreamEntry } from './utils/dreamsNormalizer';
 import { CityAutocomplete } from './components/CityAutocomplete';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST, FAQ_LIST } from './data';
 import { getAvatarUrl, getAvatarsList } from './lib/avatars';
@@ -1905,24 +1906,27 @@ export default function App() {
     // 3. Dreams History Real-time Sync
     const unsubDreams = subscribeToDreams(loggedEmail, (updatedDreams) => {
       if (updatedDreams) {
-        const formattedDreams: OracleDreamEntry[] = updatedDreams.map(d => {
+        const formattedDreams = updatedDreams.map(d => {
           let parsedInterpret = null;
           try {
-            parsedInterpret = d.interpretation ? JSON.parse(d.interpretation) : null;
+            parsedInterpret = d.interpretation 
+              ? (typeof d.interpretation === 'string' ? JSON.parse(d.interpretation) : d.interpretation) 
+              : null;
           } catch {
-            // Keep it simple
+            parsedInterpret = null;
           }
+          const text = (d as any).description || d.text || "";
           return {
             id: d.id,
             date: d.date,
             time: d.time || "",
-            title: d.title || parsedInterpret?.title || d.text.slice(0, 30) + "...",
+            title: d.title || parsedInterpret?.title || (text ? text.slice(0, 30) + "..." : "Relato de Sonho"),
             language: d.language || "pt",
-            description: d.text,
+            description: text,
             interpretation: parsedInterpret
           };
         });
-        setDreamsHistory(formattedDreams);
+        setDreamsHistory(normalizeDreamsList(formattedDreams));
       }
     }, (error) => {
       setFirebaseErrors(prev => [
@@ -2358,7 +2362,9 @@ export default function App() {
 
       try {
         const userDreams = await loadDreamsFromDatabase(uid);
-        if (userDreams && Array.isArray(userDreams)) setDreamsHistory(userDreams as any);
+        if (userDreams && Array.isArray(userDreams)) {
+          setDreamsHistory(normalizeDreamsList(userDreams));
+        }
       } catch (e) {
         console.warn("[Sync] Non-blocking loadDreamsFromDatabase error:", e);
       }
@@ -2552,7 +2558,7 @@ export default function App() {
   const [dreamsHistory, setDreamsHistory] = useState<OracleDreamEntry[]>(() => {
     try {
       const saved = localStorage.getItem("star_map_dreams_v2");
-      return saved ? JSON.parse(saved) : [];
+      return saved ? normalizeDreamsList(JSON.parse(saved)) : [];
     } catch (e) {
       return [];
     }

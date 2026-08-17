@@ -3959,7 +3959,10 @@ export default function UserDashboardPortal({
                         };
 
                         dreamsHistory.forEach(dream => {
-                          const textToSearch = `${dream.description} ${dream.interpretation?.mainMeaning || ""} ${dream.interpretation?.title || ""}`.toLowerCase();
+                          const desc = dream?.description || "";
+                          const meaning = dream?.interpretation?.mainMeaning || "";
+                          const title = dream?.interpretation?.title || dream?.title || "";
+                          const textToSearch = `${desc} ${meaning} ${title}`.toLowerCase();
                           Object.entries(keywordsMap).forEach(([category, keywords]) => {
                             const matched = keywords.some(kw => textToSearch.includes(kw));
                             if (matched) {
@@ -3973,14 +3976,16 @@ export default function UserDashboardPortal({
                         let nightmareCount = 0;
 
                         dreamsHistory.forEach(dream => {
-                          const textToSearch = `${dream.description} ${dream.interpretation?.mainMeaning || ""}`.toLowerCase();
-                          if (dream.interpretation?.dreamEnergyIndex >= 80 || textToSearch.includes("lúcido") || textToSearch.includes("lucido") || textToSearch.includes("consciente no sonho")) {
+                          const desc = dream?.description || "";
+                          const meaning = dream?.interpretation?.mainMeaning || "";
+                          const textToSearch = `${desc} ${meaning}`.toLowerCase();
+                          if ((dream?.interpretation?.dreamEnergyIndex && dream.interpretation.dreamEnergyIndex >= 80) || textToSearch.includes("lúcido") || textToSearch.includes("lucido") || textToSearch.includes("consciente no sonho")) {
                             lucidCount++;
                           }
-                          if (dream.interpretation?.positivityLevel >= 4.0) {
+                          if (dream?.interpretation?.positivityLevel && dream.interpretation.positivityLevel >= 4.0) {
                             positiveCount++;
                           }
-                          const emo = dream.interpretation?.predominantEmotion?.emotion?.toLowerCase() || '';
+                          const emo = dream?.interpretation?.predominantEmotion?.emotion?.toLowerCase() || '';
                           if (emo.includes("medo") || emo.includes("ansiedade") || textToSearch.includes("pesadelo") || textToSearch.includes("pânico") || textToSearch.includes("terror")) {
                             nightmareCount++;
                           }
