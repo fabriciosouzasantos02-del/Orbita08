@@ -745,9 +745,9 @@ export default function CircularChart({
               </filter>
               {/* Radial Center Gradient */}
               <radialGradient id="natal-mandala-center" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#0F172A" stop-opacity="0.8" />
-                <stop offset="70%" stop-color="#060A15" stop-opacity="0.95" />
-                <stop offset="100%" stop-color="#040814" stop-opacity="1" />
+                <stop offset="0%" stopColor="#0F172A" stopOpacity="0.8" />
+                <stop offset="70%" stopColor="#060A15" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="#040814" stopOpacity="1" />
               </radialGradient>
             </defs>
 
