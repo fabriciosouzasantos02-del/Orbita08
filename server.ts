@@ -6898,7 +6898,7 @@ app.post("/api/tarot/draw-full", async (req, res) => {
   }
 });// Helper to generate deeply realistic, individualized tarot readings offline when the external API key is throttled
 function generateOfflineTarotReading(type: string, cards: any[], question: string, userName: string, lang?: string): { reading: string; guidance: string } {
-  const activeLang = (lang || "pt").toLowerCase();
+  const activeLang = (lang || "pt").toLowerCase().split("-")[0];
   
   const userDisplay = userName || (
     activeLang === 'en' ? "Seeker of Wisdom" :
@@ -6908,9 +6908,17 @@ function generateOfflineTarotReading(type: string, cards: any[], question: strin
     "Buscador de Sabedoria"
   );
   
-  const mainCardsLine = cards && Array.isArray(cards)
-    ? cards.map((c: any) => c.cardName).join(", ")
-    : "uma carta misteriosa";
+  const translatedCards = (cards && Array.isArray(cards))
+    ? cards.map((c: any) => translateCard(c, activeLang))
+    : [];
+
+  const mainCardsLine = translatedCards.length > 0
+    ? translatedCards.map((c: any) => c.cardName || c.nome).join(", ")
+    : (activeLang === 'en' ? "a mysterious sacred card" :
+       activeLang === 'es' ? "una carta sagrada misteriosa" :
+       activeLang === 'de' ? "eine heilige geheimnisvolle Karte" :
+       activeLang === 'fr' ? "une carte sacrée mystérieuse" :
+       "uma carta sagrada misteriosa");
 
   const guidanceMap: Record<string, string[]> = {
     pt: [
@@ -6952,36 +6960,110 @@ function generateOfflineTarotReading(type: string, cards: any[], question: strin
   const activeGuidanceList = guidanceMap[activeLang] || guidanceMap.pt;
   const randomGuidance = activeGuidanceList[Math.floor(Math.random() * activeGuidanceList.length)];
 
+  if (type === "amor") {
+    const amorTemplates: Record<string, any> = {
+      pt: {
+        p1: `Querido(a) ${userDisplay}, as cartas revelam energias profundas em seu coração com a emanação de: ${mainCardsLine}.`,
+        p2: `Em relação ao seu questionamento amoroso ("${question || "Caminhos do coração"}"), o oráculo indica que o momento pede verdade emocional e blindagem contra interferências ou invejas externas. Não permita que dúvidas alimentadas por terceiros afetem a pureza dos seus sentimentos.`,
+        p3: `Abra espaço para diálogos sinceros e cure antigas feridas. Quando você vibra na sua própria luz com amor-próprio, os caminhos afetivos se harmonizam naturalmente.`,
+        g: `Conselho do Amor de Orbia: ${randomGuidance}`
+      },
+      en: {
+        p1: `Dear ${userDisplay}, the cards reveal profound energies within your heart through the emanation of: ${mainCardsLine}.`,
+        p2: `Regarding your love question ("${question || "Paths of the heart"}"), the oracle indicates that this moment calls for emotional truth and shielding against external interference or envy. Do not let doubts fueled by others cloud the purity of your feelings.`,
+        p3: `Make room for sincere dialogues and heal old wounds. When you vibrate in your own light with self-love, your romantic paths harmonize naturally.`,
+        g: `Love Guidance from Orbia: ${randomGuidance}`
+      },
+      es: {
+        p1: `Querido(a) ${userDisplay}, las cartas revelan energías profundas en tu corazón con la emanación de: ${mainCardsLine}.`,
+        p2: `Con respecto a tu consulta de amor ("${question || "Caminos del corazón"}"), el oráculo indica que el momento pide verdad emocional y protección contra interferencias o envidias externas. No permitas que dudas alimentadas por terceros nublen la pureza de tus sentimientos.`,
+        p3: `Abre espacio para diálogos sinceros y sana viejas heridas. Cuando vibras en tu propia luz con amor propio, los caminos afectivos se armonizan naturalmente.`,
+        g: `Consejo del Amor de Orbia: ${randomGuidance}`
+      },
+      de: {
+        p1: `Liebe(r) ${userDisplay}, die Karten offenbaren tiefe Energien in Ihrem Herzen durch die Ausstrahlung von: ${mainCardsLine}.`,
+        p2: `Bezüglich Ihrer Liebesfrage ("${question || "Wege des Herzens"}") zeigt das Orakel an, dass dieser Moment nach emotionaler Wahrheit und Schutz vor äußeren Einflüssen oder Neid verlangt. Lassen Sie nicht zu, dass von Dritten genährte Zweifel die Reinheit Ihrer Gefühle trüben.`,
+        p3: `Schaffen Sie Raum für aufrichtige Dialoge und heilen Sie alte Wunden. Wenn Sie in Ihrem eigenen Licht mit Selbstliebe schwingen, harmonisieren sich die Liebeswege ganz natürlich.`,
+        g: `Liebesrat von Orbia: ${randomGuidance}`
+      },
+      fr: {
+        p1: `Cher(e) ${userDisplay}, les cartes révèlent des énergies profondes dans votre cœur avec l'émanation de : ${mainCardsLine}.`,
+        p2: `Concernant votre question amoureuse ("${question || "Chemins du cœur"}"), l'oracle indique que le moment demande une vérité émotionnelle et une protection contre les interférences ou jalousies extérieures. Ne laissez pas les doutes nourris par autrui troubler la pureté de vos sentiments.`,
+        p3: `Faites place à des dialogues sincères et guérissez les anciennes blessures. Lorsque vous vibrez dans votre propre lumière avec amour-propre, vos voies affectives s'harmonisent naturellement.`,
+        g: `Conseil d'Amour d'Orbia : ${randomGuidance}`
+      }
+    };
+    const t = amorTemplates[activeLang] || amorTemplates.pt;
+    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}`, guidance: t.g };
+  }
+
+  if (type === "semanal") {
+    const weeklyTemplates: Record<string, any> = {
+      pt: {
+        p1: `Consulente ${userDisplay}, a sua Grande Tiragem Semanal dos 10 Arcanos Ancestrais traz um mapa vivo de energias: ${mainCardsLine}.`,
+        p2: `Nesta semana, as forças espirituais apontam para uma reorganização necessária na sua rotina e decisões profissionais. Fique atento a pessoas mal-intencionadas ou fofocas que tentem minar seu foco. No campo financeiro e de projetos, mantenha a constância e não precipite contratos sem cautela prévia.`,
+        p3: `Nas relações pessoais e familiares, pratique o recolhimento consciente e o silêncio protetor. Fortaleça sua aura com momentos de oração, banhos de ervas harmonizadores e preserve sua serenidade diante de testes passageiros.`,
+        g: `Decreto Semanal Sagrado de Orbia: ${randomGuidance}`
+      },
+      en: {
+        p1: `Querist ${userDisplay}, your Grand Weekly 10-Card Spread brings a vibrant map of cosmic energies: ${mainCardsLine}.`,
+        p2: `This week, spiritual forces point toward a necessary reorganization in your routine and professional decisions. Stay watchful against ill-intentioned individuals or gossip attempting to undermine your focus. In financial matters and projects, keep steady perseverance and do not rush agreements without careful review.`,
+        p3: `In personal and family relationships, practice mindful retreat and protective silence. Strengthen your aura with moments of prayer, harmonizing herbal baths, and preserve your inner peace through fleeting tests.`,
+        g: `Sacred Weekly Decree of Orbia: ${randomGuidance}`
+      },
+      es: {
+        p1: `Consultante ${userDisplay}, tu Gran Tirada Semanal de los 10 Arcanos Ancestrales trae un mapa vivo de energías: ${mainCardsLine}.`,
+        p2: `Esta semana, las fuerzas espirituales señalan una reorganización necesaria en tu rutina y decisiones profesionales. Mantente alerta ante personas malintencionadas o chismes que intenten minar tu concentración. En finanzas y proyectos, mantén la constancia y no te precipites en contratos sin cautela.`,
+        p3: `En las relaciones personales y familiares, practica el recogimiento consciente y el silencio protector. Fortalece tu aura con momentos de oración, baños de hierbas armonizadores y preserva tu serenidad ante pruebas pasajeras.`,
+        g: `Decreto Semanal Sagrado de Orbia: ${randomGuidance}`
+      },
+      de: {
+        p1: `Frager ${userDisplay}, Ihre große wöchentliche 10-Karten-Legung bringt eine lebendige Karte kosmischer Energien hervor: ${mainCardsLine}.`,
+        p2: `In dieser Woche weisen spirituelle Kräfte auf eine notwendige Neuorganisation in Ihrer Routine und bei beruflichen Entscheidungen hin. Seien Sie wachsam gegenüber böswilligen Personen oder Klatsch, die versuchen, Ihren Fokus zu schwächen. Bleiben Sie in finanziellen Dingen und Projekten beständig und überstürzen Sie keine Verträge ohne gründliche Prüfung.`,
+        p3: `Praktizieren Sie in persönlichen und familiären Beziehungen achtsamen Rückzug und schützende Stille. Stärken Sie Ihre Aura mit Gebeten, harmonisierenden Kräuterbädern und bewahren Sie Ihre Gelassenheit bei vorübergehenden Prüfungen.`,
+        g: `Heiliges Wöchentliches Dekret von Orbia: ${randomGuidance}`
+      },
+      fr: {
+        p1: `Consultant ${userDisplay}, votre Grand Tirage Hebdomadaire des 10 Arcanes Ancestraux apporte une carte vivante des énergies cosmiques : ${mainCardsLine}.`,
+        p2: `Cette semaine, les forces spirituelles indiquent une réorganisation nécessaire dans votre routine et vos décisions professionnelles. Restez vigilant face aux personnes malintentionnées ou aux commérages qui tenteraient d'affaiblir votre concentration. Sur le plan financier et des projets, gardez la constance et ne précipitez aucun accord sans prudence.`,
+        p3: `Dans les relations personnelles et familiales, pratiquez le recueillement conscient et le silence protecteur. Renforcez votre aura par des moments de prière, des bains d'herbes harmonisants et préservez votre sérénité face aux épreuves passagères.`,
+        g: `Décret Sacré Hebdomadaire d'Orbia : ${randomGuidance}`
+      }
+    };
+    const t = weeklyTemplates[activeLang] || weeklyTemplates.pt;
+    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}`, guidance: t.g };
+  }
+
   const templates: Record<string, any> = {
     pt: {
-      p1: `Consulente ${userDisplay}, a sua tiragem clássica de cartas tradicionais traz a emanação profunda de: ${mainCardsLine}. Cada arquétipo reflete forças milenares e nos ensina lições vivenciais indispensáveis para harmonizar nossa rotina.`,
-      p2: `Em relação à sua questão ou dúvida: "${question || "Conselho geral"}", o oráculo adverte que fofocas ou desequilíbrios momentâneos no ambiente laboral e familiar devem ser combatidos com prudência e retidão. Não responda à discórdia com a mesma vibração; conserve seu silêncio curativo e seu autodirecionamento maduro.`,
-      p3: `Aproveite as oportunidades e sintonize seu coração com os sinais que o universo envia no silêncio do seu lar. A colheita de seus esforços será muito rica no tempo certo do cosmo.`,
-      g: `Conselho dos Arcanos Clássicos: ${randomGuidance}`
+      p1: `Consulente ${userDisplay}, a sua tiragem de cartas traz a emanação profunda de: ${mainCardsLine}. Cada arquétipo reflete forças milenares e ensina lições vivenciais indispensáveis para harmonizar sua caminhada.`,
+      p2: `Em relação à sua questão ("${question || "Conselho geral"}"), o oráculo adverte que fofocas ou desequilíbrios momentâneos no ambiente laboral e familiar devem ser combatidos com prudência e retidão. Não responda à discórdia com a mesma vibração; conserve seu silêncio curativo e sua postura madura.`,
+      p3: `Aproveite as oportunidades e sintonize seu coração com os sinais que o universo envia. A colheita de seus esforços será muito rica no tempo certo do cosmo.`,
+      g: `Conselho dos Arcanos de Orbia: ${randomGuidance}`
     },
     en: {
-      p1: `Querist ${userDisplay}, your classic spread of traditional cards brings the deep emanation of: ${mainCardsLine}. Each archetype reflects ancient forces and teaches us indispensable life lessons to harmonize our routine.`,
-      p2: `Regarding your question or concern: "${question || "General advice"}", the oracle warns that gossip or temporary imbalances in the work and family environment must be combated with prudence and rectitude. Do not respond to discord with the same vibration; preserve your healing silence and your mature self-direction.`,
-      p3: `Seize the opportunities and tune your heart with the signs that the universe sends in the silence of your home. The harvest of your efforts will be very rich in the right cosmic time.`,
-      g: `Advice of the Classic Arcana: ${randomGuidance}`
+      p1: `Querist ${userDisplay}, your card spread brings the deep emanation of: ${mainCardsLine}. Each archetype reflects ancient forces and teaches indispensable life lessons to harmonize your path.`,
+      p2: `Regarding your question ("${question || "General guidance"}"), the oracle warns that gossip or temporary imbalances in your work and family environment must be handled with prudence and integrity. Do not respond to discord with the same vibration; preserve your healing silence and mature composure.`,
+      p3: `Seize the incoming opportunities and tune your heart with the signs sent by the universe. The harvest of your sincere efforts will be very rich in sacred cosmic timing.`,
+      g: `Guidance of the Sacred Arcana: ${randomGuidance}`
     },
     es: {
-      p1: `Consultante ${userDisplay}, tu tirada clásica de cartas tradicionales trae la profunda emanación de: ${mainCardsLine}. Cada arquetipo refleja fuerzas milenarias y nos enseña lecciones de vida indispensables para armonizar nuestra rutina.`,
-      p2: `Con respecto a tu pregunta o inquietud: "${question || "Consejo general"}", el oráculo advierte que los chismes o desequilibrios temporales en el entorno laboral y familiar deben ser combatidos con prudencia y rectitud. No respondas a la discordia con la misma vibración; conserva tu silencio curativo y tu maduro autodireccionamiento.`,
-      p3: `Aprovecha las oportunidades y sintoniza tu corazón con las señales que el universo envía en el silencio de tu hogar. La cosecha de tus esfuerzos será muy rica en el momento cósmico adecuado.`,
-      g: `Consejo de los Arcanos Clásicos: ${randomGuidance}`
+      p1: `Consultante ${userDisplay}, tu tirada de cartas trae la profunda emanación de: ${mainCardsLine}. Cada arquetipo refleja fuerzas milenarias y enseña lecciones de vida indispensables para armonizar tu camino.`,
+      p2: `Con respecto a tu consulta ("${question || "Consejo general"}"), el oráculo advierte que los chismes o desequilibrios temporales en el entorno laboral y familiar deben afrontarse con prudencia y rectitud. No respondas a la discordia con la misma vibración; conserva tu silencio curativo y tu postura madura.`,
+      p3: `Aprovecha las oportunidades y sintoniza tu corazón con las señales que el universo envía. La cosecha de tus esfuerzos será muy rica en el tiempo cósmico adecuado.`,
+      g: `Consejo de los Arcanos de Orbia: ${randomGuidance}`
     },
     de: {
-      p1: `Frager ${userDisplay}, Ihr klassisches Spread traditioneller Karten bringt die tiefe Ausstrahlung von: ${mainCardsLine}. Jedes Archetyp spiegelt jahrtausendealte Kräfte wider und lehrt uns unverzichtbare Lebenslektionen, um unseren Alltag zu harmonisieren.`,
-      p2: `Bezüglich Ihrer Frage oder Sorge: "${question || "Allgemeiner Rat"}" warnt das Orakel, dass Klatsch oder vorübergehende Ungleichgewichte im Arbeits- und Familienumfeld mit Vorsicht und Rechtschaffenheit bekämpft werden müssen. Antworten Sie nicht auf Zwietracht mit derselben Schwingung; bewahren Sie Ihre heilsame Stille und Ihre reife Selbstausrichtung.`,
-      p3: `Nutzen Sie die Gelegenheiten und stimmen Sie Ihr Herz auf die Zeichen ab, die das Universum in der Stille Ihres Heims sendet. Die Ernte Ihrer Bemühungen wird zur richtigen kosmischen Zeit sehr reich sein.`,
-      g: `Rat der klassischen Arkana: ${randomGuidance}`
+      p1: `Frager ${userDisplay}, Ihre gelegten Karten bringen die tiefe Ausstrahlung von: ${mainCardsLine}. Jedes Archetyp spiegelt jahrtausendealte Kräfte wider und lehrt unverzichtbare Lebenslektionen, um Ihren Weg zu harmonisieren.`,
+      p2: `Bezüglich Ihrer Frage ("${question || "Allgemeiner Rat"}") warnt das Orakel, dass Klatsch oder vorübergehende Ungleichgewichte im Arbeits- und Familienumfeld mit Umsicht und Rechtschaffenheit begegnet werden müssen. Antworten Sie nicht auf Zwietracht mit derselben Schwingung; bewahren Sie Ihre heilsame Stille und reife Haltung.`,
+      p3: `Nutzen Sie die sich bietenden Gelegenheiten und stimmen Sie Ihr Herz auf die Zeichen ab, die das Universum sendet. Die Ernte Ihrer Bemühungen wird zur richtigen kosmischen Zeit sehr reich sein.`,
+      g: `Rat der heiligen Arkana von Orbia: ${randomGuidance}`
     },
     fr: {
-      p1: `Consultant ${userDisplay}, votre tirage classique de cartes traditionnelles apporte la profonde émanation de : ${mainCardsLine}. Chaque archétype reflète des forces millénaires et nous enseigne des leçons de vie indispensables pour harmoniser notre routine.`,
-      p2: `Concernant votre question ou doute : "${question || "Conseil général"}", l'oracle avertit que les commérages ou déséquilibres temporaires dans l'environnement de travail et familial doivent être combattus avec prudence et rectitude. Ne répondez pas à la discorde par la même vibration ; conservez votre silence réparateur et votre direction personnelle mature.`,
-      p3: `Saisissez les opportunités et accordez votre cœur aux signes que l'univers envoie dans le silence de votre foyer. La récolte de vos efforts sera très riche au bon moment cosmique.`,
-      g: `Conseil des Arcanes Classiques : ${randomGuidance}`
+      p1: `Consultant ${userDisplay}, votre tirage de cartes apporte la profonde émanation de : ${mainCardsLine}. Chaque archétype reflète des forces millénaires et enseigne des leçons de vie indispensables pour harmoniser votre parcours.`,
+      p2: `Concernant votre question ("${question || "Conseil général"}"), l'oracle avertit que les commérages ou déséquilibres temporaires dans l'environnement professionnel et familial doivent être traités avec prudence et droiture. Ne répondez pas à la discorde par la même vibration ; conservez votre silence réparateur et votre posture mature.`,
+      p3: `Saisissez les opportunités et accordez votre cœur aux signes que l'univers envoie. La récolte de vos efforts sera très riche au bon moment cosmique.`,
+      g: `Conseil des Arcanes d'Orbia : ${randomGuidance}`
     }
   };
   const t = templates[activeLang] || templates["pt"];
@@ -6991,102 +7073,97 @@ function generateOfflineTarotReading(type: string, cards: any[], question: strin
 // API: Interpretação de cartas sintonizadas por IA
 app.post("/api/tarot/interpret", async (req, res) => {
   const { type, cards, question, userName, birthDate, birthTime, latitude, longitude, lang, mapData, userProfile } = req.body;
-  const userDisplay = userName || "Buscador de Sabedoria";
+  const activeLang = (lang || "pt").toLowerCase().split("-")[0];
+  const langKey = ["pt", "en", "es", "de", "fr"].includes(activeLang) ? activeLang : "pt";
 
-  const cardsListStr = cards && Array.isArray(cards)
-    ? cards.map((c: any, index: number) => `Carta ${index + 1}: ${c.cardName} (Foco: ${c.uprightMeaning || ''}. Conselho: ${c.advice || ''})`).join(", ")
-    : "uma carta misteriosa";
-
-  const activeLang = (lang || "pt").toLowerCase();
-  const langNames = {
+  const langNames: Record<string, string> = {
     pt: "Português",
     en: "English (Inglês)",
-    es: "Spanish (Espanhol)",
-    de: "German (Alemão)",
-    fr: "French (Francês)"
+    es: "Español (Espanhol)",
+    de: "Deutsch (Alemão)",
+    fr: "Français (Francês)"
   };
-  const targetLangName = langNames[activeLang] || "Português";
+  const targetLangName = langNames[langKey] || "Português";
 
-  const { userSunSign, userMoonSign, userAscSign, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile || { birthDate, birthTime, latitude, longitude }, activeLang);
+  const userDisplay = userName || (
+    langKey === 'en' ? "Seeker of Wisdom" :
+    langKey === 'es' ? "Buscador de Sabiduría" :
+    langKey === 'de' ? "Suchender der Weisheit" :
+    langKey === 'fr' ? "Chercheur de Sagesse" :
+    "Buscador de Sabedoria"
+  );
+
+  // Translate drawn cards to target language BEFORE assembling prompt
+  const translatedCards = cards && Array.isArray(cards)
+    ? cards.map((c: any) => translateCard(c, langKey))
+    : [];
+
+  const cardWord = langKey === 'en' ? 'Card' : langKey === 'es' ? 'Carta' : langKey === 'de' ? 'Karte' : langKey === 'fr' ? 'Carte' : 'Carta';
+  const focusWord = langKey === 'en' ? 'Focus' : langKey === 'es' ? 'Enfoque' : langKey === 'de' ? 'Fokus' : langKey === 'fr' ? 'Focus' : 'Foco';
+  const adviceWord = langKey === 'en' ? 'Advice' : langKey === 'es' ? 'Consejo' : langKey === 'de' ? 'Rat' : langKey === 'fr' ? 'Conseil' : 'Conselho';
+
+  const cardsListStr = translatedCards.length > 0
+    ? translatedCards.map((c: any, index: number) => `${cardWord} ${index + 1}: ${c.cardName || c.nome} (${focusWord}: ${c.uprightMeaning || ''}. ${adviceWord}: ${c.advice || ''})`).join(", ")
+    : (langKey === 'en' ? "a mysterious sacred card" : langKey === 'es' ? "una carta sagrada misteriosa" : langKey === 'de' ? "eine heilige geheimnisvolle Karte" : langKey === 'fr' ? "une carte sacrée mystérieuse" : "uma carta misteriosa");
+
+  const { userSunSign, userMoonSign, userAscSign, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile || { birthDate, birthTime, latitude, longitude }, langKey);
 
   let astroContextLine = "";
   if (chartContext) {
-    astroContextLine = `\n[IMPORTANTE - Perfil Astrológico Natal Real do Consulente (FONTE ÚNICA DA VERDADE): ${chartContext}]. Cruze de forma sutil os arquétipos das cartas de Tarot com esse mapa natal do usuário (ex: "Sendo você nativo de Sol em ${userSunSign}..." ou "Com seu ascendente em ${userAscSign}..."). Caso apareça uma carta marcante ou desafiadora (como A Torre, A Morte, O Diabo ou A Lua), faça uma correlação direta com a energia planetária de regência do signo/ascendente correspondente no mapa natal do usuário, tornando a interpretação única, autêntica, inesquecível e profundamente espiritual.`;
+    astroContextLine = `\n[NATAL ASTRO CONTEXT: ${chartContext}]. Gently weave the Tarot archetypes with the querist's natal chart (e.g. Sun in ${userSunSign}, Moon in ${userMoonSign}, Ascendant in ${userAscSign}).`;
   }
 
-  let systemPrompt = `Você é Orbia, uma taróloga profissional de verdade, extremamente sensitiva, acolhedora e profundamente humana com anos de experiência em leituras espirituais presenciais. 
+  const systemPrompt = `You are Orbia, a deeply intuitive, warm, sensitive, and authentic professional master Tarot reader with decades of experience in real in-person readings.
 
-Suas respostas NUNCA devem parecer artificiais, frias ou robóticas. Você fala diretamente ao coração do consulente de forma viva, íntima e sincera, como uma taróloga experiente falaria cara a cara, revelando fendas na alma, detalhes ocultos e sentimentos reais.
+CRITICAL LANGUAGE DIRECTIVE:
+You MUST write the ENTIRE output JSON exclusively in ${targetLangName} (Language code: "${langKey}").
+${langKey !== 'pt' ? `DO NOT use any Portuguese words or sentences. The user has explicitly selected ${targetLangName}. Every sentence of the reading and guidance MUST be natural, elegant, and native ${targetLangName}.` : ''}
 
-Nas suas leituras, você deve obrigatoriamente trazer e explorar elementos práticos da vida do consulente:
-- O momento atual em que a pessoa se encontra e o que está acontecendo à sua volta.
-- O que ela precisa prestar atenção urgente (alertas práticos de comportamento).
-- Orientação sobre o que fazer e atitudes a evitar.
-- O convívio social e relacionamentos (amigos, pessoas próximas, possíveis tramas).
-- Trabalho, carreira, finanças e caminhos de prosperidade.
-- Energias ao redor: se atentar contra invejas, fofocas, má vibração ou mal olhado oculto no ambiente se cartas mais pesadas ou espirituais surgirem (como Diabo, Torre, Sacerdotisa, Lua), ensinando formas de se proteger ou manter a cabeça erguida.
+Style & Tone:
+- Speak directly to the querist's heart in a vivid, compassionate, and spiritual voice.
+- Never sound robotic, clinical, or generic.
+- Cover practical aspects: current situation, behavioral advice, relationships (friends, family, protection against envy/gossip/bad vibrations), work, career, and spiritual alignment.
 ${astroContextLine}
 
-Escreva em parágrafos envolventes, fluidos e repletos de sabedoria ancestral em ${targetLangName}.`;
+Output must be valid JSON ONLY matching:
+{
+  "reading": "Rich, multi-paragraph personalized reading in ${targetLangName} (approx 200-320 words)...",
+  "guidance": "A short, empowering sacred mantra or spiritual defense decree in ${targetLangName}..."
+}`;
 
   let userPrompt = "";
-
   if (type === "amor") {
-    userPrompt = `Realize uma consulta de Tarot do Amor mística e profundamente humana para ${userDisplay}.
-As cartas sorteadas pelo consulente do baralho de costas são: ${cardsListStr}.
-A pergunta romântica ou angústia afetiva é: "${question || "Qual o conselho do Tarot para minha vida amorosa no momento?"}".
+    userPrompt = `Perform a profound Love & Relationship Tarot Reading in ${targetLangName} for ${userDisplay}.
+Drawn cards: ${cardsListStr}.
+Querist's question: "${question || (langKey === 'en' ? 'What is the guidance of Tarot for my love life?' : langKey === 'es' ? '¿Cuál es el consejo del Tarot para mi vida amorosa?' : langKey === 'de' ? 'Was ist der Rat des Tarot für mein Liebesleben?' : langKey === 'fr' ? 'Quel est le conseil du Tarot pour ma vie amoureuse ?' : 'Qual o conselho do Tarot para minha vida amorosa no momento?')}".
 
-Como uma taróloga de verdade lendo os segredos do coração, faça uma leitura reveladora. Trate de ciúmes, reciprocidade, pessoas ao redor que podem trazer inveja no romance, caminhos livres ou bloqueados de conexão e dê um norte exato sobre o que fazer e como se blindar espiritualmente.
-
-Gere um JSON exato em ${targetLangName} com este formato de chaves:
-{
-  "reading": "Texto fluido e profundo da sua leitura romântica realista de taróloga real, máximo 280 palavras...",
-  "guidance": "Mantra ou sinal espiritual do coração para vibrar positivamente hoje..."
-}`;
-  } else if (type === "inteligente") {
-    userPrompt = `Realize uma consulta de Tarot Inteligente para ${userDisplay} focando em autoconhecimento evolutivo e vida pessoal.
-As cartas sorteadas são: ${cardsListStr}.
-A questão trazida é: "${question || "Conselho geral sobre meu momento de vida e escolhas"}"
-
-Leia esta dinâmica de forma humana e calorosa. Fale sobre as conexões cotidianas, a rotina profissional, os sabotadores mentais (inveja externa ou autorrecriminação), o que de fato está acontecendo na jornada dela e como canalizar melhor esse caminho prático.
-
-Gere um JSON exato em ${targetLangName} com este formato de chaves:
-{
-  "reading": "Texto de leitura realista e acolhedora da taróloga Orbia, com linguagem humana e sincera, máximo 280 palavras...",
-  "guidance": "Um mantra de poder ou atitude mágica personalizada para o dia..."
-}`;
+Provide intimate, insightful advice on emotional truth, mutual reciprocity, protection from outside envy, and personal empowerment in love.
+Return JSON with "reading" and "guidance" in ${targetLangName}.`;
   } else if (type === "semanal") {
-    userPrompt = `Realize a Leitura do Tarot Semanal Profunda de 10 cartas para ${userDisplay}. 
-Esse é um momento de extrema importância e destaque na semana do consulente!
-As 10 cartas consagradas que foram sorteadas são: ${cardsListStr}.
+    userPrompt = `Perform the Grand 10-Card Weekly Sacred Tarot Reading in ${targetLangName} for ${userDisplay}.
+Drawn cards (10 positions of destiny): ${cardsListStr}.
 
-Como uma taróloga real em sua mesa sagrada, interprete essa tiragem profunda de 10 cartas! Desenvolva em detalhes ricos:
-1. O panorama geral de forças espirituais para esta semana.
-2. Trabalho, negócios e caminhos profissionais de prosperidade.
-3. Vida amorosa e relações sociais (quem se aproxima, proteção contra falsidades ou invejas na roda de convívio).
-4. O que se atentar com máxima urgência, o que fazer para vencer os desafios e o que evitar de qualquer forma.
-5. Mensagem de blindagem energética e espiritual.
+Develop a detailed, comprehensive forecast for the upcoming 7 days covering:
+1. Overall spiritual atmosphere and energy.
+2. Career, work, and financial prosperity.
+3. Love, relationships, and shielding against negative vibes or jealousy.
+4. Essential behavioral advice and what to avoid.
+5. Protection decree.
+Return JSON with "reading" and "guidance" in ${targetLangName}.`;
+  } else if (type === "inteligente") {
+    userPrompt = `Perform an Intelligent Evolution Tarot Reading in ${targetLangName} for ${userDisplay}.
+Drawn cards: ${cardsListStr}.
+Question: "${question || (langKey === 'en' ? 'General advice for my life path' : langKey === 'es' ? 'Consejo general sobre mi momento de vida' : langKey === 'de' ? 'Allgemeiner Rat für meinen Lebensweg' : langKey === 'fr' ? 'Conseil général sur mon chemin de vie' : 'Conselho geral sobre meu momento de vida e escolhas')}".
 
-Dê uma leitura magnífica, ampla, altamente personalizada e muito humana.
-
-Gere um JSON em ${targetLangName} com este formato de chaves:
-{
-  "reading": "Leitura semanal profunda detalhando cada uma das áreas com fluidez e calor humano, em tom de conversa intimista e espiritual de terapeuta e taróloga real, máximo 380 palavras...",
-  "guidance": "O grande conselho ou decreto consagrado de luz para guiar e blindar toda a semana de forma impecável..."
-}`;
+Give compassionate and practical life direction.
+Return JSON with "reading" and "guidance" in ${targetLangName}.`;
   } else {
-    // Tradicional ou fallback clássico
-    userPrompt = `Realize uma leitura de Tarot Tradicional Práctico com interpretação clássica refinada para ${userDisplay}.
-As cartas sorteadas são: ${cardsListStr}.
-Dúvida apresentada: "${question || "Conselho geral dos arquétipos milenares"}"
+    userPrompt = `Perform a Traditional Sacred Tarot Reading in ${targetLangName} for ${userDisplay}.
+Drawn cards: ${cardsListStr}.
+Question: "${question || (langKey === 'en' ? 'Wisdom from the ancient archetypes' : langKey === 'es' ? 'Sabiduría de los arquetipos milenarios' : langKey === 'de' ? 'Weisheit der uralten Archetypen' : langKey === 'fr' ? 'Sagesse des archétypes millénaires' : 'Conselho geral dos arquétipos milenares')}".
 
-Interprete de maneira mística, histórica e vivencial os arcanos tirados por ele. Faça a pessoa compreender a força espiritual do herói em sua jornada diária, perigos práticos de fofocas ou traições indicados nos arquétipos, e atitudes positivas para harmonizar seu lar e trabalho.
-
-Gere um JSON exato em ${targetLangName} com este formato de chaves:
-{
-  "reading": "A leitura e correlação clássica detalhada pela taróloga, rica em significados humanos, máximo 280 palavras...",
-  "guidance": "Um mantra de sintonização ou conselho clássico..."
-}...`; // Wait, let's make sure it's valid JSON format
+Interpret the traditional symbology with spiritual depth.
+Return JSON with "reading" and "guidance" in ${targetLangName}.`;
   }
 
   try {
@@ -7099,10 +7176,10 @@ Gere um JSON exato em ${targetLangName} com este formato de chaves:
     });
 
     const parsed = cleanAndParseJSON(response.text || "{}");
-    res.json({
-      reading: parsed.reading || generateOfflineTarotReading(type, cards, question, userName, activeLang).reading,
-      guidance: parsed.guidance || generateOfflineTarotReading(type, cards, question, userName, activeLang).guidance
-    });
+    const reading = parsed.reading || generateOfflineTarotReading(type, cards, question, userName, langKey).reading;
+    const guidance = parsed.guidance || generateOfflineTarotReading(type, cards, question, userName, langKey).guidance;
+
+    res.json({ reading, guidance });
   } catch (err) {
     const errMsg = err?.message || String(err);
     const isRateLimit = errMsg.includes("Limite de requisições excedido") || 
@@ -7118,9 +7195,77 @@ Gere um JSON exato em ${targetLangName} com este formato de chaves:
       console.log("[Tarot Info] Servindo leitura sintonizada offline devido a instabilidade:", errMsg);
     }
     
-    // Serve robust, fully custom simulated reading
-    const fallbackResult = generateOfflineTarotReading(type, cards, question, userName, activeLang);
+    // Serve robust, fully localized reading
+    const fallbackResult = generateOfflineTarotReading(type, cards, question, userName, langKey);
     res.json(fallbackResult);
+  }
+});
+
+// API: Translate existing saved reading on language switch
+app.post("/api/tarot/translate-reading", async (req, res) => {
+  try {
+    const { reading, guidance, targetLang, userName, type, cards, question } = req.body;
+    const cleanTargetLang = (targetLang || "pt").toLowerCase().split("-")[0];
+    const targetLangKey = ["pt", "en", "es", "de", "fr"].includes(cleanTargetLang) ? cleanTargetLang : "pt";
+
+    const langNames: Record<string, string> = {
+      pt: "Português",
+      en: "English",
+      es: "Español",
+      de: "Deutsch",
+      fr: "Français"
+    };
+    const targetLangName = langNames[targetLangKey] || "Português";
+
+    if (!reading && cards) {
+      const fallback = generateOfflineTarotReading(type || "inteligente", cards, question || "", userName || "", targetLangKey);
+      return res.json(fallback);
+    }
+
+    if (!reading) {
+      return res.status(400).json({ error: "Missing reading text" });
+    }
+
+    const translatePrompt = `You are a professional multilingual Tarot translator.
+Translate and spiritually adapt the following Tarot reading and sacred guidance from its original language into ${targetLangName} (Language code: ${targetLangKey}).
+Maintain the warm, empathetic, sensitive voice of Orbia.
+
+Original Reading:
+${reading}
+
+Original Guidance:
+${guidance || ""}
+
+Return JSON ONLY with:
+{
+  "reading": "Full translation in ${targetLangName}...",
+  "guidance": "Translation of the guidance in ${targetLangName}..."
+}`;
+
+    const response = await generateContentWithFallback({
+      contents: translatePrompt,
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const parsed = cleanAndParseJSON(response.text || "{}");
+    if (parsed.reading) {
+      return res.json({
+        reading: parsed.reading,
+        guidance: parsed.guidance || guidance || ""
+      });
+    }
+
+    // Fallback if AI couldn't parse
+    const fallback = generateOfflineTarotReading(type || "inteligente", cards || [], question || "", userName || "", targetLangKey);
+    res.json(fallback);
+  } catch (err) {
+    console.log("[Tarot Translation Error, serving localized offline]:", err);
+    const { type, cards, question, userName, targetLang } = req.body;
+    const cleanTargetLang = (targetLang || "pt").toLowerCase().split("-")[0];
+    const fallback = generateOfflineTarotReading(type || "inteligente", cards || [], question || "", userName || "", cleanTargetLang);
+    res.json(fallback);
   }
 });
 

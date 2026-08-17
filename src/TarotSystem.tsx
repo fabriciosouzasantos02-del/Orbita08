@@ -519,18 +519,18 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
   const [intelligentQuestion, setIntelligentQuestion] = useState<string>('');
   
   const amorQuestions = [
-    "Como será meu futuro amoroso nos próximos meses?",
-    "O que ele/ela realmente sente por mim neste ciclo?",
-    "Qual o melhor conselho de Orbia para curar meu coração agora?",
-    "Como posso me proteger de invejas ou fofocas na relação?"
+    t("Como será meu futuro amoroso nos próximos meses?"),
+    t("O que ele/ela realmente sente por mim neste ciclo?"),
+    t("Qual o melhor conselho de Orbia para curar meu coração agora?"),
+    t("Como posso me proteger de invejas ou fofocas na relação?")
   ];
   const [selectedAmorQuestion, setSelectedAmorQuestion] = useState<string>(amorQuestions[0]);
   const [isCustomAmor, setIsCustomAmor] = useState<boolean>(false);
   const [customAmorQuestion, setCustomAmorQuestion] = useState<string>('');
 
   const spreads = [
-    { id: 'conselho', name: 'Carta Única (Aconselhamento Exato)', count: 1 },
-    { id: 'jornada', name: 'Caminho Completo (Passado, Presente e Futuro)', count: 3 }
+    { id: 'conselho', name: t('Carta Única (Aconselhamento Exato)'), count: 1 },
+    { id: 'jornada', name: t('Caminho Completo (Passado, Presente e Futuro)'), count: 3 }
   ];
   const [selectedSpread, setSelectedSpread] = useState<'conselho' | 'jornada'>('conselho');
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
@@ -572,6 +572,7 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
       const sundayStr = getMostRecentSundayDateStr();
       const now = Date.now();
       const uKey = getUserKey();
+      const activeLang = (lang || 'pt').toLowerCase().split('-')[0];
       
       const updatedCooldowns: Record<TarotMode, number | null> = {
         inteligente: null,
@@ -615,8 +616,12 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
               ? ''
               : latest.interpretação.guidance || latest.interpretação.advice || '';
             
+            const rLang = (latest.idioma || latest.language || 'pt').toLowerCase().split('-')[0];
             localStorage.setItem(`tarot_saved_reading_${uKey}_${mode}`, interpretationText);
             localStorage.setItem(`tarot_saved_guidance_${uKey}_${mode}`, guidanceText);
+            localStorage.setItem(`tarot_saved_lang_${uKey}_${mode}`, rLang);
+            localStorage.setItem(`tarot_saved_reading_${uKey}_${mode}_${rLang}`, interpretationText);
+            localStorage.setItem(`tarot_saved_guidance_${uKey}_${mode}_${rLang}`, guidanceText);
           }
           if (latest.cartas || latest.cards) {
             localStorage.setItem(`tarot_saved_cards_${uKey}_${mode}`, JSON.stringify(latest.cartas || latest.cards));
@@ -641,9 +646,10 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
             ? ''
             : latest.interpretação.guidance || latest.interpretação.advice || '';
           
+          const rawCards = latest.cartas || latest.cards || [];
           setInterpretation(interpretationText);
           setGuidance(guidanceText);
-          setTempDrawnCards(latest.cartas || latest.cards || []);
+          setTempDrawnCards(rawCards);
           setSelectableCount(modeCount(activeMode));
           
           const savedMap = localStorage.getItem(`tarot_saved_map_${uKey}_${activeMode}`);
@@ -654,13 +660,46 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
           } else {
             const map: Record<number, any> = {};
             const indices: number[] = [];
-            const cardsList = latest.cartas || latest.cards || [];
-            cardsList.forEach((c: any, index: number) => {
+            rawCards.forEach((c: any, index: number) => {
               map[index] = c;
               indices.push(index);
             });
             setCardMapping(map);
             setRevealedIndices(indices);
+          }
+
+          // Check if we need to auto-translate for the current active language
+          const rLang = (latest.idioma || latest.language || 'pt').toLowerCase().split('-')[0];
+          const cachedLangReading = localStorage.getItem(`tarot_saved_reading_${uKey}_${activeMode}_${activeLang}`);
+          if (cachedLangReading) {
+            setInterpretation(cachedLangReading);
+            const cachedLangGuidance = localStorage.getItem(`tarot_saved_guidance_${uKey}_${activeMode}_${activeLang}`);
+            if (cachedLangGuidance) setGuidance(cachedLangGuidance);
+          } else if (rLang !== activeLang && interpretationText) {
+            fetch('/api/tarot/translate-reading', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                reading: interpretationText,
+                guidance: guidanceText,
+                targetLang: activeLang,
+                userName,
+                type: activeMode,
+                cards: rawCards
+              })
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.reading) {
+                setInterpretation(data.reading);
+                if (data.guidance) setGuidance(data.guidance);
+                localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}_${activeLang}`, data.reading);
+                if (data.guidance) {
+                  localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}_${activeLang}`, data.guidance);
+                }
+              }
+            })
+            .catch(e => console.warn('Could not auto-translate Firestore reading:', e));
           }
         }
       } else {
@@ -674,16 +713,15 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
     }
   };
 
-  // Load cooldowns and previously saved sessions on mount / mode switch
+  // Load cooldowns and previously saved sessions on mount / mode switch / language switch
   useEffect(() => {
     loadSavedSessions();
     if (userEmail) {
       syncWithFirestore();
     }
-  }, [activeMode, userEmail]);
+  }, [activeMode, userEmail, lang]);
 
   const loadSavedSessions = () => {
-    const now = Date.now();
     const modes: TarotMode[] = ['inteligente', 'amor', 'tradicional', 'semanal'];
     const updatedCooldowns: Record<TarotMode, number | null> = {
       inteligente: null,
@@ -697,6 +735,7 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
     const birthCityClean = cleanStringForChartId(birthCity || "sao_paulo");
     const expectedChartId = currentChartId || (birthDate ? `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}` : 'default');
     const uKey = getUserKey();
+    const activeLang = (lang || 'pt').toLowerCase().split('-')[0];
 
     modes.forEach((mode) => {
       // Verify map ID discrepancy (Tarot validator)
@@ -706,6 +745,9 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
         localStorage.removeItem(`tarot_last_draw_${uKey}_${mode}`);
         localStorage.removeItem(`tarot_saved_reading_${uKey}_${mode}`);
         localStorage.removeItem(`tarot_saved_guidance_${uKey}_${mode}`);
+        localStorage.removeItem(`tarot_saved_lang_${uKey}_${mode}`);
+        localStorage.removeItem(`tarot_saved_reading_${uKey}_${mode}_${activeLang}`);
+        localStorage.removeItem(`tarot_saved_guidance_${uKey}_${mode}_${activeLang}`);
         localStorage.removeItem(`tarot_saved_cards_${uKey}_${mode}`);
         localStorage.removeItem(`tarot_saved_map_${uKey}_${mode}`);
         localStorage.removeItem(`tarot_saved_indices_${uKey}_${mode}`);
@@ -732,20 +774,52 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
     // If active mode is currently locked, recover the saved reading so they can re-read it
     const lastTime = updatedCooldowns[activeMode];
     if (lastTime) {
-      const savedReading = localStorage.getItem(`tarot_saved_reading_${uKey}_${activeMode}`);
-      const savedGuidance = localStorage.getItem(`tarot_saved_guidance_${uKey}_${activeMode}`);
+      const savedLang = localStorage.getItem(`tarot_saved_lang_${uKey}_${activeMode}`) || 'pt';
+      const savedReadingLang = localStorage.getItem(`tarot_saved_reading_${uKey}_${activeMode}_${activeLang}`);
+      const savedGuidanceLang = localStorage.getItem(`tarot_saved_guidance_${uKey}_${activeMode}_${activeLang}`);
+      const savedReading = savedReadingLang || localStorage.getItem(`tarot_saved_reading_${uKey}_${activeMode}`);
+      const savedGuidance = savedGuidanceLang || localStorage.getItem(`tarot_saved_guidance_${uKey}_${activeMode}`);
       const savedCards = localStorage.getItem(`tarot_saved_cards_${uKey}_${activeMode}`);
       const savedMap = localStorage.getItem(`tarot_saved_map_${uKey}_${activeMode}`);
       const savedIndices = localStorage.getItem(`tarot_saved_indices_${uKey}_${activeMode}`);
 
-      if (savedReading && savedGuidance && savedCards) {
+      if (savedReading && savedCards) {
         try {
+          const parsedCards = JSON.parse(savedCards);
           setInterpretation(savedReading);
-          setGuidance(savedGuidance);
-          setTempDrawnCards(JSON.parse(savedCards));
+          setGuidance(savedGuidance || null);
+          setTempDrawnCards(parsedCards);
           if (savedMap) setCardMapping(JSON.parse(savedMap));
           if (savedIndices) setRevealedIndices(JSON.parse(savedIndices));
           setSelectableCount(modeCount(activeMode));
+
+          // If current language differs from the saved reading language and we don't have this language cached yet:
+          if (!savedReadingLang && savedLang !== activeLang && savedReading) {
+            fetch('/api/tarot/translate-reading', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                reading: savedReading,
+                guidance: savedGuidance,
+                targetLang: activeLang,
+                userName,
+                type: activeMode,
+                cards: parsedCards
+              })
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.reading) {
+                setInterpretation(data.reading);
+                if (data.guidance) setGuidance(data.guidance);
+                localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}_${activeLang}`, data.reading);
+                if (data.guidance) {
+                  localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}_${activeLang}`, data.guidance);
+                }
+              }
+            })
+            .catch(e => console.warn('Could not auto-translate cached reading:', e));
+          }
         } catch (e) {
           console.error("Erro ao recuperar sessão anterior:", e);
         }
@@ -851,14 +925,16 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
 
     let finalQuestion = '';
     if (activeMode === 'inteligente') {
-      finalQuestion = intelligentQuestion;
+      finalQuestion = intelligentQuestion || t('Conselho geral sobre meu momento de vida e escolhas');
     } else if (activeMode === 'amor') {
-      finalQuestion = isCustomAmor ? customAmorQuestion : selectedAmorQuestion;
+      finalQuestion = isCustomAmor ? customAmorQuestion : (selectedAmorQuestion || amorQuestions[0]);
     } else if (activeMode === 'tradicional') {
-      finalQuestion = selectedSpread === 'conselho' ? 'Tiragem Clássica de Conselho' : 'Tiragem Passado, Presente e Futuro';
+      finalQuestion = selectedSpread === 'conselho' ? t('Carta Única (Aconselhamento Exato)') : t('Caminho Completo (Passado, Presente e Futuro)');
     } else {
-      finalQuestion = 'Grande Consagração Semanal dos 10 Arcanos Ancestrais';
+      finalQuestion = t('Grande Consagração Semanal dos 10 Arcanos Ancestrais');
     }
+
+    const activeLang = (lang || 'pt').toLowerCase().split('-')[0];
 
     try {
       setIsInterpreting(true);
@@ -874,7 +950,7 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
           birthTime,
           latitude,
           longitude,
-          lang
+          lang: activeLang
         }),
       });
 
@@ -893,6 +969,9 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
         localStorage.setItem(`tarot_last_draw_${uKey}_${activeMode}`, nowTimestamp.toString());
         localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}`, data.reading);
         localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}`, data.guidance);
+        localStorage.setItem(`tarot_saved_lang_${uKey}_${activeMode}`, activeLang);
+        localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}_${activeLang}`, data.reading);
+        localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}_${activeLang}`, data.guidance);
         localStorage.setItem(`tarot_saved_cards_${uKey}_${activeMode}`, JSON.stringify(tempDrawnCards));
         localStorage.setItem(`tarot_saved_map_${uKey}_${activeMode}`, JSON.stringify(cardMapping));
         localStorage.setItem(`tarot_saved_indices_${uKey}_${activeMode}`, JSON.stringify(revealedIndices));
@@ -915,8 +994,8 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
           date: todayStr,
           horário: timeStr,
           time: timeStr,
-          idioma: lang || "pt",
-          language: lang || "pt",
+          idioma: activeLang,
+          language: activeLang,
           cartas: tempDrawnCards,
           cards: tempDrawnCards,
           interpretação: {
@@ -936,8 +1015,31 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
       }
     } catch (err) {
       console.error(err);
-      const fallbackReading = `Querido(a) ${userName}, as cartas indicam que você passa por um momento de grande peso emocional. Atente-se contra fofocas ou sentimentos invejosos no ambiente laboral e convívio cotidiano. Faça uma oração sincera de blindagem e limpe velhos apegos.`;
-      const fallbackGuidance = "Sinto que o amor cósmico cura suas dores. Consagre seu dia e confie no mistério.";
+      const fallbackReadings: Record<string, { reading: string; guidance: string }> = {
+        pt: {
+          reading: `Querido(a) ${userName || "Buscador"}, as cartas indicam que você passa por um momento de reavaliação emocional e escolhas importantes. Atente-se contra fofocas ou sentimentos invejosos no ambiente laboral e convívio cotidiano. Faça uma oração sincera de blindagem e limpe velhos apegos para florescer.`,
+          guidance: "Sinto que o amor cósmico cura suas dores. Consagre seu dia e confie no mistério."
+        },
+        en: {
+          reading: `Dear ${userName || "Seeker"}, the cards indicate that you are experiencing a moment of emotional reassessment and important choices. Stay watchful against gossip or envious feelings in your work and social environment. Dedicate a sincere prayer of protection and release old attachments to blossom.`,
+          guidance: "I sense that cosmic love heals your wounds. Consecrate your day and trust the sacred mystery."
+        },
+        es: {
+          reading: `Querido(a) ${userName || "Buscador"}, las cartas indican que pasas por un momento de reevaluación emocional y decisiones importantes. Mantente alerta ante chismes o envidias en el entorno laboral y social. Haz una oración sincera de protección y suelta viejos apegos para florecer.`,
+          guidance: "Siento que el amor cósmico sana tus heridas. Consagra tu día y confía en el sagrado misterio."
+        },
+        de: {
+          reading: `Liebe(r) ${userName || "Suchender"}, die Karten zeigen, dass Sie einen Moment emotionaler Neubewertung und wichtiger Entscheidungen durchleben. Achten Sie auf Klatsch oder neidische Gefühle im Arbeits- und Alltagsumfeld. Widmen Sie sich einem aufrichtigen Schutzgebet und lösen Sie alte Bindungen.`,
+          guidance: "Ich spüre, dass kosmische Liebe Ihre Wunden heilt. Weihen Sie Ihren Tag und vertrauen Sie dem heiligen Geheimnis."
+        },
+        fr: {
+          reading: `Cher(e) ${userName || "Chercheur"}, les cartes indiquent que vous traversez un moment de réévaluation émotionnelle et de choix importants. Restez attentif face aux commérages ou sentiments envieux dans le milieu professionnel et quotidien. Faites une prière sincère de protection et libérez les anciens attachements.`,
+          guidance: "Je ressens que l'amour cosmique guérit vos blessures. Consacrez votre journée et ayez confiance dans le mystère sacré."
+        }
+      };
+      const fallback = fallbackReadings[activeLang] || fallbackReadings.pt;
+      const fallbackReading = fallback.reading;
+      const fallbackGuidance = fallback.guidance;
       
       setInterpretation(fallbackReading);
       setGuidance(fallbackGuidance);
@@ -951,6 +1053,9 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
       localStorage.setItem(`tarot_last_draw_${uKey}_${activeMode}`, nowTimestamp.toString());
       localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}`, fallbackReading);
       localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}`, fallbackGuidance);
+      localStorage.setItem(`tarot_saved_lang_${uKey}_${activeMode}`, activeLang);
+      localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}_${activeLang}`, fallbackReading);
+      localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}_${activeLang}`, fallbackGuidance);
       localStorage.setItem(`tarot_saved_cards_${uKey}_${activeMode}`, JSON.stringify(tempDrawnCards));
       localStorage.setItem(`tarot_saved_map_${uKey}_${activeMode}`, JSON.stringify(cardMapping));
       localStorage.setItem(`tarot_saved_indices_${uKey}_${activeMode}`, JSON.stringify(revealedIndices));
@@ -972,8 +1077,8 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
         date: todayStr,
         horário: timeStr,
         time: timeStr,
-        idioma: lang || "pt",
-        language: lang || "pt",
+        idioma: activeLang,
+        language: activeLang,
         cartas: tempDrawnCards,
         cards: tempDrawnCards,
         interpretação: {

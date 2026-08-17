@@ -366,7 +366,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
     }
     return i18nT(text);
   };
-  const [activeSubTab, setActiveSubTab] = useState<'interativo' | 'geral' | 'astros' | 'casas' | 'aspectos' | 'extras'>('interativo');
+  const [activeSubTab, setActiveSubTab] = useState<'mandala' | 'interativo' | 'geral' | 'astros' | 'casas' | 'aspectos' | 'extras'>('mandala');
   const [selectedAstro, setSelectedAstro] = useState<AstroAstroPosition | null>(() => mapData?.astros?.[0] || null);
   const [selectedHouse, setSelectedHouse] = useState<number>(1);
 
@@ -1136,12 +1136,21 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
 
       <div className="flex gap-2 overflow-x-auto pb-1 border-b border-slate-800 scrollbar-none">
         <button
+          onClick={() => setActiveSubTab('mandala')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all shrink-0 ${
+            activeSubTab === 'mandala' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md font-bold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+          <span>{t("Mandala Astrológica HD")}</span>
+        </button>
+        <button
           onClick={() => setActiveSubTab('interativo')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all shrink-0 ${
             activeSubTab === 'interativo' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md font-bold' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+          <Compass className="w-3.5 h-3.5 text-amber-400" />
           <span>{t("Mapa Interativo de Autoconhecimento")}</span>
         </button>
         <button
@@ -1150,7 +1159,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
             activeSubTab === 'geral' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Compass className="w-3.5 h-3.5" />
+          <Orbit className="w-3.5 h-3.5" />
           <span>{t("Distribuição Energética")}</span>
         </button>
         <button
@@ -1183,19 +1192,34 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
       </div>
 
       {/* Main Subtab Contents */}
+      {activeSubTab === 'mandala' && (
+        <div className="space-y-4">
+          <CircularChart 
+            mapData={mapData} 
+            user={user} 
+            astros={mapData.astros} 
+            houses={mapData.houses} 
+            aspects={mapData.aspects} 
+            distribution={mapData.distribution} 
+          />
+        </div>
+      )}
+
       {activeSubTab === 'interativo' && (
         <InteractiveAstroMapEngine mapData={mapData} user={user} activeLanguage={i18n.language} />
       )}
 
       {activeSubTab === 'geral' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Wheel Chart section */}
-          <div className="lg:col-span-2 flex flex-col items-center justify-center bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
-            <CircularChart astros={mapData.astros} />
-            <span className="text-[10px] font-mono text-slate-500 mt-3 text-center uppercase tracking-wide">
-              {t("Diagrama do firmamento no nascimento")} ({user.birthCity})
-            </span>
+          <div className="w-full flex flex-col items-center justify-center">
+            <CircularChart 
+              mapData={mapData} 
+              user={user} 
+              astros={mapData.astros} 
+              houses={mapData.houses} 
+              aspects={mapData.aspects} 
+              distribution={mapData.distribution} 
+            />
           </div>
 
           {/* Elements, Qualities and polarization sliders */}
@@ -1318,7 +1342,6 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
               </div>
             </div>
           </div>
-        </div>
 
         {/* Section: A Balança Astrológica */}
         <div id="balanca-astrologica-section" className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 mt-6 space-y-6 shadow-xl relative overflow-hidden backdrop-blur-xs">
