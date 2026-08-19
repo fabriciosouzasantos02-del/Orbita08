@@ -2,7 +2,6 @@ import React, { useState, useMemo, useRef } from 'react';
 import { AstroAstroPosition, AstroHouse, AstroAspect, AstroElementDistribution, AstroQualityDistribution, UserProfile, AstrologyMap } from '../types';
 import { useTranslation } from 'react-i18next';
 import { 
-  Download, 
   Maximize2, 
   Minimize2, 
   Sparkles, 
@@ -12,9 +11,9 @@ import {
   Droplets, 
   User, 
   Share2, 
-  Info,
-  Layers,
-  CircleDot
+  Info, 
+  Layers, 
+  CircleDot 
 } from 'lucide-react';
 
 interface CircularChartProps {
@@ -568,24 +567,6 @@ export default function CircularChart({
     return list;
   }, [mappedPlanets]);
 
-  // Export / Download SVG as vector file
-  const handleDownloadSVG = () => {
-    const svgElement = containerRef.current?.querySelector('svg');
-    if (!svgElement) return;
-
-    const serializer = new XMLSerializer();
-    const source = serializer.serializeToString(svgElement);
-    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Mapa_Astral_${user.name?.replace(/\s+/g, '_') || 'Portal_Orbita'}.svg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div 
       ref={containerRef}
@@ -602,16 +583,9 @@ export default function CircularChart({
       {/* Floating Action Controls */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
         <button
-          onClick={handleDownloadSVG}
-          title={UI.downloadBtn}
-          className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:border-amber-400 transition-all duration-300 shadow-lg active:scale-95"
-        >
-          <Download className="w-4 h-4" />
-        </button>
-        <button
           onClick={() => setIsFullscreen(!isFullscreen)}
           title={isFullscreen ? UI.exitFullscreenBtn : UI.fullscreenBtn}
-          className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:border-amber-400 transition-all duration-300 shadow-lg active:scale-95"
+          className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:border-amber-400 transition-all duration-300 shadow-lg active:scale-95 cursor-pointer"
         >
           {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
         </button>
