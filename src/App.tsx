@@ -7605,7 +7605,7 @@ export default function App() {
               </div>
             ))}
 
-            {/* TAB 3: PLANETAS (AI Conselheira Orbia, Dreams Interpretation, Tarot, Daily Oracle) */}
+            {/* TAB 3: PLANETAS (AI Conselheira Orbia, Alinhamentos Celestes, Oráculo Diário) */}
             {activeTab === 'planetas' && (
               <div className="space-y-8 animate-in fade-in duration-300">
 
@@ -7620,7 +7620,7 @@ export default function App() {
                       {t("Sistemas Astros Ativos")}
                     </h1>
                     <p className="text-xs text-slate-400 max-w-xl mt-1">
-                      {t("Comunique-se com a Conselheira Orbia, interprete sonhos com Gemini no Cofre dos Sonhos e consulte o Oráculo diário.")}
+                      {t("Comunique-se com a Conselheira Orbia, visualize os alinhamentos celestes em tempo real e consulte o Oráculo diário.")}
                     </p>
                   </div>
                 </div>
@@ -7698,28 +7698,6 @@ export default function App() {
                         isQueryingOracle={isQueryingOracle}
                         handleAskOracle={handleAskOracle}
                         lang={currentLang}
-                      />
-                    </React.Suspense>
-                  </ErrorBoundary>
-                </div>
-
-                {/* Oráculo dos Sonhos Component */}
-                <div key={`oraculo_sonhos_card_${user?.name}_${user?.birthDate}`}>
-                  <ErrorBoundary>
-                    <React.Suspense fallback={
-                      <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.dreams", "Abrindo Cofre Celestial dos Sonhos...")}</span>
-                      </div>
-                    }>
-                      <OraculoDosSonhosCard
-                        newDreamDesc={newDreamDesc}
-                        setNewDreamDesc={setNewDreamDesc}
-                        isInterpretingDream={isInterpretingDream}
-                        handleRecordAndInterpretDream={handleRecordAndInterpretDream}
-                        dreamsHistory={dreamsHistory}
-                        selectedDreamDisplay={selectedDreamDisplay}
-                        setSelectedDreamDisplay={setSelectedDreamDisplay}
-                        preferredLanguage={currentLang}
                       />
                     </React.Suspense>
                   </ErrorBoundary>
