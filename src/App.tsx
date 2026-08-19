@@ -45,6 +45,7 @@ import AdminPanel from './components/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import OrbiaAIAndOracle from './components/OrbiaAIAndOracle';
 import OraculoDosSonhosCard from './components/OraculoDosSonhosCard';
+import PortalMandalaHero from './components/PortalMandalaHero';
 import { normalizeDreamsList, normalizeOracleDreamEntry } from './utils/dreamsNormalizer';
 import { CityAutocomplete } from './components/CityAutocomplete';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST, FAQ_LIST } from './data';
@@ -4709,62 +4710,8 @@ export default function App() {
                 {t("O único sistema autárquico que integra seu Mapa Astral de Alta Resolução com sintonizador de Nodos Lunares de Evolução Pessoal, gráficos computados de Biorritmos, tiragens dinâmicas de Tarot e Oráculo Psicanalítico de Sonhos.")}
               </p>
 
-              {/* Masterful Celestial Projection SVG Graphic */}
-              <div className="w-full max-w-[420px] aspect-square rounded-3xl bg-slate-950/80 border border-slate-900 shadow-2xl relative overflow-hidden p-6 group">
-                {/* Space background grid */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:24px_24px] opacity-15" />
-                <div className="absolute inset-0 bg-radial from-amber-500/10 to-transparent pointer-events-none" />
-
-                <svg className="w-full h-full text-amber-500/30" viewBox="0 0 200 200">
-                  {/* Outer Orbit Coordinates */}
-                  <circle cx="100" cy="100" r="85" className="fill-none stroke-amber-500/20" strokeWidth="1" />
-                  <circle cx="100" cy="100" r="80" className="fill-none stroke-amber-500/30" strokeWidth="1" strokeDasharray="2 3" />
-                  <circle cx="100" cy="100" r="62" className="fill-none stroke-slate-800" strokeWidth="1.5" />
-                  
-                  {/* Aspect projection triangles (Placidus Houses simulation lines) */}
-                  <polygon points="100,38 153.6,131 46.4,131" className="fill-amber-500/5 stroke-amber-500/30" strokeWidth="0.8" />
-                  <polygon points="100,162 153.6,69 46.4,69" className="fill-sky-500/5 stroke-sky-550/20" strokeWidth="0.8" />
-
-                  {/* Curving orbits */}
-                  <path d="M 38 100 A 62 45 45 0 1 162 100" className="fill-none stroke-emerald-500/20" strokeWidth="1" strokeDasharray="3 4" />
-                  <path d="M 100 38 A 45 62 45 0 1 100 162" className="fill-none stroke-purple-500/20" strokeWidth="1" />
-
-                  {/* Constellation Star Links (Aries/Scorpio stardust nodes) */}
-                  <g className="animate-pulse">
-                    <line x1="100" y1="38" x2="153.6" y2="69" className="stroke-amber-400/50" strokeWidth="0.75" />
-                    <line x1="153.6" y1="69" x2="153.6" y2="131" className="stroke-amber-400/50" strokeWidth="0.75" />
-                    <line x1="46.4" y1="131" x2="100" y2="162" className="stroke-amber-400/50" strokeWidth="0.75" />
-                  </g>
-
-                  {/* Core Astronomical Nodes */}
-                  <circle cx="100" cy="38" r="3" className="fill-amber-400 stroke-slate-950" strokeWidth="1" />
-                  <circle cx="153.6" cy="131" r="3" className="fill-rose-500 stroke-slate-950" strokeWidth="1" />
-                  <circle cx="46.4" cy="131" r="3" className="fill-sky-400 stroke-slate-950" strokeWidth="1" />
-                  <circle cx="153.6" cy="69" r="3" className="fill-purple-400 stroke-slate-950" strokeWidth="1" />
-                  <circle cx="46.4" cy="69" r="3" className="fill-emerald-400 stroke-slate-950" strokeWidth="1" />
-                  <circle cx="100" cy="162" r="3" className="fill-amber-400 stroke-slate-950" strokeWidth="1" />
-
-                  {/* Earth center node */}
-                  <circle cx="100" cy="100" r="10" className="fill-slate-950 stroke-amber-500/50" strokeWidth="1.5" />
-                  <circle cx="100" cy="100" r="3" className="fill-amber-500" />
-                  
-                  {/* Subtle orbiting planet nodes */}
-                  <circle cx="138" cy="80" r="2.5" className="fill-slate-100" />
-                  <text x="144" y="82" className="fill-slate-500 text-[6px] font-mono">{t("app.system.sol")}</text>
-
-                  <circle cx="68" cy="120" r="2" className="fill-indigo-400" />
-                  <text x="54" y="126" className="fill-slate-500 text-[6px] font-mono">{t("app.system.lua")}</text>
-
-                  <text x="100" y="24" textAnchor="middle" className="fill-amber-400 text-[6px] font-mono font-black tracking-widest">{t("app.system.placidusMc")}</text>
-                  <text x="100" y="180" textAnchor="middle" className="fill-slate-500 text-[6px] font-mono tracking-widest">{t("app.system.nadiIc")}</text>
-                </svg>
-
-                {/* Information readout overlays */}
-                <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-[7.5px] font-mono text-slate-500 border-t border-slate-900/40 pt-2 pointer-events-none">
-                  <span>{t("app.system.placidus2026")}</span>
-                  <span className="text-amber-500 font-bold">{t("ALGORITMO GEOCÊNTRICO ATIVO")}</span>
-                </div>
-              </div>
+              {/* High Definition Astrological Mandala Vector matching Mandala Astrológica HD */}
+              <PortalMandalaHero />
 
               {/* Created charts real-time statistics counter */}
               <div className="p-4 rounded-3xl bg-slate-950/90 border border-slate-900 flex items-center gap-4 max-w-md shadow-lg shadow-black/40">
